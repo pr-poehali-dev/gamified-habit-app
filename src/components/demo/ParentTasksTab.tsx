@@ -217,7 +217,8 @@ type TasksTabProps = {
   childNames: { id: number; name: string }[];
   onAction: (action: ParentAction) => void;
   onAddTask: (task: Omit<Task, "id">, childId: number) => void;
-  onConfirmTask: (taskId: number, childId?: number) => void;
+  onConfirmTask: (taskId: number) => void;
+  onConfirmChildTask: (childId: number, taskId: number) => void;
   onRejectConfirmTask: (childId: number, taskId: number) => void;
   onApprovePhoto: (childId: number, taskId: number) => void;
   onRejectPhoto: (childId: number, taskId: number) => void;
@@ -225,7 +226,7 @@ type TasksTabProps = {
 
 export function ParentTasksTab({
   confirmedTasks, photoProofs, pendingConfirmTasks, childNames,
-  onAction, onAddTask, onConfirmTask, onRejectConfirmTask, onApprovePhoto, onRejectPhoto,
+  onAction, onAddTask, onConfirmTask, onConfirmChildTask, onRejectConfirmTask, onApprovePhoto, onRejectPhoto,
 }: TasksTabProps) {
   const [showForm, setShowForm] = useState(false);
   const pendingPhotos = photoProofs.filter(p => p.status === "pending_review");
@@ -324,7 +325,7 @@ export function ParentTasksTab({
                     ✗ Вернуть
                   </button>
                   <button
-                    onClick={() => onConfirmTask(pt.taskId, pt.childId)}
+                    onClick={() => onConfirmChildTask(pt.childId, pt.taskId)}
                     className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-green-400 to-emerald-500 text-white font-bold text-sm shadow-sm hover:shadow-md active:scale-95 transition-all"
                   >
                     ✓ Подтвердить

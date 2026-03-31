@@ -196,7 +196,8 @@ type Props = {
   childNames: { id: number; name: string }[];
   onAction: (action: ParentAction) => void;
   onAddTask: (task: Omit<Task, "id">, childId: number) => void;
-  onConfirmTask: (taskId: number, childId?: number) => void;
+  onConfirmTask: (taskId: number) => void;
+  onConfirmChildTask: (childId: number, taskId: number) => void;
   onRejectConfirmTask: (childId: number, taskId: number) => void;
   onBuyPrize: (prizeId: number, cost: number) => void;
   onStreakClaim: () => void;
@@ -220,6 +221,7 @@ export default function ParentView({
   onAction,
   onAddTask,
   onConfirmTask,
+  onConfirmChildTask,
   onRejectConfirmTask,
   onBuyPrize,
   onStreakClaim,
@@ -273,6 +275,7 @@ export default function ParentView({
           onAction={onAction}
           onAddTask={onAddTask}
           onConfirmTask={onConfirmTask}
+          onConfirmChildTask={onConfirmChildTask}
           onRejectConfirmTask={onRejectConfirmTask}
           onApprovePhoto={onApprovePhoto}
           onRejectPhoto={onRejectPhoto}

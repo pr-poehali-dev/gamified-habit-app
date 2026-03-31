@@ -95,35 +95,46 @@ export default function Index() {
   }, [updateChild]);
 
   // ── Grant stars to a child (shared logic) ──
-  const grantStars = useCallback((childId: number, taskId: number, taskStars: number, newCompleted: number[]) => {
-    const child = children.find(c => c.id === childId);
-    if (!child) return;
-    const newStars = child.stars + taskStars;
-    const newLevel = getLevelInfo(newStars).level;
-    const prevLevel = prevLevelRef.current[childId] ?? 1;
-    if (newLevel > prevLevel) {
-      setLevelUpLevel(newLevel);
-      updateChild(childId, p => ({ ...p, stickerPacks: p.stickerPacks + 1 }));
-    }
-    prevLevelRef.current[childId] = newLevel;
-    updateChild(childId, p => ({
-      ...p,
-      stars: newStars,
-      completedTaskIds: newCompleted,
-      pendingConfirmTaskIds: p.pendingConfirmTaskIds.filter(id => id !== taskId),
-    }));
+  // Uses functional updater to always operate on latest state, avoiding stale closure bugs
+  const grantStars = useCallback((childId: number, taskId: number, taskStars: number) => {
+    updateChild(childId, p => {
+      const newStars = p.stars + taskStars;
+      const newLevel = getLevelInfo(newStars).level;
+      const prevLevel = prevLevelRef.current[childId] ?? 1;
+      const leveledUp = newLevel > prevLevel;
+      if (leveledUp) {
+        setLevelUpLevel(newLevel);
+        prevLevelRef.current[childId] = newLevel;
+      }
+      return {
+        ...p,
+        stars: newStars,
+        completedTaskIds: [...p.completedTaskIds, taskId],
+        pendingConfirmTaskIds: p.pendingConfirmTaskIds.filter(id => id !== taskId),
+        stickerPacks: leveledUp ? p.stickerPacks + 1 : p.stickerPacks,
+      };
+    });
     setShowStar(true);
     setTimeout(() => setShowStar(false), 1000);
-    checkAndGrantAchievements(childId, {
-      tasksCompleted: newCompleted.length,
-      totalStars: newStars,
-      level: newLevel,
-      starsSpent: child.starsSpent,
-      rewardsBought: child.purchasedItemIds.length,
-      streak: streak.current,
-      fastTasksDone: 0,
-    }, child.achievements);
-  }, [children, streak.current, updateChild, checkAndGrantAchievements]);
+    // Achievement check runs after state settles, reading fresh children via setter
+    setChildren(prev => {
+      const child = prev.find(c => c.id === childId);
+      if (!child) return prev;
+      const newStars = child.stars + taskStars;
+      const newLevel = getLevelInfo(newStars).level;
+      const newCompleted = [...child.completedTaskIds, taskId];
+      checkAndGrantAchievements(childId, {
+        tasksCompleted: newCompleted.length,
+        totalStars: newStars,
+        level: newLevel,
+        starsSpent: child.starsSpent,
+        rewardsBought: child.purchasedItemIds.length,
+        streak: streak.current,
+        fastTasksDone: 0,
+      }, child.achievements);
+      return prev;
+    });
+  }, [streak.current, updateChild, checkAndGrantAchievements]);
 
   // ── Child task toggle ──
   const handleTaskToggle = useCallback((taskId: number, taskStars: number) => {
@@ -135,7 +146,7 @@ export default function Index() {
     const task = child.tasks.find(t => t.id === taskId);
 
     if (task?.requireConfirm) {
-      // Mark as done but pending parent confirmation — NO stars yet
+      // Mark as pending parent confirmation — NO stars, NO XP yet
       updateChild(activeChildId, p => ({
         ...p,
         pendingConfirmTaskIds: [...p.pendingConfirmTaskIds, taskId],
@@ -144,8 +155,7 @@ export default function Index() {
     }
 
     // No confirmation needed → grant immediately
-    const newCompleted = [...child.completedTaskIds, taskId];
-    grantStars(activeChildId, taskId, taskStars, newCompleted);
+    grantStars(activeChildId, taskId, taskStars);
   }, [children, activeChildId, updateChild, grantStars]);
 
   // ── Buy reward ──
@@ -251,25 +261,24 @@ export default function Index() {
     touchStreak();
   };
 
-  // handleConfirmTask: confirms a task from PARENT_TASKS_LIST (static demo)
-  // Also triggers star grant if the task belongs to a child in pendingConfirmTaskIds
-  const handleConfirmTask = useCallback((taskId: number, childId?: number) => {
+  // handleConfirmTask: for static PARENT_TASKS_LIST items (demo data)
+  const handleConfirmTask = useCallback((taskId: number) => {
     if (confirmedTasks.includes(taskId)) return;
     setConfirmedTasks(prev => [...prev, taskId]);
     addParentXp(PARENT_ACTION_XP.task_confirm);
     touchStreak();
+  }, [confirmedTasks, addParentXp, touchStreak]);
 
-    // If a real child task is pending confirmation, grant stars now
-    const targetChildId = childId ?? children.find(c => c.pendingConfirmTaskIds.includes(taskId))?.id;
-    if (targetChildId != null) {
-      const child = children.find(c => c.id === targetChildId);
-      const task = child?.tasks.find(t => t.id === taskId);
-      if (child && task && child.pendingConfirmTaskIds.includes(taskId)) {
-        const newCompleted = [...child.completedTaskIds, taskId];
-        grantStars(targetChildId, taskId, task.stars, newCompleted);
-      }
-    }
-  }, [confirmedTasks, children, addParentXp, touchStreak, grantStars]);
+  // handleConfirmChildTask: confirms a real child task pending confirmation → grants stars
+  const handleConfirmChildTask = useCallback((childId: number, taskId: number) => {
+    const child = children.find(c => c.id === childId);
+    if (!child || !child.pendingConfirmTaskIds.includes(taskId)) return;
+    const task = child.tasks.find(t => t.id === taskId);
+    if (!task) return;
+    addParentXp(PARENT_ACTION_XP.task_confirm);
+    touchStreak();
+    grantStars(childId, taskId, task.stars);
+  }, [children, addParentXp, touchStreak, grantStars]);
 
   const handleBuyPrize = (prizeId: number, cost: number) => {
     if (getParentLevelInfo(parentXp).totalPoints < cost || purchasedPrizes.includes(prizeId)) return;
@@ -486,6 +495,7 @@ export default function Index() {
           onAction={handleParentAction}
           onAddTask={handleAddTask}
           onConfirmTask={handleConfirmTask}
+          onConfirmChildTask={handleConfirmChildTask}
           onRejectConfirmTask={handleRejectConfirmTask}
           onBuyPrize={handleBuyPrize}
           onStreakClaim={handleStreakClaim}
