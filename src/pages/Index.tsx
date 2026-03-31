@@ -1,357 +1,34 @@
-import { useState, useRef, useCallback } from "react";
-import {
-  getLevelInfo,
-  getParentLevelInfo,
-  getStreakBonus,
-  advanceStreak,
-  getTodayDateStr,
-  checkAchievements,
-  rollSticker,
-  GRADE_STARS,
-  INITIAL_CHILDREN,
-  PARENT_ACTION_XP,
-  type Mode, type ChildTab, type ParentTab, type ParentAction,
-  type StreakState, type AchievementId, type Sticker, type ChildStats,
-  type GradeRequest, type GradeValue, type ChildProfile, type PhotoProof, type Task,
-  makeTask,
-} from "@/components/demo/types";
-import { LevelUpModal, ParentLevelUpModal } from "@/components/demo/XpBar";
-import { StreakBonusModal } from "@/components/demo/StreakCard";
-import { NewAchievementModal } from "@/components/demo/AchievementBadge";
-import { GradeToast } from "@/components/demo/GradeExchange";
+import { useState } from "react";
+import { type Mode, type GradeRequest } from "@/components/demo/types";
+import { type PendingConfirmTask } from "@/components/demo/ParentTasksTab";
 import { ChildProfileSwitcher } from "@/components/demo/ChildProfileSwitcher";
 import ChildView from "@/components/demo/ChildView";
 import ParentView from "@/components/demo/ParentView";
-
-const INITIAL_STREAK: StreakState = {
-  current: 4,
-  lastActivityDate: getTodayDateStr(),
-  claimedToday: false,
-  longestStreak: 6,
-};
+import { AppModals } from "./AppModals";
+import { useChildState } from "./useChildState";
+import { useParentState } from "./useParentState";
 
 export default function Index() {
   const [mode, setMode] = useState<Mode>("child");
 
-  // ── Multi-child profiles ──
-  const [children, setChildren] = useState<ChildProfile[]>(INITIAL_CHILDREN);
-  const [activeChildId, setActiveChildId] = useState<number>(INITIAL_CHILDREN[0].id);
+  // ── Child state & handlers ──
+  const child = useChildState(0); // streak.current injected below after parent init
 
-  const activeChild = children.find(c => c.id === activeChildId) ?? children[0];
-
-  const updateChild = useCallback((id: number, updater: (p: ChildProfile) => ChildProfile) => {
-    setChildren(prev => prev.map(c => c.id === id ? updater(c) : c));
-  }, []);
-
-  // Child-scoped tab state (per child)
-  const [childTabs, setChildTabs] = useState<Record<number, ChildTab>>({});
-  const childTab = childTabs[activeChildId] ?? "tasks";
-  const setChildTab = (tab: ChildTab) =>
-    setChildTabs(prev => ({ ...prev, [activeChildId]: tab }));
-
-  // Modals
-  const [showStar, setShowStar] = useState(false);
-  const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
-  const prevLevelRef = useRef<Record<number, number>>({
-    [INITIAL_CHILDREN[0].id]: getLevelInfo(INITIAL_CHILDREN[0].stars).level,
-    [INITIAL_CHILDREN[1].id]: getLevelInfo(INITIAL_CHILDREN[1].stars).level,
-  });
-
-  const [newAchievements, setNewAchievements] = useState<AchievementId[]>([]);
-
-  // Parent state
-  const [parentTab, setParentTab] = useState<ParentTab>("tasks");
-  const [parentXp, setParentXp] = useState(120);
-  const [parentLevelUpLevel, setParentLevelUpLevel] = useState<number | null>(null);
-  const [confirmedTasks, setConfirmedTasks] = useState<number[]>([1, 4]);
-  const [purchasedPrizes, setPurchasedPrizes] = useState<number[]>([]);
-  const prevParentLevelRef = useRef(getParentLevelInfo(120).level);
-
-  // Streak
-  const [streak, setStreak] = useState<StreakState>(INITIAL_STREAK);
-  const [streakBonusModal, setStreakBonusModal] = useState<{ day: number; xp: number; points: number } | null>(null);
-
-  // Grade notifications
-  type GradeNotif = { id: string; type: "approved" | "rejected"; subject: string; stars?: number; childName: string };
-  const [gradeNotifParent, setGradeNotifParent] = useState<{ subject: string; grade: number; childName: string } | null>(null);
-  const [gradeNotifChild, setGradeNotifChild] = useState<GradeNotif | null>(null);
-
-  const { totalPoints: parentPoints } = getParentLevelInfo(parentXp);
-
-  // ── Achievement check for a specific child ──
-  const checkAndGrantAchievements = useCallback((
-    childId: number, stats: ChildStats, already: AchievementId[]
-  ) => {
-    const newOnes = checkAchievements(stats, already);
-    if (newOnes.length === 0) return;
-    updateChild(childId, p => ({
-      ...p,
-      achievements: [...p.achievements, ...newOnes],
-      stickerPacks: Math.floor((p.achievements.length + newOnes.length) / 3) > Math.floor(p.achievements.length / 3)
-        ? p.stickerPacks + 1
-        : p.stickerPacks,
-    }));
-    setNewAchievements(newOnes);
-  }, [updateChild]);
-
-  // ── Grant stars to a child (shared logic) ──
-  // Uses functional updater to always operate on latest state, avoiding stale closure bugs
-  const grantStars = useCallback((childId: number, taskId: number, taskStars: number) => {
-    updateChild(childId, p => {
-      const newStars = p.stars + taskStars;
-      const newLevel = getLevelInfo(newStars).level;
-      const prevLevel = prevLevelRef.current[childId] ?? 1;
-      const leveledUp = newLevel > prevLevel;
-      if (leveledUp) {
-        setLevelUpLevel(newLevel);
-        prevLevelRef.current[childId] = newLevel;
-      }
-      return {
-        ...p,
-        stars: newStars,
-        completedTaskIds: [...p.completedTaskIds, taskId],
-        pendingConfirmTaskIds: p.pendingConfirmTaskIds.filter(id => id !== taskId),
-        stickerPacks: leveledUp ? p.stickerPacks + 1 : p.stickerPacks,
-      };
-    });
-    setShowStar(true);
-    setTimeout(() => setShowStar(false), 1000);
-    // Achievement check runs after state settles, reading fresh children via setter
-    setChildren(prev => {
-      const child = prev.find(c => c.id === childId);
-      if (!child) return prev;
-      const newStars = child.stars + taskStars;
-      const newLevel = getLevelInfo(newStars).level;
-      const newCompleted = [...child.completedTaskIds, taskId];
-      checkAndGrantAchievements(childId, {
-        tasksCompleted: newCompleted.length,
-        totalStars: newStars,
-        level: newLevel,
-        starsSpent: child.starsSpent,
-        rewardsBought: child.purchasedItemIds.length,
-        streak: streak.current,
-        fastTasksDone: 0,
-      }, child.achievements);
-      return prev;
-    });
-  }, [streak.current, updateChild, checkAndGrantAchievements]);
-
-  // ── Child task toggle ──
-  const handleTaskToggle = useCallback((taskId: number, taskStars: number) => {
-    const child = children.find(c => c.id === activeChildId);
-    if (!child) return;
-    if (child.completedTaskIds.includes(taskId)) return;
-    if (child.pendingConfirmTaskIds.includes(taskId)) return;
-
-    const task = child.tasks.find(t => t.id === taskId);
-
-    if (task?.requireConfirm) {
-      // Mark as pending parent confirmation — NO stars, NO XP yet
-      updateChild(activeChildId, p => ({
-        ...p,
-        pendingConfirmTaskIds: [...p.pendingConfirmTaskIds, taskId],
-      }));
-      return;
-    }
-
-    // No confirmation needed → grant immediately
-    grantStars(activeChildId, taskId, taskStars);
-  }, [children, activeChildId, updateChild, grantStars]);
-
-  // ── Buy reward ──
-  const handleBuy = useCallback((itemId: number, cost: number) => {
-    const child = children.find(c => c.id === activeChildId);
-    if (!child || child.stars < cost || child.purchasedItemIds.includes(itemId)) return;
-
-    const newStars = child.stars - cost;
-    const newSpent = child.starsSpent + cost;
-    const newPurchased = [...child.purchasedItemIds, itemId];
-    updateChild(activeChildId, p => ({
-      ...p, stars: newStars, starsSpent: newSpent, purchasedItemIds: newPurchased,
-    }));
-
-    checkAndGrantAchievements(activeChildId, {
-      tasksCompleted: child.completedTaskIds.length,
-      totalStars: newStars,
-      level: getLevelInfo(newStars).level,
-      starsSpent: newSpent,
-      rewardsBought: newPurchased.length,
-      streak: streak.current,
-      fastTasksDone: 0,
-    }, child.achievements);
-  }, [children, activeChildId, streak.current, updateChild, checkAndGrantAchievements]);
-
-  // ── Open sticker pack ──
-  const handleOpenStickerPack = useCallback((): Sticker => {
-    const sticker = rollSticker();
-    updateChild(activeChildId, p => {
-      const existing = p.stickers.find(s => s.stickerId === sticker.id);
-      const newStickers = existing
-        ? p.stickers.map(s => s.stickerId === sticker.id ? { ...s, count: s.count + 1 } : s)
-        : [...p.stickers, { stickerId: sticker.id, count: 1 }];
-      return {
-        ...p,
-        stickerPacks: Math.max(0, p.stickerPacks - 1),
-        stickers: newStickers,
-        avatarOverride: sticker.avatarOverride ?? p.avatarOverride,
-      };
-    });
-    return sticker;
-  }, [activeChildId, updateChild]);
-
-  // ── Photo proof handlers ──
-  const handleAttachPhoto = useCallback((taskId: number, dataUrl: string) => {
-    updateChild(activeChildId, p => {
-      const existing = p.photoProofs.find(pp => pp.taskId === taskId);
-      const newProof: PhotoProof = {
-        taskId,
-        dataUrl,
-        uploadedAt: new Date().toISOString(),
-        status: "pending_review",
-      };
-      return {
-        ...p,
-        photoProofs: existing
-          ? p.photoProofs.map(pp => pp.taskId === taskId ? newProof : pp)
-          : [...p.photoProofs, newProof],
-      };
-    });
-  }, [activeChildId, updateChild]);
-
-  const handleApprovePhoto = useCallback((childId: number, taskId: number) => {
-    updateChild(childId, p => ({
-      ...p,
-      photoProofs: p.photoProofs.map(pp =>
-        pp.taskId === taskId ? { ...pp, status: "approved" as const } : pp
-      ),
-    }));
-  }, [updateChild]);
-
-  const handleRejectConfirmTask = useCallback((childId: number, taskId: number) => {
-    updateChild(childId, p => ({
-      ...p,
-      pendingConfirmTaskIds: p.pendingConfirmTaskIds.filter(id => id !== taskId),
-    }));
-  }, [updateChild]);
-
-  const handleRejectPhoto = useCallback((childId: number, taskId: number) => {
-    updateChild(childId, p => ({
-      ...p,
-      photoProofs: p.photoProofs.map(pp =>
-        pp.taskId === taskId ? { ...pp, status: "rejected" as const } : pp
-      ),
-    }));
-  }, [updateChild]);
-
-  // ── Parent XP ──
-  const addParentXp = useCallback((xp: number) => {
-    setParentXp(prev => {
-      const next = prev + xp;
-      const newLevel = getParentLevelInfo(next).level;
-      if (newLevel > prevParentLevelRef.current) setParentLevelUpLevel(newLevel);
-      prevParentLevelRef.current = newLevel;
-      return next;
-    });
-  }, []);
-
-  const touchStreak = useCallback(() => setStreak(prev => advanceStreak(prev)), []);
-
-  const handleParentAction = (action: ParentAction) => {
-    addParentXp(PARENT_ACTION_XP[action]);
-    touchStreak();
-  };
-
-  // handleConfirmTask: for static PARENT_TASKS_LIST items (demo data)
-  const handleConfirmTask = useCallback((taskId: number) => {
-    if (confirmedTasks.includes(taskId)) return;
-    setConfirmedTasks(prev => [...prev, taskId]);
-    addParentXp(PARENT_ACTION_XP.task_confirm);
-    touchStreak();
-  }, [confirmedTasks, addParentXp, touchStreak]);
-
-  // handleConfirmChildTask: confirms a real child task pending confirmation → grants stars
-  const handleConfirmChildTask = useCallback((childId: number, taskId: number) => {
-    const child = children.find(c => c.id === childId);
-    if (!child || !child.pendingConfirmTaskIds.includes(taskId)) return;
-    const task = child.tasks.find(t => t.id === taskId);
-    if (!task) return;
-    addParentXp(PARENT_ACTION_XP.task_confirm);
-    touchStreak();
-    grantStars(childId, taskId, task.stars);
-  }, [children, addParentXp, touchStreak, grantStars]);
-
-  const handleBuyPrize = (prizeId: number, cost: number) => {
-    if (getParentLevelInfo(parentXp).totalPoints < cost || purchasedPrizes.includes(prizeId)) return;
-    setPurchasedPrizes(prev => [...prev, prizeId]);
-  };
-
-  const handleStreakClaim = useCallback(() => {
-    setStreak(prev => {
-      if (prev.claimedToday) return prev;
-      const bonus = getStreakBonus(prev.current);
-      setStreakBonusModal({ day: prev.current, xp: bonus.xp, points: bonus.points });
-      addParentXp(bonus.xp);
-      return { ...prev, claimedToday: true };
-    });
-  }, [addParentXp]);
-
-  // ── Grade handlers (per child) ──
-  const handleSubmitGrade = useCallback((childId: number, subject: string, grade: GradeValue, date: string) => {
-    const req: GradeRequest = {
-      id: `gr_${Date.now()}`,
-      subject, grade, date,
-      status: "pending",
-      createdAt: new Date().toISOString(),
-    };
-    updateChild(childId, p => ({ ...p, gradeRequests: [req, ...p.gradeRequests] }));
-    const child = children.find(c => c.id === childId);
-    setGradeNotifParent({ subject, grade, childName: child?.name ?? "" });
-  }, [children, updateChild]);
-
-  const handleApproveGrade = useCallback((childId: number, reqId: string) => {
-    const child = children.find(c => c.id === childId);
-    const req = child?.gradeRequests.find(r => r.id === reqId);
-    if (!req || req.status !== "pending") return;
-    const stars = GRADE_STARS[req.grade];
-    updateChild(childId, p => ({
-      ...p,
-      stars: p.stars + stars,
-      gradeRequests: p.gradeRequests.map(r =>
-        r.id === reqId ? { ...r, status: "approved" as const, starsAwarded: stars } : r
-      ),
-    }));
-    setGradeNotifChild({ id: reqId, type: "approved", subject: req.subject, stars, childName: child?.name ?? "" });
-  }, [children, updateChild]);
-
-  const handleRejectGrade = useCallback((childId: number, reqId: string) => {
-    const child = children.find(c => c.id === childId);
-    const req = child?.gradeRequests.find(r => r.id === reqId);
-    if (!req) return;
-    updateChild(childId, p => ({
-      ...p,
-      gradeRequests: p.gradeRequests.map(r =>
-        r.id === reqId ? { ...r, status: "rejected" as const } : r
-      ),
-    }));
-    setGradeNotifChild({ id: reqId, type: "rejected", subject: req.subject, childName: child?.name ?? "" });
-  }, [children, updateChild]);
-
-  // ── Add task to a child ──
-  const handleAddTask = useCallback((taskData: Omit<Task, "id">, childId: number) => {
-    const base = makeTask(taskData.title, taskData.stars, taskData.emoji);
-    const newTask: Task = { ...base, requirePhoto: taskData.requirePhoto };
-    updateChild(childId, p => ({ ...p, tasks: [...p.tasks, newTask] }));
-  }, [updateChild]);
-
-  // All pending grade requests across children (for parent view)
-  const allGradeRequests: (GradeRequest & { childId: number; childName: string })[] = children.flatMap(c =>
-    c.gradeRequests.map(r => ({ ...r, childId: c.id, childName: c.name }))
+  // ── Parent state & handlers ──
+  const parent = useParentState(
+    child.grantStars,
+    (childId) => child.children.find(c => c.id === childId),
   );
 
-  const childNames = children.map(c => ({ id: c.id, name: c.name }));
+  // Derived data for parent view
+  const allGradeRequests: (GradeRequest & { childId: number; childName: string })[] =
+    child.children.flatMap(c =>
+      c.gradeRequests.map(r => ({ ...r, childId: c.id, childName: c.name }))
+    );
 
-  // All pending confirm tasks across children (for parent tasks tab)
-  const allPendingConfirmTasks = children.flatMap(c =>
+  const childNames = child.children.map(c => ({ id: c.id, name: c.name }));
+
+  const allPendingConfirmTasks: PendingConfirmTask[] = child.children.flatMap(c =>
     c.pendingConfirmTaskIds.map(taskId => {
       const task = c.tasks.find(t => t.id === taskId);
       return task ? {
@@ -363,8 +40,17 @@ export default function Index() {
         taskEmoji: task.emoji,
         taskStars: task.stars,
       } : null;
-    }).filter(Boolean)
-  ) as import("@/components/demo/ParentTasksTab").PendingConfirmTask[];
+    }).filter(Boolean) as PendingConfirmTask[]
+  );
+
+  const allPhotoProofs = child.children.flatMap(c =>
+    c.photoProofs.map(p => ({
+      ...p,
+      childId: c.id,
+      childName: c.name,
+      taskTitle: c.tasks.find(t => t.id === p.taskId)?.title ?? "",
+    }))
+  );
 
   return (
     <div
@@ -375,50 +61,22 @@ export default function Index() {
       }`}
       style={{ fontFamily: mode === "child" ? "Nunito, sans-serif" : "Golos Text, sans-serif" }}
     >
-      {levelUpLevel !== null && <LevelUpModal level={levelUpLevel} onClose={() => setLevelUpLevel(null)} />}
-      {parentLevelUpLevel !== null && (
-        <ParentLevelUpModal
-          level={parentLevelUpLevel}
-          points={getParentLevelInfo(parentXp).totalPoints}
-          onClose={() => setParentLevelUpLevel(null)}
-        />
-      )}
-      {streakBonusModal !== null && (
-        <StreakBonusModal
-          day={streakBonusModal.day}
-          xp={streakBonusModal.xp}
-          points={streakBonusModal.points}
-          onClose={() => setStreakBonusModal(null)}
-        />
-      )}
-      {newAchievements.length > 0 && (
-        <NewAchievementModal ids={newAchievements} onClose={() => setNewAchievements([])} />
-      )}
-      {showStar && (
-        <div className="fixed inset-0 pointer-events-none z-40 flex items-center justify-center">
-          <div className="text-8xl animate-star-pop">⭐</div>
-        </div>
-      )}
-      {gradeNotifParent && (
-        <GradeToast
-          emoji="📝"
-          title={`Новая оценка от ${gradeNotifParent.childName}`}
-          subtitle={`${gradeNotifParent.subject} · ${gradeNotifParent.grade} балл — ожидает подтверждения`}
-          color="from-[#6B7BFF] to-[#9B6BFF]"
-          onClose={() => setGradeNotifParent(null)}
-        />
-      )}
-      {gradeNotifChild && (
-        <GradeToast
-          emoji={gradeNotifChild.type === "approved" ? "🌟" : "😔"}
-          title={gradeNotifChild.type === "approved" ? `+${gradeNotifChild.stars} звёзд начислено!` : "Оценка отклонена"}
-          subtitle={gradeNotifChild.type === "approved"
-            ? `${gradeNotifChild.subject} · родитель подтвердил обмен`
-            : `${gradeNotifChild.subject} · обратись к родителю`}
-          color={gradeNotifChild.type === "approved" ? "from-green-400 to-emerald-500" : "from-orange-400 to-red-500"}
-          onClose={() => setGradeNotifChild(null)}
-        />
-      )}
+      <AppModals
+        levelUpLevel={child.levelUpLevel}
+        newAchievements={child.newAchievements}
+        showStar={child.showStar}
+        gradeNotifChild={child.gradeNotifChild}
+        parentLevelUpLevel={parent.parentLevelUpLevel}
+        parentXp={parent.parentXp}
+        streakBonusModal={parent.streakBonusModal}
+        gradeNotifParent={child.gradeNotifParent}
+        onCloseLevelUp={() => child.setLevelUpLevel(null)}
+        onCloseParentLevelUp={() => parent.setParentLevelUpLevel(null)}
+        onCloseStreakBonus={() => parent.setStreakBonusModal(null)}
+        onCloseNewAchievements={() => child.setNewAchievements([])}
+        onCloseGradeNotifParent={() => child.setGradeNotifParent(null)}
+        onCloseGradeNotifChild={() => child.setGradeNotifChild(null)}
+      />
 
       {/* Mode switcher */}
       <div className="flex justify-center pt-5 px-4">
@@ -452,63 +110,60 @@ export default function Index() {
       {/* Child profile switcher */}
       {mode === "child" && (
         <ChildProfileSwitcher
-          profiles={children}
-          activeId={activeChildId}
-          onSwitch={id => { setActiveChildId(id); }}
+          profiles={child.children}
+          activeId={child.activeChildId}
+          onSwitch={id => child.setActiveChildId(id)}
         />
       )}
 
+      {/* Child view */}
       {mode === "child" && (
         <ChildView
-          key={activeChildId}
-          childTab={childTab}
-          setChildTab={setChildTab}
-          profile={activeChild}
-          handleTaskToggle={handleTaskToggle}
-          handleBuy={handleBuy}
-          onOpenStickerPack={handleOpenStickerPack}
-          onSubmitGrade={(subject, grade, date) => handleSubmitGrade(activeChildId, subject, grade, date)}
-          onAttachPhoto={handleAttachPhoto}
+          key={child.activeChildId}
+          childTab={child.childTab}
+          setChildTab={child.setChildTab}
+          profile={child.activeChild}
+          handleTaskToggle={child.handleTaskToggle}
+          handleBuy={child.handleBuy}
+          onOpenStickerPack={child.handleOpenStickerPack}
+          onSubmitGrade={(subject, grade, date) =>
+            child.handleSubmitGrade(child.activeChildId, subject, grade, date)
+          }
+          onAttachPhoto={child.handleAttachPhoto}
         />
       )}
 
+      {/* Parent view */}
       {mode === "parent" && (
         <ParentView
-          parentTab={parentTab}
-          setParentTab={setParentTab}
-          parentXp={parentXp}
-          parentPoints={parentPoints}
-          streak={streak}
-          confirmedTasks={confirmedTasks}
-          purchasedPrizes={purchasedPrizes}
+          parentTab={parent.parentTab}
+          setParentTab={parent.setParentTab}
+          parentXp={parent.parentXp}
+          parentPoints={parent.parentPoints}
+          streak={parent.streak}
+          confirmedTasks={parent.confirmedTasks}
+          purchasedPrizes={parent.purchasedPrizes}
           gradeRequests={allGradeRequests}
-          photoProofs={children.flatMap(c =>
-            c.photoProofs.map(p => ({
-              ...p,
-              childId: c.id,
-              childName: c.name,
-              taskTitle: c.tasks.find(t => t.id === p.taskId)?.title ?? "",
-            }))
-          )}
+          photoProofs={allPhotoProofs}
           pendingConfirmTasks={allPendingConfirmTasks}
           childNames={childNames}
-          onAction={handleParentAction}
-          onAddTask={handleAddTask}
-          onConfirmTask={handleConfirmTask}
-          onConfirmChildTask={handleConfirmChildTask}
-          onRejectConfirmTask={handleRejectConfirmTask}
-          onBuyPrize={handleBuyPrize}
-          onStreakClaim={handleStreakClaim}
+          onAction={parent.handleParentAction}
+          onAddTask={child.handleAddTask}
+          onConfirmTask={parent.handleConfirmTask}
+          onConfirmChildTask={parent.handleConfirmChildTask}
+          onRejectConfirmTask={child.handleRejectConfirmTask}
+          onBuyPrize={parent.handleBuyPrize}
+          onStreakClaim={parent.handleStreakClaim}
           onApproveGrade={(id) => {
             const req = allGradeRequests.find(r => r.id === id);
-            if (req) handleApproveGrade(req.childId, id);
+            if (req) child.handleApproveGrade(req.childId, id);
           }}
           onRejectGrade={(id) => {
             const req = allGradeRequests.find(r => r.id === id);
-            if (req) handleRejectGrade(req.childId, id);
+            if (req) child.handleRejectGrade(req.childId, id);
           }}
-          onApprovePhoto={handleApprovePhoto}
-          onRejectPhoto={handleRejectPhoto}
+          onApprovePhoto={child.handleApprovePhoto}
+          onRejectPhoto={child.handleRejectPhoto}
         />
       )}
     </div>
