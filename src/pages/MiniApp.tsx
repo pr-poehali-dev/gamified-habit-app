@@ -75,27 +75,47 @@ function getLevelInfo(totalStars: number) {
   return { level, xpInLevel, xpPct };
 }
 
+const LEVEL_TIERS = [
+  { from: 1,  emoji: "⭐", title: "Новичок" },
+  { from: 4,  emoji: "🥉", title: "Бронза" },
+  { from: 7,  emoji: "🥈", title: "Серебро" },
+  { from: 10, emoji: "🥇", title: "Золото" },
+  { from: 15, emoji: "💎", title: "Алмаз" },
+  { from: 20, emoji: "🏆", title: "Чемпион" },
+];
+
 function getLevelEmoji(level: number) {
-  if (level >= 20) return "🏆";
-  if (level >= 15) return "💎";
-  if (level >= 10) return "🥇";
-  if (level >= 7) return "🥈";
-  if (level >= 4) return "🥉";
-  return "⭐";
+  return [...LEVEL_TIERS].reverse().find(t => level >= t.from)?.emoji ?? "⭐";
+}
+
+function getLevelTier(level: number) {
+  return [...LEVEL_TIERS].reverse().find(t => level >= t.from) ?? LEVEL_TIERS[0];
+}
+
+function getNextTier(level: number) {
+  return LEVEL_TIERS.find(t => t.from > level) ?? null;
 }
 
 function XpBar({ stars }: { stars: number }) {
   const { level, xpInLevel, xpPct } = getLevelInfo(stars);
-  const emoji = getLevelEmoji(level);
+  const tier = getLevelTier(level);
+  const nextTier = getNextTier(level);
+  const left = STARS_PER_LEVEL - xpInLevel;
+  const levelsToNext = nextTier ? nextTier.from - level : null;
 
   return (
     <div className="mt-3">
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
-          <span className="text-lg">{emoji}</span>
-          <span className="text-white font-bold text-sm">Уровень {level}</span>
+          <span className="text-lg">{tier.emoji}</span>
+          <div>
+            <span className="text-white font-bold text-sm">Уровень {level}</span>
+            <span className="text-white/50 text-xs ml-1.5">{tier.title}</span>
+          </div>
         </div>
-        <span className="text-white/70 text-xs">{xpInLevel}/10 XP до следующего</span>
+        <span className="text-white/70 text-xs">
+          {left === 0 ? "🎉 Новый уровень!" : `⚡ ещё ${left} ${left === 1 ? "звезда" : left < 5 ? "звезды" : "звёзд"}`}
+        </span>
       </div>
       <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden relative">
         <div
@@ -106,12 +126,34 @@ function XpBar({ stars }: { stars: number }) {
           <div key={p} className="absolute top-0 bottom-0 w-px bg-white/20" style={{ left: `${p}%` }} />
         ))}
       </div>
-      <div className="flex justify-between mt-1">
-        {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((p, i) => (
-          <span key={p} className={`text-[9px] ${xpPct >= p && (i === 10 || xpPct < (p + 10)) ? "text-yellow-300 font-bold" : "text-white/30"}`}>
-            {i === 0 ? "" : i === 10 ? "100%" : `${p}%`}
+      {nextTier && levelsToNext !== null && (
+        <div className="mt-2 flex items-center gap-1.5 bg-white/10 rounded-xl px-3 py-1.5">
+          <span className="text-sm">{tier.emoji}</span>
+          <span className="text-white/30 text-xs">→</span>
+          <span className="text-sm">{nextTier.emoji}</span>
+          <span className="text-white/60 text-xs flex-1">
+            До <span className="text-white font-semibold">{nextTier.title}</span>: ещё {levelsToNext} {levelsToNext === 1 ? "уровень" : levelsToNext < 5 ? "уровня" : "уровней"} (ур. {nextTier.from})
           </span>
-        ))}
+        </div>
+      )}
+
+      {/* Tier roadmap */}
+      <div className="mt-2.5 flex items-center justify-between px-1">
+        {LEVEL_TIERS.map((t, i) => {
+          const reached = level >= t.from;
+          const isCurrent = getLevelTier(level).from === t.from;
+          return (
+            <div key={t.from} className="flex items-center">
+              <div className={`flex flex-col items-center gap-0.5 transition-all ${reached ? "opacity-100" : "opacity-25"}`}>
+                <span className={`text-base ${isCurrent ? "scale-125 drop-shadow" : ""}`}>{t.emoji}</span>
+                <span className={`text-[8px] font-bold ${isCurrent ? "text-yellow-300" : "text-white/50"}`}>{t.title}</span>
+              </div>
+              {i < LEVEL_TIERS.length - 1 && (
+                <div className={`w-4 h-px mx-0.5 mb-3 ${level >= LEVEL_TIERS[i + 1].from ? "bg-yellow-400" : "bg-white/20"}`} />
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -369,20 +411,11 @@ function ChildView({ user }: { user: Extract<User, { role: "child" }> }) {
             </div>
             <div className="bg-white/20 rounded-2xl px-3 py-2 text-center">
               <p className="text-white text-2xl font-black">{getLevelInfo(stars).level}</p>
-              <p className="text-white/80 text-xs">уровень {getLevelEmoji(getLevelInfo(stars).level)}</p>
+              <p className="text-white/80 text-xs">{getLevelTier(getLevelInfo(stars).level).emoji} {getLevelTier(getLevelInfo(stars).level).title}</p>
             </div>
           </div>
         </div>
         <XpBar stars={stars} />
-        {(() => {
-          const { xpInLevel } = getLevelInfo(stars);
-          const left = STARS_PER_LEVEL - xpInLevel;
-          return (
-            <p className="text-white/60 text-xs text-center mt-1.5">
-              {left === 0 ? "🎉 Новый уровень!" : `⚡ До следующего уровня: ${left} ${left === 1 ? "звезда" : left < 5 ? "звезды" : "звёзд"}`}
-            </p>
-          );
-        })()}
         {overdue.length > 0 && (
           <div className="mt-3 bg-red-500/30 border border-red-400/40 rounded-xl px-3 py-2">
             <p className="text-white text-sm font-medium">🔴 {overdue.length} просроченных задания</p>
