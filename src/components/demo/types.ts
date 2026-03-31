@@ -59,3 +59,78 @@ export const CHILDREN = [
   { id: 1, name: "Маша", age: 9, stars: 47, avatar: "👧", tasksTotal: 12, tasksDone: 8 },
   { id: 2, name: "Вася", age: 7, stars: 31, avatar: "👦", tasksTotal: 10, tasksDone: 5 },
 ];
+
+// ─── Parent XP System ────────────────────────────────────────────────────────
+
+export const PARENT_XP_PER_LEVEL = 100;
+export const PARENT_POINTS_PER_LEVEL = 1000;
+
+export type ParentAction =
+  | "task_create"
+  | "task_confirm"
+  | "child_add"
+  | "invite_relative";
+
+export const PARENT_ACTION_XP: Record<ParentAction, number> = {
+  task_create: 20,
+  task_confirm: 30,
+  child_add: 50,
+  invite_relative: 40,
+};
+
+export const PARENT_ACTION_LABELS: Record<ParentAction, { label: string; emoji: string }> = {
+  task_create: { label: "Создать задачу", emoji: "📝" },
+  task_confirm: { label: "Подтвердить выполнение", emoji: "✅" },
+  child_add: { label: "Добавить ребёнка", emoji: "👶" },
+  invite_relative: { label: "Пригласить родственника", emoji: "👨‍👩‍👧" },
+};
+
+export const PARENT_LEVEL_TIERS = [
+  { from: 1,  emoji: "🌱", title: "Новичок",    badge: "Начинающий родитель" },
+  { from: 3,  emoji: "🥉", title: "Бронза",     badge: "Активный родитель" },
+  { from: 5,  emoji: "🥈", title: "Серебро",    badge: "Опытный наставник" },
+  { from: 8,  emoji: "🥇", title: "Золото",     badge: "Мастер воспитания" },
+  { from: 12, emoji: "💎", title: "Алмаз",      badge: "Семейный чемпион" },
+  { from: 18, emoji: "👑", title: "Легенда",    badge: "Легенда родительства" },
+];
+
+export function getParentLevelInfo(totalXp: number) {
+  const level = Math.floor(totalXp / PARENT_XP_PER_LEVEL) + 1;
+  const xpInLevel = totalXp % PARENT_XP_PER_LEVEL;
+  const xpPct = (xpInLevel / PARENT_XP_PER_LEVEL) * 100;
+  const totalPoints = (level - 1) * PARENT_POINTS_PER_LEVEL;
+  return { level, xpInLevel, xpPct, totalPoints };
+}
+
+export function getParentLevelTier(level: number) {
+  return [...PARENT_LEVEL_TIERS].reverse().find(t => level >= t.from) ?? PARENT_LEVEL_TIERS[0];
+}
+
+export function getParentNextTier(level: number) {
+  return PARENT_LEVEL_TIERS.find(t => t.from > level) ?? null;
+}
+
+export const PARENT_TIPS: Record<number, string> = {
+  1: "Хвалите ребёнка сразу после выполнения задачи — это лучший момент.",
+  2: "Разбивайте большие задачи на маленькие шаги — дети легче справляются.",
+  3: "Ставьте задачи вместе с ребёнком — он будет чувствовать ответственность.",
+  4: "Важен режим: задачи в одно и то же время формируют полезные привычки.",
+  5: "Небольшое соревнование между братьями и сёстрами мотивирует обоих.",
+  6: "Иногда лучший приз — ваше совместное время, а не вещь.",
+  7: "Объясняйте, зачем нужна задача — дети выполняют её охотнее.",
+  8: "Давайте ребёнку выбор из 2 задач — он чувствует контроль над ситуацией.",
+};
+
+export function getParentTip(level: number): string {
+  const key = ((level - 1) % Object.keys(PARENT_TIPS).length) + 1;
+  return PARENT_TIPS[key] ?? PARENT_TIPS[1];
+}
+
+export const PARTNER_PRIZES = [
+  { id: 1, title: "Скидка 20% в Детском Мире", cost: 1000, emoji: "🧸", partner: "Детский Мир", type: "coupon" },
+  { id: 2, title: "Билеты в кино на семью", cost: 2000, emoji: "🎬", partner: "Синема Парк", type: "ticket" },
+  { id: 3, title: "Промокод на пиццу", cost: 1500, emoji: "🍕", partner: "Додо Пицца", type: "promo" },
+  { id: 4, title: "Абонемент в спортзал (1 мес.)", cost: 3000, emoji: "💪", partner: "World Class", type: "gift" },
+  { id: 5, title: "Сертификат на книги 500₽", cost: 1000, emoji: "📚", partner: "Лабиринт", type: "certificate" },
+  { id: 6, title: "Скидка 15% на витамины", cost: 800, emoji: "💊", partner: "iHerb", type: "promo" },
+];

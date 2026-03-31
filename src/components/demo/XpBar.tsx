@@ -1,5 +1,8 @@
 import { useEffect } from "react";
-import { getLevelInfo, getLevelTier, getLevelEmoji, getNextTier, LEVEL_TIERS, STARS_PER_LEVEL } from "./types";
+import {
+  getLevelInfo, getLevelTier, getLevelEmoji, getNextTier, LEVEL_TIERS, STARS_PER_LEVEL,
+  getParentLevelInfo, getParentLevelTier, getParentNextTier, PARENT_XP_PER_LEVEL,
+} from "./types";
 
 export function XpBar({ stars, showTierHint = false }: { stars: number; showTierHint?: boolean }) {
   const { level, xpInLevel, xpPct } = getLevelInfo(stars);
@@ -46,6 +49,85 @@ export function XpBar({ stars, showTierHint = false }: { stars: number; showTier
           </span>
         </div>
       )}
+    </div>
+  );
+}
+
+export function ParentXpBar({ xp, points }: { xp: number; points: number }) {
+  const { level, xpInLevel, xpPct } = getParentLevelInfo(xp);
+  const tier = getParentLevelTier(level);
+  const nextTier = getParentNextTier(level);
+  const left = PARENT_XP_PER_LEVEL - xpInLevel;
+
+  return (
+    <div className="bg-gradient-to-r from-[#6B7BFF]/10 to-[#9B6BFF]/10 border border-[#6B7BFF]/20 backdrop-blur rounded-2xl px-4 py-3 shadow-sm">
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">{tier.emoji}</span>
+          <div>
+            <span className="font-black text-[#1E1B4B] text-sm">Уровень {level}</span>
+            <span className="text-[#6B7BFF] text-xs font-semibold ml-1.5">{tier.title}</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-amber-500 font-black text-sm">{points.toLocaleString()} баллов</span>
+          <span className="text-gray-400 text-xs">{left > 0 ? `+${left} XP до ур. ${level + 1}` : "🎉 Новый уровень!"}</span>
+        </div>
+      </div>
+      <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden relative">
+        <div
+          className="h-full bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] rounded-full transition-all duration-700"
+          style={{ width: `${xpPct}%` }}
+        />
+      </div>
+      <div className="flex justify-between mt-1">
+        <span className="text-[9px] text-gray-300">0 XP</span>
+        <span className="text-[9px] text-gray-400 font-semibold">{xpInLevel}/{PARENT_XP_PER_LEVEL} XP</span>
+        {nextTier && (
+          <span className="text-[9px] text-[#9B6BFF] font-semibold">→ {nextTier.emoji} {nextTier.title} (ур. {nextTier.from})</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function ParentLevelUpModal({ level, points, onClose }: { level: number; points: number; onClose: () => void }) {
+  const tier = getParentLevelTier(level);
+  useEffect(() => {
+    const t = setTimeout(onClose, 5000);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-6"
+      style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="relative bg-gradient-to-br from-[#6B7BFF] via-[#9B6BFF] to-[#FF6BDB] rounded-3xl p-8 text-center shadow-2xl w-full max-w-xs"
+        style={{ animation: "levelUpPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both" }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="text-7xl mb-3" style={{ animation: "spinOnce 0.6s ease-out 0.2s both" }}>
+          {tier.emoji}
+        </div>
+        <p className="text-white/80 text-xs font-bold uppercase tracking-widest mb-1">Новый уровень!</p>
+        <p className="text-white text-5xl font-black mb-1">{level}</p>
+        <p className="text-white/90 text-base font-bold mb-3">{tier.badge}</p>
+        <div className="bg-white/20 rounded-2xl px-4 py-3 mb-4">
+          <p className="text-white/70 text-xs font-semibold mb-0.5">Начислено баллов</p>
+          <p className="text-white text-3xl font-black">+1 000</p>
+          <p className="text-white/60 text-xs">Обменяйте на призы от партнёров</p>
+        </div>
+        <p className="text-white/80 text-sm font-semibold">Итого: {points.toLocaleString()} баллов</p>
+        <button
+          onClick={onClose}
+          className="mt-5 bg-white/30 text-white font-bold rounded-2xl px-6 py-2 text-sm active:scale-95 transition-transform"
+        >
+          Отлично! 🎉
+        </button>
+      </div>
     </div>
   );
 }
