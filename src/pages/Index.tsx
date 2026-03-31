@@ -14,29 +14,47 @@ function getLevelInfo(totalStars: number) {
   return { level, xpInLevel, xpPct };
 }
 
+const LEVEL_TIERS = [
+  { from: 1,  emoji: "⭐", title: "Новичок" },
+  { from: 4,  emoji: "🥉", title: "Бронза" },
+  { from: 7,  emoji: "🥈", title: "Серебро" },
+  { from: 10, emoji: "🥇", title: "Золото" },
+  { from: 15, emoji: "💎", title: "Алмаз" },
+  { from: 20, emoji: "🏆", title: "Чемпион" },
+];
+
 function getLevelEmoji(level: number) {
-  if (level >= 20) return "🏆";
-  if (level >= 15) return "💎";
-  if (level >= 10) return "🥇";
-  if (level >= 7) return "🥈";
-  if (level >= 4) return "🥉";
-  return "⭐";
+  const tier = [...LEVEL_TIERS].reverse().find(t => level >= t.from);
+  return tier?.emoji ?? "⭐";
 }
 
-function XpBar({ stars }: { stars: number }) {
+function getLevelTier(level: number) {
+  return [...LEVEL_TIERS].reverse().find(t => level >= t.from) ?? LEVEL_TIERS[0];
+}
+
+function getNextTier(level: number) {
+  return LEVEL_TIERS.find(t => t.from > level) ?? null;
+}
+
+function XpBar({ stars, showTierHint = false }: { stars: number; showTierHint?: boolean }) {
   const { level, xpInLevel, xpPct } = getLevelInfo(stars);
-  const emoji = getLevelEmoji(level);
+  const tier = getLevelTier(level);
+  const nextTier = getNextTier(level);
   const left = STARS_PER_LEVEL - xpInLevel;
+  const levelsToNext = nextTier ? nextTier.from - level : null;
 
   return (
     <div className="bg-white/80 backdrop-blur rounded-2xl px-4 py-3 shadow-sm">
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
-          <span className="text-lg">{emoji}</span>
-          <span className="font-black text-[#2D1B69] text-sm">Уровень {level}</span>
+          <span className="text-lg">{tier.emoji}</span>
+          <div>
+            <span className="font-black text-[#2D1B69] text-sm">Уровень {level}</span>
+            <span className="text-gray-400 text-xs font-semibold ml-1.5">{tier.title}</span>
+          </div>
         </div>
         <span className="text-gray-400 text-xs font-semibold">
-          {left === 0 ? "🎉 Новый уровень!" : `⚡ Ещё ${left} ${left === 1 ? "звезда" : left < 5 ? "звезды" : "звёзд"} до ур. ${level + 1}`}
+          {left === 0 ? "🎉 Новый уровень!" : `⚡ ещё ${left} ${left === 1 ? "звезда" : left < 5 ? "звезды" : "звёзд"}`}
         </span>
       </div>
       <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden relative">
@@ -53,6 +71,16 @@ function XpBar({ stars }: { stars: number }) {
         <span className="text-[9px] text-gray-400 font-semibold">{xpInLevel}/10 XP</span>
         <span className="text-[9px] text-gray-300">100%</span>
       </div>
+      {showTierHint && nextTier && levelsToNext !== null && (
+        <div className="mt-2.5 flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2">
+          <span className="text-base">{tier.emoji}</span>
+          <span className="text-gray-300 text-xs">→</span>
+          <span className="text-base">{nextTier.emoji}</span>
+          <span className="text-xs text-gray-500 font-semibold flex-1">
+            До <b>{nextTier.title}</b>: ещё {levelsToNext} {levelsToNext === 1 ? "уровень" : levelsToNext < 5 ? "уровня" : "уровней"} (ур. {nextTier.from})
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -284,8 +312,7 @@ export default function Index() {
               {/* Level card */}
               <div className="bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-3xl p-5 text-center mb-4 shadow-lg">
                 <div className="text-5xl mb-1">{levelEmoji}</div>
-                <div className="text-white/80 text-xs font-semibold uppercase tracking-widest mb-1">Текущий уровень</div>
-                <div className="text-white text-4xl font-black">{level}</div>
+                <div className="text-white/80 text-xs font-semibold uppercase tracking-widest mb-1">{getLevelTier(level).title} · Уровень {level}</div>
                 <div className="mt-3">
                   <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden">
                     <div
@@ -297,6 +324,33 @@ export default function Index() {
                     {getLevelInfo(starCount).xpInLevel}/10 XP · до ур. {level + 1} ещё {STARS_PER_LEVEL - getLevelInfo(starCount).xpInLevel} ⭐
                   </p>
                 </div>
+              </div>
+
+              {/* Tier roadmap */}
+              <div className="bg-white/90 rounded-3xl p-4 shadow-sm mb-4">
+                <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-3">Путь к чемпиону</p>
+                <div className="flex items-center justify-between">
+                  {LEVEL_TIERS.map((tier, i) => {
+                    const reached = level >= tier.from;
+                    const isCurrent = getLevelTier(level).from === tier.from;
+                    return (
+                      <div key={tier.from} className="flex items-center">
+                        <div className={`flex flex-col items-center gap-1 ${reached ? "opacity-100" : "opacity-30"}`}>
+                          <div className={`text-2xl transition-all ${isCurrent ? "scale-125 drop-shadow-md" : ""}`}>{tier.emoji}</div>
+                          <span className={`text-[9px] font-bold ${isCurrent ? "text-[#FF6B9D]" : "text-gray-400"}`}>{tier.title}</span>
+                          <span className="text-[8px] text-gray-300">ур.{tier.from}</span>
+                        </div>
+                        {i < LEVEL_TIERS.length - 1 && (
+                          <div className={`w-5 h-px mx-1 mb-4 ${level >= LEVEL_TIERS[i + 1].from ? "bg-yellow-400" : "bg-gray-200"}`} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="bg-white/90 rounded-3xl p-5 shadow-sm mb-4">
+                <XpBar stars={starCount} showTierHint />
               </div>
 
               <div className="bg-white/90 rounded-3xl p-5 shadow-sm">
@@ -361,7 +415,7 @@ export default function Index() {
                 </div>
               </div>
               <div className="mb-4">
-                <XpBar stars={starCount} />
+                <XpBar stars={starCount} showTierHint />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
