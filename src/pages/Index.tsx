@@ -17,6 +17,7 @@ import {
 import { LevelUpModal, ParentLevelUpModal } from "@/components/demo/XpBar";
 import { StreakBonusModal } from "@/components/demo/StreakCard";
 import { NewAchievementModal } from "@/components/demo/AchievementBadge";
+import { GradeToast } from "@/components/demo/GradeExchange";
 import ChildView from "@/components/demo/ChildView";
 import ParentView from "@/components/demo/ParentView";
 
@@ -188,6 +189,11 @@ export default function Index() {
     });
   }, [addParentXp]);
 
+  // ── Grade notifications ──
+  type GradeNotif = { id: string; type: "approved" | "rejected"; subject: string; stars?: number };
+  const [gradeNotifParent, setGradeNotifParent] = useState<{ subject: string; grade: number } | null>(null);
+  const [gradeNotifChild, setGradeNotifChild] = useState<GradeNotif | null>(null);
+
   // ── Grade handlers ──
   const handleSubmitGrade = (subject: string, grade: GradeValue, date: string) => {
     const newRequest: GradeRequest = {
@@ -199,6 +205,7 @@ export default function Index() {
       createdAt: new Date().toISOString(),
     };
     setGradeRequests(prev => [newRequest, ...prev]);
+    setGradeNotifParent({ subject, grade });
   };
 
   const handleApproveGrade = useCallback((id: string) => {
@@ -206,19 +213,21 @@ export default function Index() {
       prev.map(r => {
         if (r.id !== id || r.status !== "pending") return r;
         const stars = GRADE_STARS[r.grade];
-        // Award stars to child
         setStarCount(s => s + stars);
         prevChildLevelRef.current = getLevelInfo(starCount + stars).level;
-        addParentXp(PARENT_ACTION_XP.task_confirm);
-        touchStreak();
+        setGradeNotifChild({ id: r.id, type: "approved", subject: r.subject, stars });
         return { ...r, status: "approved" as const, starsAwarded: stars };
       })
     );
-  }, [starCount, addParentXp, touchStreak]);
+  }, [starCount]);
 
   const handleRejectGrade = useCallback((id: string) => {
     setGradeRequests(prev =>
-      prev.map(r => r.id === id && r.status === "pending" ? { ...r, status: "rejected" as const } : r)
+      prev.map(r => {
+        if (r.id !== id || r.status !== "pending") return r;
+        setGradeNotifChild({ id: r.id, type: "rejected", subject: r.subject });
+        return { ...r, status: "rejected" as const };
+      })
     );
   }, []);
 
@@ -259,6 +268,30 @@ export default function Index() {
         <div className="fixed inset-0 pointer-events-none z-40 flex items-center justify-center">
           <div className="text-8xl animate-star-pop">⭐</div>
         </div>
+      )}
+
+      {/* Parent: new grade request toast */}
+      {gradeNotifParent && (
+        <GradeToast
+          emoji="📝"
+          title="Новая оценка от Маши"
+          subtitle={`${gradeNotifParent.subject} · ${gradeNotifParent.grade} балл — ожидает подтверждения`}
+          color="from-[#6B7BFF] to-[#9B6BFF]"
+          onClose={() => setGradeNotifParent(null)}
+        />
+      )}
+
+      {/* Child: grade decision toast */}
+      {gradeNotifChild && (
+        <GradeToast
+          emoji={gradeNotifChild.type === "approved" ? "🌟" : "😔"}
+          title={gradeNotifChild.type === "approved" ? `+${gradeNotifChild.stars} звёзд начислено!` : "Оценка отклонена"}
+          subtitle={gradeNotifChild.type === "approved"
+            ? `${gradeNotifChild.subject} · родитель подтвердил обмен`
+            : `${gradeNotifChild.subject} · обратись к родителю`}
+          color={gradeNotifChild.type === "approved" ? "from-green-400 to-emerald-500" : "from-orange-400 to-red-500"}
+          onClose={() => setGradeNotifChild(null)}
+        />
       )}
 
       {/* Mode switcher */}

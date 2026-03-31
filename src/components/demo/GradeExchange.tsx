@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   SUBJECTS, GRADE_STARS, GRADE_EMOJI, GRADE_LABEL, GRADE_UNLOCK_LEVEL,
   type GradeRequest, type GradeValue,
@@ -319,6 +319,42 @@ export function ParentGradePanel({ requests, onApprove, onReject }: ParentGradeP
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Toast notification ───────────────────────────────────────────────────────
+
+type GradeToastProps = {
+  emoji: string;
+  title: string;
+  subtitle: string;
+  color: string;
+  onClose: () => void;
+};
+
+export function GradeToast({ emoji, title, subtitle, color, onClose }: GradeToastProps) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 4000);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed top-20 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none"
+      style={{ animation: "slideDown 0.4s cubic-bezier(0.34,1.56,0.64,1) both" }}
+    >
+      <div
+        className={`pointer-events-auto bg-gradient-to-r ${color} rounded-2xl px-4 py-3 shadow-2xl flex items-center gap-3 max-w-sm w-full`}
+        onClick={onClose}
+      >
+        <span className="text-3xl flex-shrink-0">{emoji}</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-white font-black text-sm truncate">{title}</p>
+          <p className="text-white/80 text-xs mt-0.5 leading-tight">{subtitle}</p>
+        </div>
+        <button className="text-white/60 hover:text-white flex-shrink-0 text-lg leading-none">×</button>
+      </div>
     </div>
   );
 }
