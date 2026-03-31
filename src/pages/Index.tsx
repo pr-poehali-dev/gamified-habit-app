@@ -2,12 +2,23 @@ import { useState, useRef, useCallback } from "react";
 import {
   getLevelInfo,
   getParentLevelInfo,
+  getStreakBonus,
+  advanceStreak,
+  getTodayDateStr,
   PARENT_ACTION_XP,
-  type Mode, type ChildTab, type ParentTab, type ParentAction,
+  type Mode, type ChildTab, type ParentTab, type ParentAction, type StreakState,
 } from "@/components/demo/types";
 import { LevelUpModal, ParentLevelUpModal } from "@/components/demo/XpBar";
+import { StreakBonusModal } from "@/components/demo/StreakCard";
 import ChildView from "@/components/demo/ChildView";
 import ParentView from "@/components/demo/ParentView";
+
+const INITIAL_STREAK: StreakState = {
+  current: 4,
+  lastActivityDate: getTodayDateStr(),
+  claimedToday: false,
+  longestStreak: 6,
+};
 
 export default function Index() {
   const [mode, setMode] = useState<Mode>("child");
@@ -28,6 +39,10 @@ export default function Index() {
   const [confirmedTasks, setConfirmedTasks] = useState<number[]>([1, 4]);
   const [purchasedPrizes, setPurchasedPrizes] = useState<number[]>([]);
   const prevParentLevelRef = useRef(getParentLevelInfo(120).level);
+
+  // Streak state
+  const [streak, setStreak] = useState<StreakState>(INITIAL_STREAK);
+  const [streakBonusModal, setStreakBonusModal] = useState<{ day: number; xp: number; points: number } | null>(null);
 
   const { totalPoints: parentPoints } = getParentLevelInfo(parentXp);
 
@@ -53,7 +68,7 @@ export default function Index() {
     updateStars(starCount - cost);
   };
 
-  // ── Parent handlers ──
+  // ── Parent XP helper ──
   const addParentXp = useCallback((xp: number) => {
     setParentXp(prev => {
       const next = prev + xp;
@@ -64,14 +79,22 @@ export default function Index() {
     });
   }, []);
 
+  // ── Streak: advance on any parent action ──
+  const touchStreak = useCallback(() => {
+    setStreak(prev => advanceStreak(prev));
+  }, []);
+
+  // ── Parent handlers ──
   const handleParentAction = (action: ParentAction) => {
     addParentXp(PARENT_ACTION_XP[action]);
+    touchStreak();
   };
 
   const handleConfirmTask = (taskId: number) => {
     if (confirmedTasks.includes(taskId)) return;
     setConfirmedTasks(prev => [...prev, taskId]);
     addParentXp(PARENT_ACTION_XP.task_confirm);
+    touchStreak();
   };
 
   const handleBuyPrize = (prizeId: number, cost: number) => {
@@ -79,6 +102,17 @@ export default function Index() {
     if (totalPoints < cost || purchasedPrizes.includes(prizeId)) return;
     setPurchasedPrizes(prev => [...prev, prizeId]);
   };
+
+  // ── Streak claim ──
+  const handleStreakClaim = useCallback(() => {
+    setStreak(prev => {
+      if (prev.claimedToday) return prev;
+      const bonus = getStreakBonus(prev.current);
+      setStreakBonusModal({ day: prev.current, xp: bonus.xp, points: bonus.points });
+      addParentXp(bonus.xp);
+      return { ...prev, claimedToday: true };
+    });
+  }, [addParentXp]);
 
   return (
     <div
@@ -89,17 +123,24 @@ export default function Index() {
       }`}
       style={{ fontFamily: mode === "child" ? "Nunito, sans-serif" : "Golos Text, sans-serif" }}
     >
-      {/* Child level-up */}
       {levelUpLevel !== null && (
         <LevelUpModal level={levelUpLevel} onClose={() => setLevelUpLevel(null)} />
       )}
 
-      {/* Parent level-up */}
       {parentLevelUpLevel !== null && (
         <ParentLevelUpModal
           level={parentLevelUpLevel}
           points={getParentLevelInfo(parentXp).totalPoints}
           onClose={() => setParentLevelUpLevel(null)}
+        />
+      )}
+
+      {streakBonusModal !== null && (
+        <StreakBonusModal
+          day={streakBonusModal.day}
+          xp={streakBonusModal.xp}
+          points={streakBonusModal.points}
+          onClose={() => setStreakBonusModal(null)}
         />
       )}
 
@@ -156,11 +197,13 @@ export default function Index() {
           setParentTab={setParentTab}
           parentXp={parentXp}
           parentPoints={parentPoints}
+          streak={streak}
           confirmedTasks={confirmedTasks}
           purchasedPrizes={purchasedPrizes}
           onAction={handleParentAction}
           onConfirmTask={handleConfirmTask}
           onBuyPrize={handleBuyPrize}
+          onStreakClaim={handleStreakClaim}
         />
       )}
     </div>

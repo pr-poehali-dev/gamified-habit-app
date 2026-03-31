@@ -1,12 +1,14 @@
 import Icon from "@/components/ui/icon";
 import { ParentXpBar } from "./XpBar";
+import { StreakCard } from "./StreakCard";
 import {
   getLevelInfo, getLevelEmoji,
   getParentLevelInfo, getParentLevelTier,
+  getStreakBonus,
   SHOP_ITEMS, PARENT_TASKS_LIST, CHILDREN,
   PARTNER_PRIZES, PARENT_ACTION_LABELS, PARENT_ACTION_XP,
   getParentTip,
-  type ParentAction, type ParentTab,
+  type ParentAction, type ParentTab, type StreakState,
 } from "./types";
 
 type Props = {
@@ -14,11 +16,13 @@ type Props = {
   setParentTab: (tab: ParentTab) => void;
   parentXp: number;
   parentPoints: number;
+  streak: StreakState;
   confirmedTasks: number[];
   purchasedPrizes: number[];
   onAction: (action: ParentAction) => void;
   onConfirmTask: (taskId: number) => void;
   onBuyPrize: (prizeId: number, cost: number) => void;
+  onStreakClaim: () => void;
 };
 
 export default function ParentView({
@@ -26,11 +30,13 @@ export default function ParentView({
   setParentTab,
   parentXp,
   parentPoints,
+  streak,
   confirmedTasks,
   purchasedPrizes,
   onAction,
   onConfirmTask,
   onBuyPrize,
+  onStreakClaim,
 }: Props) {
   const { level } = getParentLevelInfo(parentXp);
   const tier = getParentLevelTier(level);
@@ -45,9 +51,12 @@ export default function ParentView({
             <p className="text-sm text-gray-500 font-medium">Добро пожаловать</p>
             <h1 className="text-2xl font-bold text-[#1E1B4B]">Андрей Иванов</h1>
           </div>
-          <div className="flex flex-col items-center gap-1">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] rounded-2xl flex items-center justify-center text-2xl shadow-md">
-              👨
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="flex items-center gap-2">
+              <StreakCard streak={streak} onClaim={onStreakClaim} compact />
+              <div className="w-10 h-10 bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] rounded-2xl flex items-center justify-center text-xl shadow-md">
+                👨
+              </div>
             </div>
             <span className="text-xs font-bold text-[#6B7BFF]">{tier.emoji} {tier.title}</span>
           </div>
@@ -147,6 +156,9 @@ export default function ParentView({
 
       {parentTab === "bonuses" && (
         <div className="animate-fade-in space-y-4">
+          {/* Streak block */}
+          <StreakCard streak={streak} onClaim={onStreakClaim} />
+
           {/* Balance card */}
           <div className="bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] rounded-3xl p-5 text-white shadow-lg">
             <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">Ваш баланс</p>
@@ -180,6 +192,17 @@ export default function ParentView({
                   <p className="text-xs text-gray-400">Автоматически при наборе XP</p>
                 </div>
                 <p className="text-xs font-bold text-amber-600">+1 000 баллов</p>
+              </div>
+              <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-2xl p-3 flex items-center gap-3">
+                <span className="text-xl">🔥</span>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-[#1E1B4B]">Ежедневный стрик</p>
+                  <p className="text-xs text-gray-400">Действуй каждый день — бонус растёт</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-bold text-orange-600">до +{getStreakBonus(10).points} б.</p>
+                  <p className="text-xs text-orange-400">на день 10</p>
+                </div>
               </div>
             </div>
           </div>

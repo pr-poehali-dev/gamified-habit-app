@@ -126,6 +126,69 @@ export function getParentTip(level: number): string {
   return PARENT_TIPS[key] ?? PARENT_TIPS[1];
 }
 
+// ─── Parent Streak System ────────────────────────────────────────────────────
+
+export const STREAK_MAX_DAY = 10;
+
+export type StreakState = {
+  current: number;
+  lastActivityDate: string;
+  claimedToday: boolean;
+  longestStreak: number;
+};
+
+export function getStreakBonus(day: number): { xp: number; points: number } {
+  const clamped = Math.min(day, STREAK_MAX_DAY);
+  const xp = Math.round((clamped / STREAK_MAX_DAY) * 100);
+  const points = Math.round((clamped / STREAK_MAX_DAY) * 1000);
+  return { xp, points };
+}
+
+export function getStreakEmoji(day: number): string {
+  if (day >= 10) return "🔥";
+  if (day >= 7) return "⚡";
+  if (day >= 5) return "✨";
+  if (day >= 3) return "🌟";
+  return "💫";
+}
+
+export function getStreakTitle(day: number): string {
+  if (day >= 10) return "Легенда!";
+  if (day >= 7) return "Горячая серия";
+  if (day >= 5) return "На волне";
+  if (day >= 3) return "Набираем темп";
+  return "Начало серии";
+}
+
+export function getTodayDateStr(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function isStreakAlive(lastDate: string): boolean {
+  if (!lastDate) return false;
+  const today = new Date();
+  const last = new Date(lastDate);
+  today.setHours(0, 0, 0, 0);
+  last.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((today.getTime() - last.getTime()) / 86400000);
+  return diffDays <= 1;
+}
+
+export function advanceStreak(state: StreakState): StreakState {
+  const today = getTodayDateStr();
+  if (state.lastActivityDate === today) return state;
+  const alive = isStreakAlive(state.lastActivityDate);
+  const next = alive ? state.current + 1 : 1;
+  return {
+    current: next,
+    lastActivityDate: today,
+    claimedToday: false,
+    longestStreak: Math.max(state.longestStreak, next),
+  };
+}
+
+export const STREAK_DAYS_PREVIEW = Array.from({ length: STREAK_MAX_DAY }, (_, i) => i + 1);
+
 export const PARTNER_PRIZES = [
   { id: 1, title: "Скидка 20% в Детском Мире", cost: 1000, emoji: "🧸", partner: "Детский Мир", type: "coupon" },
   { id: 2, title: "Билеты в кино на семью", cost: 2000, emoji: "🎬", partner: "Синема Парк", type: "ticket" },
