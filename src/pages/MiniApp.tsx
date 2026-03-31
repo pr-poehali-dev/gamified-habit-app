@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Icon from "@/components/ui/icon";
 
 const API = "https://functions.poehali.dev/3a2e1162-786c-43ae-a6b7-78b24771e462";
@@ -194,6 +194,51 @@ function TaskCard({ task, onComplete, onApprove, isParent }: {
   );
 }
 
+function LevelUpModal({ level, onClose }: { level: number; onClose: () => void }) {
+  const emoji = getLevelEmoji(level);
+  useEffect(() => {
+    const t = setTimeout(onClose, 4000);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-6"
+      style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="relative bg-gradient-to-br from-yellow-400 via-orange-400 to-pink-500 rounded-3xl p-8 text-center shadow-2xl w-full max-w-xs"
+        style={{ animation: "levelUpPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both" }}
+      >
+        <div className="text-7xl mb-3" style={{ animation: "spinOnce 0.6s ease-out 0.2s both" }}>
+          {emoji}
+        </div>
+        <p className="text-white/80 text-sm font-semibold uppercase tracking-widest mb-1">Новый уровень!</p>
+        <p className="text-white text-5xl font-black mb-2">{level}</p>
+        <p className="text-white/90 text-base font-semibold">Так держать! Ты становишься лучше!</p>
+        <div className="mt-5 flex justify-center gap-1">
+          {[...Array(5)].map((_, i) => (
+            <span
+              key={i}
+              className="text-2xl"
+              style={{ animation: `starPop 0.4s ease-out ${0.4 + i * 0.08}s both` }}
+            >
+              ⭐
+            </span>
+          ))}
+        </div>
+        <button
+          onClick={onClose}
+          className="mt-5 bg-white/30 text-white font-bold rounded-2xl px-6 py-2 text-sm active:scale-95 transition-transform"
+        >
+          Ура! 🎉
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ChildView({ user }: { user: Extract<User, { role: "child" }> }) {
   const [tab, setTab] = useState<"tasks" | "shop">("tasks");
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -201,6 +246,8 @@ function ChildView({ user }: { user: Extract<User, { role: "child" }> }) {
   const [stars, setStars] = useState(user.stars);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
+  const prevLevelRef = useRef(getLevelInfo(user.stars).level);
 
   const tid = user.telegram_id;
 
@@ -208,6 +255,17 @@ function ChildView({ user }: { user: Extract<User, { role: "child" }> }) {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
   };
+
+  const updateStars = useCallback((newStars: number) => {
+    const newLevel = getLevelInfo(newStars).level;
+    if (newLevel > prevLevelRef.current) {
+      setLevelUpLevel(newLevel);
+      tg()?.HapticFeedback?.notificationOccurred("success");
+      tg()?.HapticFeedback?.impactOccurred("heavy");
+    }
+    prevLevelRef.current = newLevel;
+    setStars(newStars);
+  }, []);
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
@@ -233,7 +291,7 @@ function ChildView({ user }: { user: Extract<User, { role: "child" }> }) {
         body: JSON.stringify({ initData: tg()?.initData || "", telegram_id: tid }),
       });
       const data = await r.json();
-      if (data.items) { setShop(data.items); setStars(data.stars); }
+      if (data.items) { setShop(data.items); updateStars(data.stars); }
     } finally {
       setLoading(false);
     }
@@ -287,6 +345,9 @@ function ChildView({ user }: { user: Extract<User, { role: "child" }> }) {
 
   return (
     <div className="min-h-screen" style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}>
+      {levelUpLevel !== null && (
+        <LevelUpModal level={levelUpLevel} onClose={() => setLevelUpLevel(null)} />
+      )}
       {toast && (
         <div className="fixed top-4 left-4 right-4 z-50 bg-gray-900 text-white rounded-2xl px-4 py-3 text-sm font-medium shadow-xl animate-slide-up text-center">
           {toast}
