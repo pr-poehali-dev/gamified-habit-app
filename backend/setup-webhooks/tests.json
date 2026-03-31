@@ -1,0 +1,11 @@
+{
+  "tests": [
+    {
+      "name": "Health check",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    }
+  ]
+}
