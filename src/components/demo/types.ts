@@ -1,5 +1,5 @@
 export type Mode = "child" | "parent";
-export type ChildTab = "tasks" | "stars" | "shop" | "profile";
+export type ChildTab = "tasks" | "stars" | "shop" | "achievements" | "stickers" | "profile";
 export type ParentTab = "tasks" | "rewards" | "stats" | "children" | "profile";
 
 export const STARS_PER_LEVEL = 10;
@@ -188,6 +188,154 @@ export function advanceStreak(state: StreakState): StreakState {
 }
 
 export const STREAK_DAYS_PREVIEW = Array.from({ length: STREAK_MAX_DAY }, (_, i) => i + 1);
+
+// ─── Child Achievements ───────────────────────────────────────────────────────
+
+export type AchievementId =
+  | "first_task" | "tasks_5" | "tasks_10" | "tasks_25"
+  | "stars_10" | "stars_50" | "stars_100"
+  | "level_3" | "level_5" | "level_10"
+  | "spend_10" | "spend_30"
+  | "reward_1" | "reward_3"
+  | "streak_3" | "streak_7"
+  | "speed_demon";
+
+export type Achievement = {
+  id: AchievementId;
+  title: string;
+  desc: string;
+  emoji: string;
+  rarity: "common" | "uncommon" | "rare" | "mythical" | "legendary";
+  check: (s: ChildStats) => boolean;
+};
+
+export type ChildStats = {
+  tasksCompleted: number;
+  totalStars: number;
+  level: number;
+  starsSpent: number;
+  rewardsBought: number;
+  streak: number;
+  fastTasksDone: number;
+};
+
+export const ACHIEVEMENTS: Achievement[] = [
+  { id: "first_task",  title: "Первый шаг",      desc: "Выполни первое задание",          emoji: "🌱", rarity: "common",    check: s => s.tasksCompleted >= 1 },
+  { id: "tasks_5",     title: "Пятёрка",          desc: "Выполни 5 заданий",               emoji: "✋", rarity: "common",    check: s => s.tasksCompleted >= 5 },
+  { id: "tasks_10",    title: "Десятка",           desc: "Выполни 10 заданий",              emoji: "🔟", rarity: "uncommon",  check: s => s.tasksCompleted >= 10 },
+  { id: "tasks_25",    title: "Трудяга",           desc: "Выполни 25 заданий",              emoji: "💪", rarity: "rare",      check: s => s.tasksCompleted >= 25 },
+  { id: "stars_10",    title: "Звёздочка",         desc: "Собери 10 звёзд",                 emoji: "⭐", rarity: "common",    check: s => s.totalStars >= 10 },
+  { id: "stars_50",    title: "Звёздный дождь",    desc: "Собери 50 звёзд",                 emoji: "🌟", rarity: "uncommon",  check: s => s.totalStars >= 50 },
+  { id: "stars_100",   title: "Звёздный король",   desc: "Собери 100 звёзд",               emoji: "👑", rarity: "legendary", check: s => s.totalStars >= 100 },
+  { id: "level_3",     title: "Растём!",           desc: "Достигни 3-го уровня",            emoji: "📈", rarity: "common",    check: s => s.level >= 3 },
+  { id: "level_5",     title: "Середнячок",        desc: "Достигни 5-го уровня",            emoji: "🥈", rarity: "uncommon",  check: s => s.level >= 5 },
+  { id: "level_10",    title: "Мастер",            desc: "Достигни 10-го уровня",           emoji: "🏆", rarity: "mythical",  check: s => s.level >= 10 },
+  { id: "spend_10",    title: "Транжира",          desc: "Потрать 10 звёзд",                emoji: "💸", rarity: "common",    check: s => s.starsSpent >= 10 },
+  { id: "spend_30",    title: "Шопоголик",         desc: "Потрать 30 звёзд",                emoji: "🛍️", rarity: "uncommon",  check: s => s.starsSpent >= 30 },
+  { id: "reward_1",    title: "Первая награда",    desc: "Купи первую награду",             emoji: "🎁", rarity: "common",    check: s => s.rewardsBought >= 1 },
+  { id: "reward_3",    title: "Коллекционер",      desc: "Купи 3 награды",                  emoji: "🗃️", rarity: "rare",      check: s => s.rewardsBought >= 3 },
+  { id: "streak_3",    title: "Регулярность",      desc: "3 дня подряд без пропусков",      emoji: "🔥", rarity: "uncommon",  check: s => s.streak >= 3 },
+  { id: "streak_7",    title: "Железная воля",     desc: "7 дней подряд без пропусков",     emoji: "⚡", rarity: "mythical",  check: s => s.streak >= 7 },
+  { id: "speed_demon", title: "Молния",            desc: "Выполни задачу мгновенно",        emoji: "⚡", rarity: "rare",      check: s => s.fastTasksDone >= 1 },
+];
+
+export const RARITY_CONFIG = {
+  common:    { label: "Common",    color: "#9CA3AF", bg: "from-gray-100 to-gray-50",   border: "border-gray-200",   glow: ""                              },
+  uncommon:  { label: "Uncommon",  color: "#10B981", bg: "from-green-100 to-emerald-50", border: "border-green-300", glow: "shadow-green-200"              },
+  rare:      { label: "Rare",      color: "#6B7BFF", bg: "from-blue-100 to-indigo-50", border: "border-indigo-300", glow: "shadow-indigo-200"              },
+  mythical:  { label: "Mythical",  color: "#D946EF", bg: "from-purple-100 to-pink-50", border: "border-purple-400", glow: "shadow-purple-200"             },
+  legendary: { label: "Legendary", color: "#F59E0B", bg: "from-yellow-100 to-amber-50", border: "border-yellow-400", glow: "shadow-yellow-200 shadow-md"  },
+} as const;
+
+export function checkAchievements(stats: ChildStats, already: AchievementId[]): AchievementId[] {
+  return ACHIEVEMENTS
+    .filter(a => !already.includes(a.id) && a.check(stats))
+    .map(a => a.id);
+}
+
+// ─── Child Stickers ───────────────────────────────────────────────────────────
+
+export type StickerRarity = "common" | "uncommon" | "rare" | "mythical" | "legendary";
+
+export type Sticker = {
+  id: string;
+  name: string;
+  emoji: string;
+  rarity: StickerRarity;
+  description: string;
+  avatarOverride?: string;
+  animationClass?: string;
+};
+
+export const ALL_STICKERS: Sticker[] = [
+  // Common (6)
+  { id: "s_sun",      name: "Солнышко",      emoji: "☀️",  rarity: "common",    description: "Яркое и позитивное" },
+  { id: "s_star",     name: "Звёздочка",     emoji: "⭐",  rarity: "common",    description: "За каждую звезду" },
+  { id: "s_pencil",   name: "Карандашик",    emoji: "✏️",  rarity: "common",    description: "Любитель учёбы" },
+  { id: "s_apple",    name: "Яблоко",        emoji: "🍎",  rarity: "common",    description: "Здоровый выбор" },
+  { id: "s_book",     name: "Книжка",        emoji: "📚",  rarity: "common",    description: "Читатель" },
+  { id: "s_heart",    name: "Сердечко",      emoji: "❤️",  rarity: "common",    description: "С любовью" },
+  // Uncommon (5)
+  { id: "s_rocket",   name: "Ракета",        emoji: "🚀",  rarity: "uncommon",  description: "К звёздам!" },
+  { id: "s_rainbow",  name: "Радуга",        emoji: "🌈",  rarity: "uncommon",  description: "После дождя" },
+  { id: "s_crown",    name: "Корона",        emoji: "👑",  rarity: "uncommon",  description: "Маленький король" },
+  { id: "s_dino",     name: "Динозаврик",    emoji: "🦕",  rarity: "uncommon",  description: "Доисторический друг" },
+  { id: "s_planet",   name: "Планета",       emoji: "🪐",  rarity: "uncommon",  description: "Покоритель космоса" },
+  // Rare (4)
+  { id: "s_dragon",   name: "Дракончик",     emoji: "🐉",  rarity: "rare",      description: "Огнедышащий!" },
+  { id: "s_wizard",   name: "Волшебник",     emoji: "🧙",  rarity: "rare",      description: "Мастер магии" },
+  { id: "s_diamond",  name: "Алмаз",         emoji: "💎",  rarity: "rare",      description: "Настоящая ценность" },
+  { id: "s_phoenix",  name: "Феникс",        emoji: "🦅",  rarity: "rare",      description: "Возрождается снова" },
+  // Mythical (3)
+  { id: "s_unicorn",  name: "Единорог",      emoji: "🦄",  rarity: "mythical",  description: "Легендарное существо" },
+  { id: "s_ghost",    name: "Призрак",       emoji: "👻",  rarity: "mythical",  description: "Таинственный дух", animationClass: "animate-bounce" },
+  { id: "s_crystal",  name: "Кристалл",      emoji: "🔮",  rarity: "mythical",  description: "Видит будущее" },
+  // Legendary (2) — дают аватар-оверрайд
+  { id: "s_alien",    name: "Инопланетянин", emoji: "👽",  rarity: "legendary", description: "Из другой галактики", avatarOverride: "👽", animationClass: "animate-pulse" },
+  { id: "s_ninja",    name: "Ниндзя",        emoji: "🥷",  rarity: "legendary", description: "Невидимый мастер",   avatarOverride: "🥷", animationClass: "animate-bounce" },
+];
+
+export const STICKER_DROP_POOL: Record<StickerRarity, number> = {
+  common: 50, uncommon: 25, rare: 15, mythical: 8, legendary: 2,
+};
+
+export function rollSticker(): Sticker {
+  const roll = Math.random() * 100;
+  let rarity: StickerRarity;
+  if (roll < 50) rarity = "common";
+  else if (roll < 75) rarity = "uncommon";
+  else if (roll < 90) rarity = "rare";
+  else if (roll < 98) rarity = "mythical";
+  else rarity = "legendary";
+  const pool = ALL_STICKERS.filter(s => s.rarity === rarity);
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// ─── Child Status ─────────────────────────────────────────────────────────────
+
+export type ChildStatus = {
+  emoji: string;
+  label: string;
+  color: string;
+};
+
+export const CHILD_STATUSES: ChildStatus[] = [
+  { emoji: "🌱", label: "Росток",       color: "#10B981" },
+  { emoji: "⚡", label: "Энергичный",   color: "#F59E0B" },
+  { emoji: "📚", label: "Умник",        color: "#6B7BFF" },
+  { emoji: "🔥", label: "На волне",     color: "#EF4444" },
+  { emoji: "🏆", label: "Чемпион",      color: "#D946EF" },
+  { emoji: "🚀", label: "Ракета",       color: "#8B5CF6" },
+];
+
+export function getChildStatus(tasksCompleted: number, level: number): ChildStatus {
+  if (level >= 10) return CHILD_STATUSES[5];
+  if (level >= 7)  return CHILD_STATUSES[4];
+  if (level >= 5)  return CHILD_STATUSES[3];
+  if (tasksCompleted >= 10) return CHILD_STATUSES[2];
+  if (tasksCompleted >= 5)  return CHILD_STATUSES[1];
+  return CHILD_STATUSES[0];
+}
 
 export const PARTNER_PRIZES = [
   { id: 1, title: "Скидка 20% в Детском Мире", cost: 1000, emoji: "🧸", partner: "Детский Мир", type: "coupon" },

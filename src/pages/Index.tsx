@@ -5,13 +5,19 @@ import {
   getStreakBonus,
   advanceStreak,
   getTodayDateStr,
+  checkAchievements,
+  rollSticker,
   PARENT_ACTION_XP,
-  type Mode, type ChildTab, type ParentTab, type ParentAction, type StreakState,
+  type Mode, type ChildTab, type ParentTab, type ParentAction,
+  type StreakState, type AchievementId, type Sticker, type ChildStats,
 } from "@/components/demo/types";
 import { LevelUpModal, ParentLevelUpModal } from "@/components/demo/XpBar";
 import { StreakBonusModal } from "@/components/demo/StreakCard";
+import { NewAchievementModal } from "@/components/demo/AchievementBadge";
 import ChildView from "@/components/demo/ChildView";
 import ParentView from "@/components/demo/ParentView";
+
+type CollectedSticker = { stickerId: string; count: number };
 
 const INITIAL_STREAK: StreakState = {
   current: 4,
@@ -29,8 +35,16 @@ export default function Index() {
   const [purchasedItems, setPurchasedItems] = useState<number[]>([]);
   const [showStar, setShowStar] = useState(false);
   const [starCount, setStarCount] = useState(15);
+  const [starsSpent, setStarsSpent] = useState(0);
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
   const prevChildLevelRef = useRef(getLevelInfo(15).level);
+
+  // Achievements & stickers
+  const [achievements, setAchievements] = useState<AchievementId[]>(["first_task", "stars_10"]);
+  const [newAchievements, setNewAchievements] = useState<AchievementId[]>([]);
+  const [stickers, setStickers] = useState<CollectedSticker[]>([]);
+  const [stickerPacks, setStickerPacks] = useState(2);
+  const [avatarOverride, setAvatarOverride] = useState<string | undefined>(undefined);
 
   // Parent state
   const [parentTab, setParentTab] = useState<ParentTab>("tasks");
@@ -40,35 +54,92 @@ export default function Index() {
   const [purchasedPrizes, setPurchasedPrizes] = useState<number[]>([]);
   const prevParentLevelRef = useRef(getParentLevelInfo(120).level);
 
-  // Streak state
+  // Streak
   const [streak, setStreak] = useState<StreakState>(INITIAL_STREAK);
   const [streakBonusModal, setStreakBonusModal] = useState<{ day: number; xp: number; points: number } | null>(null);
 
   const { totalPoints: parentPoints } = getParentLevelInfo(parentXp);
 
-  // ── Child handlers ──
-  const updateStars = useCallback((newStars: number) => {
-    const newLevel = getLevelInfo(newStars).level;
-    if (newLevel > prevChildLevelRef.current) setLevelUpLevel(newLevel);
-    prevChildLevelRef.current = newLevel;
-    setStarCount(newStars);
+  // ── Achievement check ──
+  const checkAndGrantAchievements = useCallback((stats: ChildStats, already: AchievementId[]) => {
+    const newOnes = checkAchievements(stats, already);
+    if (newOnes.length > 0) {
+      setAchievements(prev => [...prev, ...newOnes]);
+      setNewAchievements(newOnes);
+      const totalAfter = already.length + newOnes.length;
+      if (Math.floor(totalAfter / 3) > Math.floor(already.length / 3)) {
+        setStickerPacks(prev => prev + 1);
+      }
+    }
   }, []);
 
+  // ── Child handlers ──
   const handleTaskToggle = (taskId: number, taskStars: number) => {
     if (completedTasks.includes(taskId)) return;
-    setCompletedTasks(prev => [...prev, taskId]);
-    updateStars(starCount + taskStars);
+    const newCompleted = [...completedTasks, taskId];
+    setCompletedTasks(newCompleted);
+    const newStars = starCount + taskStars;
+    const newLevel = getLevelInfo(newStars).level;
+    if (newLevel > prevChildLevelRef.current) {
+      setLevelUpLevel(newLevel);
+      setStickerPacks(prev => prev + 1);
+    }
+    prevChildLevelRef.current = newLevel;
+    setStarCount(newStars);
     setShowStar(true);
     setTimeout(() => setShowStar(false), 1000);
+    setAchievements(prev => {
+      const stats: ChildStats = {
+        tasksCompleted: newCompleted.length,
+        totalStars: newStars,
+        level: newLevel,
+        starsSpent,
+        rewardsBought: purchasedItems.length,
+        streak: streak.current,
+        fastTasksDone: 0,
+      };
+      checkAndGrantAchievements(stats, prev);
+      return prev;
+    });
   };
 
   const handleBuy = (itemId: number, cost: number) => {
     if (starCount < cost || purchasedItems.includes(itemId)) return;
-    setPurchasedItems(prev => [...prev, itemId]);
-    updateStars(starCount - cost);
+    const newPurchased = [...purchasedItems, itemId];
+    setPurchasedItems(newPurchased);
+    const newStars = starCount - cost;
+    const newSpent = starsSpent + cost;
+    setStarCount(newStars);
+    setStarsSpent(newSpent);
+    setAchievements(prev => {
+      const stats: ChildStats = {
+        tasksCompleted: completedTasks.length,
+        totalStars: newStars,
+        level: getLevelInfo(newStars).level,
+        starsSpent: newSpent,
+        rewardsBought: newPurchased.length,
+        streak: streak.current,
+        fastTasksDone: 0,
+      };
+      checkAndGrantAchievements(stats, prev);
+      return prev;
+    });
   };
 
-  // ── Parent XP helper ──
+  // ── Sticker pack ──
+  const handleOpenStickerPack = useCallback((): Sticker => {
+    const sticker = rollSticker();
+    setStickerPacks(prev => Math.max(0, prev - 1));
+    setStickers(prev => {
+      const existing = prev.find(c => c.stickerId === sticker.id);
+      if (existing) return prev.map(c => c.stickerId === sticker.id ? { ...c, count: c.count + 1 } : c);
+      return [...prev, { stickerId: sticker.id, count: 1 }];
+    });
+    if (sticker.avatarOverride) setAvatarOverride(sticker.avatarOverride);
+    return sticker;
+  }, []);
+
+  // ── Parent XP ──
   const addParentXp = useCallback((xp: number) => {
     setParentXp(prev => {
       const next = prev + xp;
@@ -79,12 +150,10 @@ export default function Index() {
     });
   }, []);
 
-  // ── Streak: advance on any parent action ──
   const touchStreak = useCallback(() => {
     setStreak(prev => advanceStreak(prev));
   }, []);
 
-  // ── Parent handlers ──
   const handleParentAction = (action: ParentAction) => {
     addParentXp(PARENT_ACTION_XP[action]);
     touchStreak();
@@ -103,7 +172,6 @@ export default function Index() {
     setPurchasedPrizes(prev => [...prev, prizeId]);
   };
 
-  // ── Streak claim ──
   const handleStreakClaim = useCallback(() => {
     setStreak(prev => {
       if (prev.claimedToday) return prev;
@@ -126,7 +194,6 @@ export default function Index() {
       {levelUpLevel !== null && (
         <LevelUpModal level={levelUpLevel} onClose={() => setLevelUpLevel(null)} />
       )}
-
       {parentLevelUpLevel !== null && (
         <ParentLevelUpModal
           level={parentLevelUpLevel}
@@ -134,7 +201,6 @@ export default function Index() {
           onClose={() => setParentLevelUpLevel(null)}
         />
       )}
-
       {streakBonusModal !== null && (
         <StreakBonusModal
           day={streakBonusModal.day}
@@ -143,7 +209,12 @@ export default function Index() {
           onClose={() => setStreakBonusModal(null)}
         />
       )}
-
+      {newAchievements.length > 0 && (
+        <NewAchievementModal
+          ids={newAchievements}
+          onClose={() => setNewAchievements([])}
+        />
+      )}
       {showStar && (
         <div className="fixed inset-0 pointer-events-none z-40 flex items-center justify-center">
           <div className="text-8xl animate-star-pop">⭐</div>
@@ -186,8 +257,13 @@ export default function Index() {
           starCount={starCount}
           completedTasks={completedTasks}
           purchasedItems={purchasedItems}
+          achievements={achievements}
+          stickers={stickers}
+          stickerPacks={stickerPacks}
+          avatarOverride={avatarOverride}
           handleTaskToggle={handleTaskToggle}
           handleBuy={handleBuy}
+          onOpenStickerPack={handleOpenStickerPack}
         />
       )}
 
