@@ -1,12 +1,13 @@
 import Icon from "@/components/ui/icon";
 import {
   getLevelInfo, getLevelTier, getLevelEmoji, LEVEL_TIERS, STARS_PER_LEVEL,
-  CHILD_TASKS, SHOP_ITEMS, ALL_STICKERS, getChildStatus,
-  type ChildTab, type AchievementId, type Sticker,
+  CHILD_TASKS, SHOP_ITEMS, ALL_STICKERS, getChildStatus, GRADE_UNLOCK_LEVEL,
+  type ChildTab, type AchievementId, type Sticker, type GradeRequest, type GradeValue,
 } from "./types";
 import { XpBar } from "./XpBar";
 import { AchievementRow, AchievementGrid } from "./AchievementBadge";
 import { StickerCollection, rollSticker } from "./StickerCollection";
+import { ChildGradeView } from "./GradeExchange";
 
 type CollectedSticker = { stickerId: string; count: number };
 
@@ -20,16 +21,18 @@ type Props = {
   stickers: CollectedSticker[];
   stickerPacks: number;
   avatarOverride?: string;
+  gradeRequests: GradeRequest[];
   handleTaskToggle: (taskId: number, taskStars: number) => void;
   handleBuy: (itemId: number, cost: number) => void;
   onOpenStickerPack: () => Sticker;
+  onSubmitGrade: (subject: string, grade: GradeValue, date: string) => void;
 };
 
 export default function ChildView({
   childTab, setChildTab,
   starCount, completedTasks, purchasedItems,
   achievements, stickers, stickerPacks, avatarOverride,
-  handleTaskToggle, handleBuy, onOpenStickerPack,
+  gradeRequests, handleTaskToggle, handleBuy, onOpenStickerPack, onSubmitGrade,
 }: Props) {
   const { level } = getLevelInfo(starCount);
   const levelEmoji = getLevelEmoji(level);
@@ -211,6 +214,22 @@ export default function ChildView({
         </div>
       )}
 
+      {childTab === "grades" && (
+        <div className="animate-fade-in space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-black text-[#2D1B69]">Оценки → Звёзды</h2>
+            {level < GRADE_UNLOCK_LEVEL && (
+              <span className="text-xs font-black text-gray-400 bg-gray-100 px-2 py-1 rounded-xl">🔒 с ур. {GRADE_UNLOCK_LEVEL}</span>
+            )}
+          </div>
+          <ChildGradeView
+            requests={gradeRequests}
+            level={level}
+            onSubmit={onSubmitGrade}
+          />
+        </div>
+      )}
+
       {childTab === "achievements" && (
         <div className="animate-fade-in space-y-4">
           <div className="flex items-center justify-between">
@@ -335,25 +354,36 @@ export default function ChildView({
       <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-4 px-4">
         <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl px-2 py-2 flex gap-0.5 border border-white">
           {([
-            { key: "tasks",        emoji: "📋", label: "Задачи" },
-            { key: "stars",        emoji: "⭐", label: "Звёзды" },
-            { key: "shop",         emoji: "🛍️", label: "Магазин" },
-            { key: "achievements", emoji: "🏅", label: "Ачивки" },
-            { key: "stickers",     emoji: "🎴", label: "Стикеры" },
-            { key: "profile",      emoji: "👤", label: "Профиль" },
-          ] as { key: ChildTab; emoji: string; label: string }[]).map(tab => (
+            { key: "tasks",        emoji: "📋", label: "Задачи",   locked: false },
+            { key: "stars",        emoji: "⭐", label: "Звёзды",   locked: false },
+            { key: "shop",         emoji: "🛍️", label: "Магазин",  locked: false },
+            { key: "grades",       emoji: "📝", label: "Оценки",   locked: level < GRADE_UNLOCK_LEVEL },
+            { key: "achievements", emoji: "🏅", label: "Ачивки",   locked: false },
+            { key: "stickers",     emoji: "🎴", label: "Стикеры",  locked: false },
+            { key: "profile",      emoji: "👤", label: "Профиль",  locked: false },
+          ] as { key: ChildTab; emoji: string; label: string; locked: boolean }[]).map(tab => (
             <button
               key={tab.key}
               onClick={() => setChildTab(tab.key)}
-              className={`flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-2xl transition-all duration-300 relative ${
+              className={`flex flex-col items-center gap-0.5 px-2 py-2 rounded-2xl transition-all duration-300 relative ${
                 childTab === tab.key
                   ? "bg-gradient-to-b from-[#FF6B9D] to-[#FF9B6B] scale-110 shadow-md"
-                  : "hover:bg-gray-50"
+                  : tab.locked
+                    ? "opacity-50"
+                    : "hover:bg-gray-50"
               }`}
             >
+              {tab.locked && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-gray-400 rounded-full text-[9px] font-black text-white flex items-center justify-center">🔒</span>
+              )}
               {tab.key === "stickers" && stickerPacks > 0 && childTab !== "stickers" && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-violet-500 rounded-full text-[9px] font-black text-white flex items-center justify-center">
                   {stickerPacks}
+                </span>
+              )}
+              {tab.key === "grades" && gradeRequests.filter(r => r.status === "pending").length > 0 && childTab !== "grades" && !tab.locked && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full text-[9px] font-black text-white flex items-center justify-center">
+                  {gradeRequests.filter(r => r.status === "pending").length}
                 </span>
               )}
               <span className="text-lg">{tab.emoji}</span>

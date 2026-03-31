@@ -7,9 +7,12 @@ import {
   getTodayDateStr,
   checkAchievements,
   rollSticker,
+  GRADE_STARS,
+  INITIAL_GRADE_REQUESTS,
   PARENT_ACTION_XP,
   type Mode, type ChildTab, type ParentTab, type ParentAction,
   type StreakState, type AchievementId, type Sticker, type ChildStats,
+  type GradeRequest, type GradeValue,
 } from "@/components/demo/types";
 import { LevelUpModal, ParentLevelUpModal } from "@/components/demo/XpBar";
 import { StreakBonusModal } from "@/components/demo/StreakCard";
@@ -57,6 +60,9 @@ export default function Index() {
   // Streak
   const [streak, setStreak] = useState<StreakState>(INITIAL_STREAK);
   const [streakBonusModal, setStreakBonusModal] = useState<{ day: number; xp: number; points: number } | null>(null);
+
+  // Grade requests
+  const [gradeRequests, setGradeRequests] = useState<GradeRequest[]>(INITIAL_GRADE_REQUESTS);
 
   const { totalPoints: parentPoints } = getParentLevelInfo(parentXp);
 
@@ -182,6 +188,40 @@ export default function Index() {
     });
   }, [addParentXp]);
 
+  // ── Grade handlers ──
+  const handleSubmitGrade = (subject: string, grade: GradeValue, date: string) => {
+    const newRequest: GradeRequest = {
+      id: `gr_${Date.now()}`,
+      subject,
+      grade,
+      date,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    };
+    setGradeRequests(prev => [newRequest, ...prev]);
+  };
+
+  const handleApproveGrade = useCallback((id: string) => {
+    setGradeRequests(prev =>
+      prev.map(r => {
+        if (r.id !== id || r.status !== "pending") return r;
+        const stars = GRADE_STARS[r.grade];
+        // Award stars to child
+        setStarCount(s => s + stars);
+        prevChildLevelRef.current = getLevelInfo(starCount + stars).level;
+        addParentXp(PARENT_ACTION_XP.task_confirm);
+        touchStreak();
+        return { ...r, status: "approved" as const, starsAwarded: stars };
+      })
+    );
+  }, [starCount, addParentXp, touchStreak]);
+
+  const handleRejectGrade = useCallback((id: string) => {
+    setGradeRequests(prev =>
+      prev.map(r => r.id === id && r.status === "pending" ? { ...r, status: "rejected" as const } : r)
+    );
+  }, []);
+
   return (
     <div
       className={`min-h-screen transition-all duration-500 ${
@@ -261,9 +301,11 @@ export default function Index() {
           stickers={stickers}
           stickerPacks={stickerPacks}
           avatarOverride={avatarOverride}
+          gradeRequests={gradeRequests}
           handleTaskToggle={handleTaskToggle}
           handleBuy={handleBuy}
           onOpenStickerPack={handleOpenStickerPack}
+          onSubmitGrade={handleSubmitGrade}
         />
       )}
 
@@ -276,10 +318,13 @@ export default function Index() {
           streak={streak}
           confirmedTasks={confirmedTasks}
           purchasedPrizes={purchasedPrizes}
+          gradeRequests={gradeRequests}
           onAction={handleParentAction}
           onConfirmTask={handleConfirmTask}
           onBuyPrize={handleBuyPrize}
           onStreakClaim={handleStreakClaim}
+          onApproveGrade={handleApproveGrade}
+          onRejectGrade={handleRejectGrade}
         />
       )}
     </div>

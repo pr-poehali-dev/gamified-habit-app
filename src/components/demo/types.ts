@@ -1,6 +1,6 @@
 export type Mode = "child" | "parent";
-export type ChildTab = "tasks" | "stars" | "shop" | "achievements" | "stickers" | "profile";
-export type ParentTab = "tasks" | "rewards" | "stats" | "children" | "profile";
+export type ChildTab = "tasks" | "stars" | "shop" | "grades" | "achievements" | "stickers" | "profile";
+export type ParentTab = "tasks" | "rewards" | "grades" | "stats" | "children" | "profile";
 
 export const STARS_PER_LEVEL = 10;
 
@@ -336,6 +336,60 @@ export function getChildStatus(tasksCompleted: number, level: number): ChildStat
   if (tasksCompleted >= 5)  return CHILD_STATUSES[1];
   return CHILD_STATUSES[0];
 }
+
+// ─── Grade Exchange System ────────────────────────────────────────────────────
+
+export const GRADE_UNLOCK_LEVEL = 2;
+
+export const SUBJECTS = [
+  "Математика", "Русский язык", "Чтение", "Окружающий мир",
+  "Английский язык", "Физкультура", "Музыка", "Рисование",
+  "Труд", "История", "Биология", "География",
+];
+
+export type GradeValue = 2 | 3 | 4 | 5;
+
+export const GRADE_STARS: Record<GradeValue, number> = {
+  5: 5, 4: 4, 3: 3, 2: 2,
+};
+
+export const GRADE_EMOJI: Record<GradeValue, string> = {
+  5: "🌟", 4: "😊", 3: "😐", 2: "😔",
+};
+
+export const GRADE_LABEL: Record<GradeValue, string> = {
+  5: "Отлично", 4: "Хорошо", 3: "Удовлетворительно", 2: "Плохо",
+};
+
+export type GradeRequest = {
+  id: string;
+  subject: string;
+  grade: GradeValue;
+  date: string;
+  status: "pending" | "approved" | "rejected";
+  starsAwarded?: number;
+  createdAt: string;
+};
+
+export const INITIAL_GRADE_REQUESTS: GradeRequest[] = [
+  {
+    id: "gr1",
+    subject: "Математика",
+    grade: 5,
+    date: "2026-03-30",
+    status: "approved",
+    starsAwarded: 5,
+    createdAt: "2026-03-30T10:00:00Z",
+  },
+  {
+    id: "gr2",
+    subject: "Русский язык",
+    grade: 4,
+    date: "2026-03-31",
+    status: "pending",
+    createdAt: "2026-03-31T14:00:00Z",
+  },
+];
 
 export const PARTNER_PRIZES = [
   { id: 1, title: "Скидка 20% в Детском Мире", cost: 1000, emoji: "🧸", partner: "Детский Мир", type: "coupon" },

@@ -1,6 +1,7 @@
 import Icon from "@/components/ui/icon";
 import { ParentXpBar } from "./XpBar";
 import { StreakCard } from "./StreakCard";
+import { ParentGradePanel } from "./GradeExchange";
 import {
   getLevelInfo, getLevelEmoji,
   getParentLevelInfo, getParentLevelTier,
@@ -8,7 +9,7 @@ import {
   SHOP_ITEMS, PARENT_TASKS_LIST, CHILDREN,
   PARTNER_PRIZES, PARENT_ACTION_LABELS, PARENT_ACTION_XP,
   getParentTip,
-  type ParentAction, type ParentTab, type StreakState,
+  type ParentAction, type ParentTab, type StreakState, type GradeRequest,
 } from "./types";
 
 type Props = {
@@ -19,10 +20,13 @@ type Props = {
   streak: StreakState;
   confirmedTasks: number[];
   purchasedPrizes: number[];
+  gradeRequests: GradeRequest[];
   onAction: (action: ParentAction) => void;
   onConfirmTask: (taskId: number) => void;
   onBuyPrize: (prizeId: number, cost: number) => void;
   onStreakClaim: () => void;
+  onApproveGrade: (id: string) => void;
+  onRejectGrade: (id: string) => void;
 };
 
 export default function ParentView({
@@ -33,10 +37,13 @@ export default function ParentView({
   streak,
   confirmedTasks,
   purchasedPrizes,
+  gradeRequests,
   onAction,
   onConfirmTask,
   onBuyPrize,
   onStreakClaim,
+  onApproveGrade,
+  onRejectGrade,
 }: Props) {
   const { level } = getParentLevelInfo(parentXp);
   const tier = getParentLevelTier(level);
@@ -151,6 +158,24 @@ export default function ParentView({
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {parentTab === "grades" && (
+        <div className="animate-fade-in space-y-4">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-[#1E1B4B]">Оценки детей</h2>
+            {gradeRequests.filter(r => r.status === "pending").length > 0 && (
+              <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                {gradeRequests.filter(r => r.status === "pending").length} новых
+              </span>
+            )}
+          </div>
+          <ParentGradePanel
+            requests={gradeRequests}
+            onApprove={onApproveGrade}
+            onReject={onRejectGrade}
+          />
         </div>
       )}
 
@@ -461,6 +486,7 @@ export default function ParentView({
           {([
             { key: "tasks",    emoji: "📋", label: "Задачи" },
             { key: "rewards",  emoji: "🎁", label: "Награды" },
+            { key: "grades",   emoji: "📝", label: "Оценки" },
             { key: "bonuses",  emoji: "🏅", label: "Бонусы" },
             { key: "children", emoji: "👨‍👧", label: "Дети" },
             { key: "profile",  emoji: "👤", label: "Профиль" },
@@ -468,17 +494,22 @@ export default function ParentView({
             <button
               key={tab.key}
               onClick={() => setParentTab(tab.key)}
-              className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-2xl transition-all duration-300 relative ${
+              className={`flex flex-col items-center gap-0.5 px-2 py-2 rounded-2xl transition-all duration-300 relative ${
                 parentTab === tab.key
                   ? "bg-gradient-to-b from-[#6B7BFF] to-[#9B6BFF] scale-110 shadow-md"
                   : "hover:bg-gray-50"
               }`}
             >
+              {tab.key === "grades" && gradeRequests.filter(r => r.status === "pending").length > 0 && parentTab !== "grades" && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] font-black text-white flex items-center justify-center">
+                  {gradeRequests.filter(r => r.status === "pending").length}
+                </span>
+              )}
               {tab.key === "bonuses" && parentPoints > 0 && parentTab !== "bonuses" && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full text-[9px] font-black text-white flex items-center justify-center">!</span>
               )}
               <span className="text-xl">{tab.emoji}</span>
-              <span className={`text-[10px] font-black ${parentTab === tab.key ? "text-white" : "text-gray-400"}`}>
+              <span className={`text-[9px] font-black ${parentTab === tab.key ? "text-white" : "text-gray-400"}`}>
                 {tab.label}
               </span>
             </button>
