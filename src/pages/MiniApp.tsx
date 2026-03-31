@@ -66,14 +66,53 @@ function formatDeadline(iso: string | null): { label: string; color: string } | 
   return { label: `${h}ч`, color: "text-yellow-600" };
 }
 
-function StarBar({ stars, max = 30 }: { stars: number; max?: number }) {
-  const pct = Math.min(100, (stars % max) / max * 100);
+const STARS_PER_LEVEL = 10;
+
+function getLevelInfo(totalStars: number) {
+  const level = Math.floor(totalStars / STARS_PER_LEVEL) + 1;
+  const xpInLevel = totalStars % STARS_PER_LEVEL;
+  const xpPct = (xpInLevel / STARS_PER_LEVEL) * 100;
+  return { level, xpInLevel, xpPct };
+}
+
+function getLevelEmoji(level: number) {
+  if (level >= 20) return "🏆";
+  if (level >= 15) return "💎";
+  if (level >= 10) return "🥇";
+  if (level >= 7) return "🥈";
+  if (level >= 4) return "🥉";
+  return "⭐";
+}
+
+function XpBar({ stars }: { stars: number }) {
+  const { level, xpInLevel, xpPct } = getLevelInfo(stars);
+  const emoji = getLevelEmoji(level);
+
   return (
-    <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
-      <div
-        className="h-full bg-gradient-to-r from-yellow-300 to-yellow-500 rounded-full transition-all duration-700"
-        style={{ width: `${pct}%` }}
-      />
+    <div className="mt-3">
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-1.5">
+          <span className="text-lg">{emoji}</span>
+          <span className="text-white font-bold text-sm">Уровень {level}</span>
+        </div>
+        <span className="text-white/70 text-xs">{xpInLevel}/10 XP до следующего</span>
+      </div>
+      <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden relative">
+        <div
+          className="h-full bg-gradient-to-r from-yellow-300 via-yellow-400 to-orange-400 rounded-full transition-all duration-700"
+          style={{ width: `${xpPct}%` }}
+        />
+        {[10, 20, 30, 40, 50, 60, 70, 80, 90].map(p => (
+          <div key={p} className="absolute top-0 bottom-0 w-px bg-white/20" style={{ left: `${p}%` }} />
+        ))}
+      </div>
+      <div className="flex justify-between mt-1">
+        {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((p, i) => (
+          <span key={p} className={`text-[9px] ${xpPct >= p && (i === 10 || xpPct < (p + 10)) ? "text-yellow-300 font-bold" : "text-white/30"}`}>
+            {i === 0 ? "" : i === 10 ? "100%" : `${p}%`}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -261,14 +300,18 @@ function ChildView({ user }: { user: Extract<User, { role: "child" }> }) {
             <h1 className="text-white text-xl font-bold">Привет, {user.name}! 👋</h1>
             <p className="text-white/70 text-sm mt-0.5">Выполняй задания — получай звёзды</p>
           </div>
-          <div className="bg-white/20 rounded-2xl px-4 py-2 text-center">
-            <p className="text-yellow-300 text-2xl font-black">{stars}</p>
-            <p className="text-white/80 text-xs">звёзд ⭐</p>
+          <div className="flex gap-2">
+            <div className="bg-white/20 rounded-2xl px-3 py-2 text-center">
+              <p className="text-yellow-300 text-2xl font-black">{stars}</p>
+              <p className="text-white/80 text-xs">звёзд ⭐</p>
+            </div>
+            <div className="bg-white/20 rounded-2xl px-3 py-2 text-center">
+              <p className="text-white text-2xl font-black">{getLevelInfo(stars).level}</p>
+              <p className="text-white/80 text-xs">уровень {getLevelEmoji(getLevelInfo(stars).level)}</p>
+            </div>
           </div>
         </div>
-        <div className="mt-3">
-          <StarBar stars={stars} />
-        </div>
+        <XpBar stars={stars} />
         {overdue.length > 0 && (
           <div className="mt-3 bg-red-500/30 border border-red-400/40 rounded-xl px-3 py-2">
             <p className="text-white text-sm font-medium">🔴 {overdue.length} просроченных задания</p>
