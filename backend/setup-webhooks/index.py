@@ -26,6 +26,20 @@ def get_webhook_info(token):
         return json.loads(resp.read())
 
 
+def set_menu_button(token, mini_app_url, title="🚀 Открыть приложение"):
+    url = f"https://api.telegram.org/bot{token}/setChatMenuButton"
+    payload = json.dumps({
+        "menu_button": {
+            "type": "web_app",
+            "text": title,
+            "web_app": {"url": mini_app_url}
+        }
+    }).encode()
+    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req) as resp:
+        return json.loads(resp.read())
+
+
 def handler(event: dict, context) -> dict:
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, OPTIONS", "Access-Control-Allow-Headers": "Content-Type"}, "body": ""}
@@ -33,17 +47,26 @@ def handler(event: dict, context) -> dict:
     child_token = os.environ.get("CHILD_BOT_TOKEN", "")
     parent_token = os.environ.get("PARENT_BOT_TOKEN", "")
 
+    mini_app_url = os.environ.get("MINI_APP_URL", "")
     results = {}
 
     if child_token:
-        results["child_bot"] = set_webhook(child_token, CHILD_BOT_URL)
+        results["child_bot_webhook"] = set_webhook(child_token, CHILD_BOT_URL)
         results["child_bot_info"] = get_webhook_info(child_token)
+        if mini_app_url:
+            results["child_bot_menu"] = set_menu_button(child_token, mini_app_url)
+        else:
+            results["child_bot_menu"] = {"skipped": "MINI_APP_URL not set"}
     else:
         results["child_bot"] = {"error": "CHILD_BOT_TOKEN not set"}
 
     if parent_token:
-        results["parent_bot"] = set_webhook(parent_token, PARENT_BOT_URL)
+        results["parent_bot_webhook"] = set_webhook(parent_token, PARENT_BOT_URL)
         results["parent_bot_info"] = get_webhook_info(parent_token)
+        if mini_app_url:
+            results["parent_bot_menu"] = set_menu_button(parent_token, mini_app_url)
+        else:
+            results["parent_bot_menu"] = {"skipped": "MINI_APP_URL not set"}
     else:
         results["parent_bot"] = {"error": "PARENT_BOT_TOKEN not set"}
 
