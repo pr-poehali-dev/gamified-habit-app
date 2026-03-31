@@ -1,14 +1,14 @@
 import { useState } from "react";
-import Icon from "@/components/ui/icon";
 import { ParentXpBar } from "./XpBar";
 import { StreakCard } from "./StreakCard";
 import { ParentGradePanel } from "./GradeExchange";
+import { ParentTasksTab, ParentRewardsTab } from "./ParentTasksTab";
+import { ParentBonusTab } from "./ParentBonusTab";
+import { ParentStatsTab, ParentProfileTab } from "./ParentStatsTab";
 import {
   getLevelInfo, getLevelEmoji,
   getParentLevelInfo, getParentLevelTier,
-  getStreakBonus,
-  SHOP_ITEMS, PARENT_TASKS_LIST, CHILDREN,
-  PARTNER_PRIZES, PARENT_ACTION_LABELS, PARENT_ACTION_XP,
+  CHILDREN, PARENT_TASKS_LIST, PARENT_ACTION_XP,
   getParentTip,
   type ParentAction, type ParentTab, type StreakState, type GradeRequest,
 } from "./types";
@@ -46,14 +46,12 @@ function ChildrenTab({ onAction }: { onAction: (a: ParentAction) => void }) {
         </button>
       </div>
 
-      {/* Add child form */}
       {showForm && (
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] px-5 py-4">
             <p className="text-white font-black text-base">👶 Добавить ребёнка</p>
           </div>
           <div className="p-5 space-y-4">
-            {/* Avatar */}
             <div>
               <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-2">Аватар</label>
               <div className="flex gap-3">
@@ -70,8 +68,6 @@ function ChildrenTab({ onAction }: { onAction: (a: ParentAction) => void }) {
                 ))}
               </div>
             </div>
-
-            {/* Name */}
             <div>
               <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-1.5">
                 Имя <span className="text-red-400">*</span>
@@ -84,8 +80,6 @@ function ChildrenTab({ onAction }: { onAction: (a: ParentAction) => void }) {
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-gray-50 font-semibold focus:outline-none focus:ring-2 focus:ring-[#6B7BFF]/40"
               />
             </div>
-
-            {/* Age — required */}
             <div>
               <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-1.5">
                 Возраст <span className="text-red-400">*</span>
@@ -112,11 +106,9 @@ function ChildrenTab({ onAction }: { onAction: (a: ParentAction) => void }) {
                 </p>
               )}
             </div>
-
             {error && (
               <p className="text-red-500 text-xs font-bold bg-red-50 rounded-xl px-3 py-2">{error}</p>
             )}
-
             <button
               onClick={handleAdd}
               className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-black text-sm shadow-sm active:scale-95 transition-all"
@@ -127,7 +119,6 @@ function ChildrenTab({ onAction }: { onAction: (a: ParentAction) => void }) {
         </div>
       )}
 
-      {/* Invite relative */}
       <button
         onClick={() => onAction("invite_relative")}
         className="w-full bg-white border-2 border-dashed border-[#6B7BFF]/40 rounded-2xl p-4 flex items-center gap-3 hover:border-[#6B7BFF] transition-colors group"
@@ -142,7 +133,6 @@ function ChildrenTab({ onAction }: { onAction: (a: ParentAction) => void }) {
         </span>
       </button>
 
-      {/* Children list */}
       {CHILDREN.map(child => {
         const { level: cLevel, xpPct } = getLevelInfo(child.stars);
         const cEmoji = getLevelEmoji(cLevel);
@@ -189,6 +179,8 @@ function ChildrenTab({ onAction }: { onAction: (a: ParentAction) => void }) {
     </div>
   );
 }
+
+// ─── Main ParentView ──────────────────────────────────────────────────────────
 
 type Props = {
   parentTab: ParentTab;
@@ -258,86 +250,16 @@ export default function ParentView({
         </div>
       </div>
 
-      {/* Actions XP panel */}
+      {/* Tab content */}
       {parentTab === "tasks" && (
-        <div className="animate-fade-in space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-[#1E1B4B]">Задачи</h2>
-            <button
-              onClick={() => onAction("task_create")}
-              className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95"
-            >
-              + Добавить
-            </button>
-          </div>
-
-          {/* XP hint */}
-          <div className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex items-center gap-3">
-            <span className="text-2xl">⚡</span>
-            <div>
-              <p className="text-xs font-bold text-[#1E1B4B]">Зарабатывайте XP за действия</p>
-              <p className="text-xs text-gray-400">Создание задачи +{PARENT_ACTION_XP.task_create} XP · Подтверждение +{PARENT_ACTION_XP.task_confirm} XP</p>
-            </div>
-          </div>
-
-          {PARENT_TASKS_LIST.map((item, i) => {
-            const isDone = confirmedTasks.includes(item.id) || item.status === "done";
-            return (
-              <div
-                key={item.id}
-                className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3 hover:shadow-md transition-all"
-                style={{ animationDelay: `${i * 0.06}s` }}
-              >
-                <div className="text-2xl">{item.emoji}</div>
-                <div className="flex-1">
-                  <p className="font-semibold text-[#1E1B4B] text-sm">{item.task}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Ребёнок: {item.child}</p>
-                </div>
-                <div className="text-right flex flex-col items-end gap-1">
-                  <div className="text-sm font-bold text-amber-500">{item.stars} ⭐</div>
-                  {isDone ? (
-                    <span className="text-xs font-semibold text-green-500">✓ Выполнено</span>
-                  ) : (
-                    <button
-                      onClick={() => onConfirmTask(item.id)}
-                      className="text-xs bg-green-100 text-green-600 font-bold px-2 py-0.5 rounded-lg hover:bg-green-200 transition-colors active:scale-95"
-                    >
-                      Подтвердить
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <ParentTasksTab
+          confirmedTasks={confirmedTasks}
+          onAction={onAction}
+          onConfirmTask={onConfirmTask}
+        />
       )}
 
-      {parentTab === "rewards" && (
-        <div className="animate-fade-in space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-[#1E1B4B]">Магазин наград</h2>
-            <button className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm">
-              + Добавить
-            </button>
-          </div>
-          {SHOP_ITEMS.map((item, i) => (
-            <div
-              key={item.id}
-              className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3"
-              style={{ animationDelay: `${i * 0.06}s` }}
-            >
-              <div className="text-2xl">{item.emoji}</div>
-              <div className="flex-1">
-                <p className="font-semibold text-[#1E1B4B] text-sm">{item.title}</p>
-                <p className="text-xs text-gray-400 mt-0.5">Стоимость: {item.cost} ⭐</p>
-              </div>
-              <button className="text-gray-400 hover:text-red-400 transition-colors">
-                <Icon name="Trash2" size={16} />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+      {parentTab === "rewards" && <ParentRewardsTab />}
 
       {parentTab === "grades" && (
         <div className="animate-fade-in space-y-4">
@@ -358,238 +280,22 @@ export default function ParentView({
       )}
 
       {parentTab === "bonuses" && (
-        <div className="animate-fade-in space-y-4">
-          {/* Streak block */}
-          <StreakCard streak={streak} onClaim={onStreakClaim} />
-
-          {/* Balance card */}
-          <div className="bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] rounded-3xl p-5 text-white shadow-lg">
-            <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">Ваш баланс</p>
-            <p className="text-4xl font-black">{parentPoints.toLocaleString()} <span className="text-2xl font-bold">баллов</span></p>
-            <p className="text-white/70 text-xs mt-2">+{PARENT_POINTS_PER_LEVEL_DISPLAY} баллов за каждый новый уровень</p>
-            <div className="mt-3 flex items-center gap-2">
-              <span className="text-lg">{tier.emoji}</span>
-              <span className="text-sm font-bold">{tier.badge}</span>
-            </div>
-          </div>
-
-          {/* How to earn */}
-          <div>
-            <h3 className="text-base font-bold text-[#1E1B4B] mb-3">Как зарабатывать баллы</h3>
-            <div className="space-y-2">
-              {(Object.keys(PARENT_ACTION_LABELS) as ParentAction[]).map(action => (
-                <div key={action} className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex items-center gap-3">
-                  <span className="text-xl">{PARENT_ACTION_LABELS[action].emoji}</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-[#1E1B4B]">{PARENT_ACTION_LABELS[action].label}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs font-bold text-[#6B7BFF]">+{PARENT_ACTION_XP[action]} XP</p>
-                  </div>
-                </div>
-              ))}
-              <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-3 flex items-center gap-3">
-                <span className="text-xl">🏆</span>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-[#1E1B4B]">Новый уровень</p>
-                  <p className="text-xs text-gray-400">Автоматически при наборе XP</p>
-                </div>
-                <p className="text-xs font-bold text-amber-600">+1 000 баллов</p>
-              </div>
-              <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-2xl p-3 flex items-center gap-3">
-                <span className="text-xl">🔥</span>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-[#1E1B4B]">Ежедневный стрик</p>
-                  <p className="text-xs text-gray-400">Действуй каждый день — бонус растёт</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-bold text-orange-600">до +{getStreakBonus(10).points} б.</p>
-                  <p className="text-xs text-orange-400">на день 10</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Prize store */}
-          <div>
-            <h3 className="text-base font-bold text-[#1E1B4B] mb-3">Магазин призов</h3>
-            <div className="space-y-3">
-              {PARTNER_PRIZES.map((prize, i) => {
-                const bought = purchasedPrizes.includes(prize.id);
-                const canBuy = parentPoints >= prize.cost && !bought;
-                return (
-                  <div
-                    key={prize.id}
-                    className={`bg-white rounded-2xl p-4 shadow-sm border transition-all ${bought ? "border-green-200 opacity-70" : "border-gray-100 hover:shadow-md"}`}
-                    style={{ animationDelay: `${i * 0.06}s` }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="text-3xl">{prize.emoji}</div>
-                      <div className="flex-1">
-                        <p className="font-bold text-[#1E1B4B] text-sm">{prize.title}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">от {prize.partner}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                            prize.type === "coupon" ? "bg-blue-100 text-blue-600" :
-                            prize.type === "ticket" ? "bg-purple-100 text-purple-600" :
-                            prize.type === "promo" ? "bg-green-100 text-green-600" :
-                            prize.type === "gift" ? "bg-pink-100 text-pink-600" :
-                            "bg-amber-100 text-amber-600"
-                          }`}>
-                            {prize.type === "coupon" ? "Скидка" :
-                             prize.type === "ticket" ? "Билет" :
-                             prize.type === "promo" ? "Промокод" :
-                             prize.type === "gift" ? "Подарок" : "Сертификат"}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <p className="text-sm font-black text-amber-600">{prize.cost.toLocaleString()} б.</p>
-                        {bought ? (
-                          <span className="text-xs font-bold text-green-500">✓ Получено</span>
-                        ) : (
-                          <button
-                            onClick={() => onBuyPrize(prize.id, prize.cost)}
-                            disabled={!canBuy}
-                            className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all active:scale-95 ${
-                              canBuy
-                                ? "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white shadow-sm hover:shadow-md"
-                                : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            }`}
-                          >
-                            Обменять
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <ParentBonusTab
+          parentPoints={parentPoints}
+          parentXp={parentXp}
+          streak={streak}
+          purchasedPrizes={purchasedPrizes}
+          onStreakClaim={onStreakClaim}
+          onBuyPrize={onBuyPrize}
+        />
       )}
 
-      {parentTab === "stats" && (
-        <div className="animate-fade-in space-y-4">
-          <h2 className="text-lg font-bold text-[#1E1B4B]">Статистика</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: "Задач выполнено", value: "13", sub: "за всё время", color: "from-blue-500 to-indigo-600" },
-              { label: "Звёзд выдано", value: "78", sub: "суммарно", color: "from-amber-400 to-orange-500" },
-              { label: "Наград получено", value: "4", sub: "выкуплено", color: "from-green-400 to-teal-500" },
-              { label: "Активных задач", value: "3", sub: "в работе", color: "from-violet-500 to-purple-600" },
-            ].map(card => (
-              <div key={card.label} className={`bg-gradient-to-br ${card.color} rounded-2xl p-4 shadow-sm`}>
-                <p className="text-white/80 text-xs">{card.label}</p>
-                <p className="text-white text-3xl font-black mt-1">{card.value}</p>
-                <p className="text-white/60 text-xs mt-0.5">{card.sub}</p>
-              </div>
-            ))}
-          </div>
+      {parentTab === "stats" && <ParentStatsTab />}
 
-          <h3 className="text-base font-bold text-[#1E1B4B] mt-2">Прогресс детей</h3>
-          {CHILDREN.map(child => {
-            const { level: cLevel, xpPct, xpInLevel } = getLevelInfo(child.stars);
-            const cEmoji = getLevelEmoji(cLevel);
-            const pct = child.tasksTotal > 0 ? Math.round(child.tasksDone / child.tasksTotal * 100) : 0;
-            return (
-              <div key={child.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{child.avatar}</span>
-                    <div>
-                      <p className="font-bold text-[#1E1B4B]">{child.name}</p>
-                      <p className="text-xs text-gray-400">{child.tasksDone} из {child.tasksTotal} задач</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-yellow-500 font-black text-lg">{child.stars}⭐</p>
-                    <div className="flex items-center gap-1 justify-end">
-                      <span className="text-sm">{cEmoji}</span>
-                      <span className="text-xs text-gray-500 font-semibold">ур. {cLevel}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">Задачи: {pct}%</p>
-                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-violet-500 to-purple-600 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">XP до ур. {cLevel + 1}: {xpInLevel}/10</p>
-                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full transition-all duration-700" style={{ width: `${xpPct}%` }} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {parentTab === "children" && (
-        <ChildrenTab onAction={onAction} />
-      )}
-
-      
+      {parentTab === "children" && <ChildrenTab onAction={onAction} />}
 
       {parentTab === "profile" && (
-        <div className="animate-fade-in">
-          <div className="bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] rounded-3xl p-6 text-center text-white shadow-lg mb-4">
-            <div className="text-6xl mb-2">👨</div>
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <span className="text-2xl">{tier.emoji}</span>
-              <h2 className="text-2xl font-black">Андрей Иванов</h2>
-            </div>
-            <p className="opacity-80 font-bold">{tier.badge}</p>
-            <div className="mt-3 bg-white/20 rounded-2xl px-4 py-2 inline-block">
-              <p className="text-sm font-black">{parentPoints.toLocaleString()} баллов</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: "Детей", value: CHILDREN.length, emoji: "👨‍👧‍👦" },
-              { label: "Задач создано", value: PARENT_TASKS_LIST.length, emoji: "📋" },
-              { label: "Уровень", value: level, emoji: tier.emoji },
-              { label: "Дней в системе", value: 14, emoji: "📅" },
-            ].map(stat => (
-              <div key={stat.label} className="bg-white/90 rounded-3xl p-4 text-center shadow-sm">
-                <div className="text-3xl mb-1">{stat.emoji}</div>
-                <div className="text-2xl font-black text-[#1E1B4B]">{stat.value}</div>
-                <div className="text-xs font-bold text-gray-500">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Level achievements */}
-          <h3 className="text-base font-bold text-[#1E1B4B] mt-4 mb-3">Уровни и привилегии</h3>
-          <div className="space-y-2">
-            {[
-              { lvl: 1,  emoji: "🌱", title: "Новичок",   perk: "Персональные советы" },
-              { lvl: 3,  emoji: "🥉", title: "Бронза",    perk: "Расширенная статистика" },
-              { lvl: 5,  emoji: "🥈", title: "Серебро",   perk: "Доступ к призам партнёров" },
-              { lvl: 8,  emoji: "🥇", title: "Золото",    perk: "Эксклюзивные купоны" },
-              { lvl: 12, emoji: "💎", title: "Алмаз",     perk: "VIP-предложения" },
-              { lvl: 18, emoji: "👑", title: "Легенда",   perk: "Особый статус и привилегии" },
-            ].map(row => {
-              const reached = level >= row.lvl;
-              return (
-                <div key={row.lvl} className={`flex items-center gap-3 rounded-2xl p-3 border transition-all ${reached ? "bg-white border-[#6B7BFF]/30 shadow-sm" : "bg-gray-50 border-gray-100 opacity-60"}`}>
-                  <span className="text-xl">{row.emoji}</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-[#1E1B4B]">Ур. {row.lvl} — {row.title}</p>
-                    <p className="text-xs text-gray-400">{row.perk}</p>
-                  </div>
-                  {reached && <Icon name="CheckCircle" size={16} className="text-[#6B7BFF]" />}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <ParentProfileTab parentXp={parentXp} parentPoints={parentPoints} />
       )}
 
       {/* Bottom nav */}
@@ -631,5 +337,3 @@ export default function ParentView({
     </div>
   );
 }
-
-const PARENT_POINTS_PER_LEVEL_DISPLAY = "1 000";
