@@ -214,17 +214,28 @@ def handle_callback(conn, token, callback_query):
             cur.execute(f"""
                 UPDATE {SCHEMA}.tasks SET status = 'done', completed_at = NOW()
                 WHERE id = %s AND child_id = %s AND status = 'pending'
-                RETURNING stars, title
+                RETURNING stars, title, parent_id
             """, (task_id, child["id"]))
             row = cur.fetchone()
         conn.commit()
 
         if row:
-            stars_earned, title = row
-            tg_answer_callback(token, cq_id, f"⭐ +{stars_earned} звёзд!")
+            stars_earned, title, parent_id = row
+            tg_answer_callback(token, cq_id, "✅ Отправлено на проверку!")
             tg_send(token, chat_id,
                 f"🎉 Отлично! Ты выполнил задание <b>«{title}»</b>!\n"
-                f"Ждёт подтверждения от родителя. +{stars_earned}⭐ скоро начислятся!")
+                f"Ждёт подтверждения родителя — тогда получишь {stars_earned}⭐")
+            # Уведомляем родителя через родительский бот
+            parent_token = os.environ.get("PARENT_BOT_TOKEN", "")
+            if parent_token and parent_id:
+                with conn.cursor() as cur:
+                    cur.execute(f"SELECT telegram_id FROM {SCHEMA}.parents WHERE id = %s", (parent_id,))
+                    p_row = cur.fetchone()
+                if p_row:
+                    tg_send(parent_token, p_row[0],
+                        f"🔔 <b>{child['name']}</b> выполнил задание <b>«{title}»</b>!\n\n"
+                        f"Награда: {stars_earned}⭐\n\n"
+                        f"Нажмите «📋 Задачи» чтобы подтвердить и начислить звёзды.")
         else:
             tg_answer_callback(token, cq_id, "Задание уже выполнено!")
 

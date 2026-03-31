@@ -306,10 +306,20 @@ def handle_callback(conn, token, callback_query):
             row = cur.fetchone()
         if row:
             child_id, stars, title = row
-            cur.execute(f"UPDATE {SCHEMA}.children SET stars = stars + %s WHERE id = %s", (stars, child_id))
+            with conn.cursor() as cur:
+                cur.execute(f"UPDATE {SCHEMA}.children SET stars = stars + %s WHERE id = %s RETURNING stars, telegram_id, name", (stars, child_id))
+                child_row = cur.fetchone()
             conn.commit()
             tg_answer_callback(token, cq_id, f"✅ +{stars}⭐ начислено!")
-            tg_send(token, chat_id, f"✅ Задача «{title}» подтверждена! Ребёнку начислено <b>{stars}⭐</b>")
+            tg_send(token, chat_id, f"✅ Задача «{title}» подтверждена! <b>{child_row[2]}</b> получил <b>{stars}⭐</b>")
+            # Уведомляем ребёнка через детский бот
+            child_token = os.environ.get("CHILD_BOT_TOKEN", "")
+            if child_token and child_row and child_row[1]:
+                new_stars = child_row[0]
+                tg_send(child_token, child_row[1],
+                    f"🎉 Родитель подтвердил задание <b>«{title}»</b>!\n\n"
+                    f"Тебе начислено <b>+{stars}⭐</b>\n"
+                    f"Теперь у тебя: <b>{new_stars}⭐</b> 🌟")
         else:
             tg_answer_callback(token, cq_id, "Задача не найдена")
             conn.commit()
@@ -351,12 +361,23 @@ def handle_state_input(conn, token, chat_id, telegram_id, parent_id, text, sessi
                 INSERT INTO {SCHEMA}.tasks (parent_id, child_id, title, stars, emoji, status)
                 VALUES (%s, %s, %s, %s, '📋', 'pending')
             """, (parent_id, data["child_id"], data["title"], stars))
+            # Получаем telegram_id ребёнка для уведомления
+            cur.execute(f"SELECT telegram_id FROM {SCHEMA}.children WHERE id = %s", (data["child_id"],))
+            child_tg = cur.fetchone()
         conn.commit()
         set_session(conn, telegram_id, "idle")
         tg_send(token, chat_id,
             f"✅ Задача <b>«{data['title']}»</b> добавлена для <b>{data['child_name']}</b>!\n"
             f"Награда: {stars}⭐",
             reply_markup=main_keyboard())
+        # Уведомляем ребёнка через детский бот
+        child_token = os.environ.get("CHILD_BOT_TOKEN", "")
+        if child_token and child_tg and child_tg[0]:
+            tg_send(child_token, child_tg[0],
+                f"📋 Новое задание от родителя!\n\n"
+                f"<b>«{data['title']}»</b>\n\n"
+                f"Награда: <b>{stars}⭐</b>\n\n"
+                f"Нажми «📋 Мои задачи» чтобы посмотреть все задания.")
 
     elif state == "add_reward_title":
         set_session(conn, telegram_id, "add_reward_cost", {"title": text.strip()})
