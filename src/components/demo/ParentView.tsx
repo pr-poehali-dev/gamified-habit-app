@@ -198,7 +198,7 @@ type Props = {
   streak: StreakState;
   confirmedTasks: number[];
   purchasedPrizes: number[];
-  gradeRequests: GradeRequest[];
+  gradeRequests: (GradeRequest & { childId: number; childName: string })[];
   onAction: (action: ParentAction) => void;
   onConfirmTask: (taskId: number) => void;
   onBuyPrize: (prizeId: number, cost: number) => void;

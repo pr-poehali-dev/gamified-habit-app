@@ -33,13 +33,20 @@ export function getNextTier(level: number) {
   return LEVEL_TIERS.find(t => t.from > level) ?? null;
 }
 
-export const CHILD_TASKS = [
+// ─── Task templates ───────────────────────────────────────────────────────────
+
+export type Task = { id: number; title: string; stars: number; emoji: string };
+
+export const DEFAULT_TASKS: Task[] = [
   { id: 1, title: "Убрать комнату", stars: 3, emoji: "🧹" },
   { id: 2, title: "Сделать домашнее задание", stars: 5, emoji: "📚" },
   { id: 3, title: "Почистить зубы", stars: 1, emoji: "🦷" },
   { id: 4, title: "Вынести мусор", stars: 2, emoji: "🗑️" },
   { id: 5, title: "Прочитать 20 страниц", stars: 4, emoji: "📖" },
 ];
+
+// For backward compat
+export const CHILD_TASKS = DEFAULT_TASKS;
 
 export const SHOP_ITEMS = [
   { id: 1, title: "Поход в кино", cost: 30, emoji: "🎬" },
@@ -48,11 +55,76 @@ export const SHOP_ITEMS = [
   { id: 4, title: "Лишний час игр", cost: 15, emoji: "⏰" },
 ];
 
+// ─── Child Profile ────────────────────────────────────────────────────────────
+
+export type CollectedSticker = { stickerId: string; count: number };
+
+export type ChildProfile = {
+  id: number;
+  name: string;
+  age: number;
+  avatar: string;
+  // Progress
+  stars: number;
+  starsSpent: number;
+  // Tasks
+  tasks: Task[];
+  completedTaskIds: number[];
+  purchasedItemIds: number[];
+  // Gamification
+  achievements: AchievementId[];
+  stickers: CollectedSticker[];
+  stickerPacks: number;
+  avatarOverride?: string;
+  // Grades
+  gradeRequests: GradeRequest[];
+};
+
+let _nextTaskId = 100;
+export function makeTask(title: string, stars: number, emoji: string): Task {
+  return { id: _nextTaskId++, title, stars, emoji };
+}
+
+export function createChildProfile(
+  id: number, name: string, age: number, avatar: string,
+  overrides: Partial<ChildProfile> = {}
+): ChildProfile {
+  return {
+    id, name, age, avatar,
+    stars: 0, starsSpent: 0,
+    tasks: [...DEFAULT_TASKS],
+    completedTaskIds: [], purchasedItemIds: [],
+    achievements: [], stickers: [], stickerPacks: 1,
+    gradeRequests: [],
+    ...overrides,
+  };
+}
+
+export const INITIAL_CHILDREN: ChildProfile[] = [
+  createChildProfile(1, "Маша", 9, "👧", {
+    stars: 15,
+    completedTaskIds: [1, 3],
+    achievements: ["first_task", "stars_10"],
+    stickerPacks: 2,
+    gradeRequests: [
+      { id: "gr1", subject: "Математика", grade: 5, date: "2026-03-30", status: "approved", starsAwarded: 5, createdAt: "2026-03-30T10:00:00Z" },
+      { id: "gr2", subject: "Русский язык", grade: 4, date: "2026-03-31", status: "pending", createdAt: "2026-03-31T14:00:00Z" },
+    ],
+  }),
+  createChildProfile(2, "Вася", 7, "👦", {
+    stars: 8,
+    completedTaskIds: [2],
+    achievements: ["first_task"],
+    stickerPacks: 1,
+  }),
+];
+
+// Parent tasks derived from children (used in parent view)
 export const PARENT_TASKS_LIST = [
-  { id: 1, child: "Маша", task: "Убрать комнату", stars: 3, status: "done", emoji: "🧹" },
-  { id: 2, child: "Вася", task: "Сделать домашку", stars: 5, status: "pending", emoji: "📚" },
-  { id: 3, child: "Маша", task: "Полить цветы", stars: 2, status: "pending", emoji: "🌸" },
-  { id: 4, child: "Вася", task: "Вынести мусор", stars: 2, status: "done", emoji: "🗑️" },
+  { id: 1, childId: 1, child: "Маша", task: "Убрать комнату", stars: 3, status: "done", emoji: "🧹" },
+  { id: 2, childId: 2, child: "Вася", task: "Сделать домашку", stars: 5, status: "pending", emoji: "📚" },
+  { id: 3, childId: 1, child: "Маша", task: "Полить цветы", stars: 2, status: "pending", emoji: "🌸" },
+  { id: 4, childId: 2, child: "Вася", task: "Вынести мусор", stars: 2, status: "done", emoji: "🗑️" },
 ];
 
 export const CHILDREN = [

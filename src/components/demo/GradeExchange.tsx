@@ -215,7 +215,7 @@ export function ChildGradeView({ requests, level, age, onSubmit }: ChildGradePro
 // ─── Parent: pending requests panel ──────────────────────────────────────────
 
 type ParentGradeProps = {
-  requests: GradeRequest[];
+  requests: (GradeRequest & { childName?: string })[];
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
 };
@@ -250,7 +250,7 @@ export function ParentGradePanel({ requests, onApprove, onReject }: ParentGradeP
                   </div>
                   <div className="flex-1">
                     <p className="font-black text-[#1E1B4B]">{r.subject}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{r.date} · Маша</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{r.date}{r.childName ? ` · ${r.childName}` : ""}</p>
                   </div>
                   <div className="text-right">
                     <p className={`font-black text-xl ${r.grade >= 4 ? "text-green-600" : "text-orange-500"}`}>

@@ -8,20 +8,19 @@ import {
   checkAchievements,
   rollSticker,
   GRADE_STARS,
-  INITIAL_GRADE_REQUESTS,
+  INITIAL_CHILDREN,
   PARENT_ACTION_XP,
   type Mode, type ChildTab, type ParentTab, type ParentAction,
   type StreakState, type AchievementId, type Sticker, type ChildStats,
-  type GradeRequest, type GradeValue,
+  type GradeRequest, type GradeValue, type ChildProfile,
 } from "@/components/demo/types";
 import { LevelUpModal, ParentLevelUpModal } from "@/components/demo/XpBar";
 import { StreakBonusModal } from "@/components/demo/StreakCard";
 import { NewAchievementModal } from "@/components/demo/AchievementBadge";
 import { GradeToast } from "@/components/demo/GradeExchange";
+import { ChildProfileSwitcher } from "@/components/demo/ChildProfileSwitcher";
 import ChildView from "@/components/demo/ChildView";
 import ParentView from "@/components/demo/ParentView";
-
-type CollectedSticker = { stickerId: string; count: number };
 
 const INITIAL_STREAK: StreakState = {
   current: 4,
@@ -33,22 +32,31 @@ const INITIAL_STREAK: StreakState = {
 export default function Index() {
   const [mode, setMode] = useState<Mode>("child");
 
-  // Child state
-  const [childTab, setChildTab] = useState<ChildTab>("tasks");
-  const [completedTasks, setCompletedTasks] = useState<number[]>([1, 3]);
-  const [purchasedItems, setPurchasedItems] = useState<number[]>([]);
-  const [showStar, setShowStar] = useState(false);
-  const [starCount, setStarCount] = useState(15);
-  const [starsSpent, setStarsSpent] = useState(0);
-  const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
-  const prevChildLevelRef = useRef(getLevelInfo(15).level);
+  // ── Multi-child profiles ──
+  const [children, setChildren] = useState<ChildProfile[]>(INITIAL_CHILDREN);
+  const [activeChildId, setActiveChildId] = useState<number>(INITIAL_CHILDREN[0].id);
 
-  // Achievements & stickers
-  const [achievements, setAchievements] = useState<AchievementId[]>(["first_task", "stars_10"]);
+  const activeChild = children.find(c => c.id === activeChildId) ?? children[0];
+
+  const updateChild = useCallback((id: number, updater: (p: ChildProfile) => ChildProfile) => {
+    setChildren(prev => prev.map(c => c.id === id ? updater(c) : c));
+  }, []);
+
+  // Child-scoped tab state (per child)
+  const [childTabs, setChildTabs] = useState<Record<number, ChildTab>>({});
+  const childTab = childTabs[activeChildId] ?? "tasks";
+  const setChildTab = (tab: ChildTab) =>
+    setChildTabs(prev => ({ ...prev, [activeChildId]: tab }));
+
+  // Modals
+  const [showStar, setShowStar] = useState(false);
+  const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
+  const prevLevelRef = useRef<Record<number, number>>({
+    [INITIAL_CHILDREN[0].id]: getLevelInfo(INITIAL_CHILDREN[0].stars).level,
+    [INITIAL_CHILDREN[1].id]: getLevelInfo(INITIAL_CHILDREN[1].stars).level,
+  });
+
   const [newAchievements, setNewAchievements] = useState<AchievementId[]>([]);
-  const [stickers, setStickers] = useState<CollectedSticker[]>([]);
-  const [stickerPacks, setStickerPacks] = useState(2);
-  const [avatarOverride, setAvatarOverride] = useState<string | undefined>(undefined);
 
   // Parent state
   const [parentTab, setParentTab] = useState<ParentTab>("tasks");
@@ -62,89 +70,101 @@ export default function Index() {
   const [streak, setStreak] = useState<StreakState>(INITIAL_STREAK);
   const [streakBonusModal, setStreakBonusModal] = useState<{ day: number; xp: number; points: number } | null>(null);
 
-  // Grade requests
-  const [gradeRequests, setGradeRequests] = useState<GradeRequest[]>(INITIAL_GRADE_REQUESTS);
+  // Grade notifications
+  type GradeNotif = { id: string; type: "approved" | "rejected"; subject: string; stars?: number; childName: string };
+  const [gradeNotifParent, setGradeNotifParent] = useState<{ subject: string; grade: number; childName: string } | null>(null);
+  const [gradeNotifChild, setGradeNotifChild] = useState<GradeNotif | null>(null);
 
   const { totalPoints: parentPoints } = getParentLevelInfo(parentXp);
 
-  // ── Achievement check ──
-  const checkAndGrantAchievements = useCallback((stats: ChildStats, already: AchievementId[]) => {
+  // ── Achievement check for a specific child ──
+  const checkAndGrantAchievements = useCallback((
+    childId: number, stats: ChildStats, already: AchievementId[]
+  ) => {
     const newOnes = checkAchievements(stats, already);
-    if (newOnes.length > 0) {
-      setAchievements(prev => [...prev, ...newOnes]);
-      setNewAchievements(newOnes);
-      const totalAfter = already.length + newOnes.length;
-      if (Math.floor(totalAfter / 3) > Math.floor(already.length / 3)) {
-        setStickerPacks(prev => prev + 1);
-      }
-    }
-  }, []);
+    if (newOnes.length === 0) return;
+    updateChild(childId, p => ({
+      ...p,
+      achievements: [...p.achievements, ...newOnes],
+      stickerPacks: Math.floor((p.achievements.length + newOnes.length) / 3) > Math.floor(p.achievements.length / 3)
+        ? p.stickerPacks + 1
+        : p.stickerPacks,
+    }));
+    setNewAchievements(newOnes);
+  }, [updateChild]);
 
-  // ── Child handlers ──
-  const handleTaskToggle = (taskId: number, taskStars: number) => {
-    if (completedTasks.includes(taskId)) return;
-    const newCompleted = [...completedTasks, taskId];
-    setCompletedTasks(newCompleted);
-    const newStars = starCount + taskStars;
+  // ── Child task toggle ──
+  const handleTaskToggle = useCallback((taskId: number, taskStars: number) => {
+    const child = children.find(c => c.id === activeChildId);
+    if (!child || child.completedTaskIds.includes(taskId)) return;
+
+    const newCompleted = [...child.completedTaskIds, taskId];
+    const newStars = child.stars + taskStars;
     const newLevel = getLevelInfo(newStars).level;
-    if (newLevel > prevChildLevelRef.current) {
+    const prevLevel = prevLevelRef.current[activeChildId] ?? 1;
+
+    if (newLevel > prevLevel) {
       setLevelUpLevel(newLevel);
-      setStickerPacks(prev => prev + 1);
+      updateChild(activeChildId, p => ({ ...p, stickerPacks: p.stickerPacks + 1 }));
     }
-    prevChildLevelRef.current = newLevel;
-    setStarCount(newStars);
+    prevLevelRef.current[activeChildId] = newLevel;
+
+    updateChild(activeChildId, p => ({ ...p, stars: newStars, completedTaskIds: newCompleted }));
     setShowStar(true);
     setTimeout(() => setShowStar(false), 1000);
-    setAchievements(prev => {
-      const stats: ChildStats = {
-        tasksCompleted: newCompleted.length,
-        totalStars: newStars,
-        level: newLevel,
-        starsSpent,
-        rewardsBought: purchasedItems.length,
-        streak: streak.current,
-        fastTasksDone: 0,
-      };
-      checkAndGrantAchievements(stats, prev);
-      return prev;
-    });
-  };
 
-  const handleBuy = (itemId: number, cost: number) => {
-    if (starCount < cost || purchasedItems.includes(itemId)) return;
-    const newPurchased = [...purchasedItems, itemId];
-    setPurchasedItems(newPurchased);
-    const newStars = starCount - cost;
-    const newSpent = starsSpent + cost;
-    setStarCount(newStars);
-    setStarsSpent(newSpent);
-    setAchievements(prev => {
-      const stats: ChildStats = {
-        tasksCompleted: completedTasks.length,
-        totalStars: newStars,
-        level: getLevelInfo(newStars).level,
-        starsSpent: newSpent,
-        rewardsBought: newPurchased.length,
-        streak: streak.current,
-        fastTasksDone: 0,
-      };
-      checkAndGrantAchievements(stats, prev);
-      return prev;
-    });
-  };
+    // Check achievements
+    checkAndGrantAchievements(activeChildId, {
+      tasksCompleted: newCompleted.length,
+      totalStars: newStars,
+      level: newLevel,
+      starsSpent: child.starsSpent,
+      rewardsBought: child.purchasedItemIds.length,
+      streak: streak.current,
+      fastTasksDone: 0,
+    }, child.achievements);
+  }, [children, activeChildId, streak.current, updateChild, checkAndGrantAchievements]);
 
-  // ── Sticker pack ──
+  // ── Buy reward ──
+  const handleBuy = useCallback((itemId: number, cost: number) => {
+    const child = children.find(c => c.id === activeChildId);
+    if (!child || child.stars < cost || child.purchasedItemIds.includes(itemId)) return;
+
+    const newStars = child.stars - cost;
+    const newSpent = child.starsSpent + cost;
+    const newPurchased = [...child.purchasedItemIds, itemId];
+    updateChild(activeChildId, p => ({
+      ...p, stars: newStars, starsSpent: newSpent, purchasedItemIds: newPurchased,
+    }));
+
+    checkAndGrantAchievements(activeChildId, {
+      tasksCompleted: child.completedTaskIds.length,
+      totalStars: newStars,
+      level: getLevelInfo(newStars).level,
+      starsSpent: newSpent,
+      rewardsBought: newPurchased.length,
+      streak: streak.current,
+      fastTasksDone: 0,
+    }, child.achievements);
+  }, [children, activeChildId, streak.current, updateChild, checkAndGrantAchievements]);
+
+  // ── Open sticker pack ──
   const handleOpenStickerPack = useCallback((): Sticker => {
     const sticker = rollSticker();
-    setStickerPacks(prev => Math.max(0, prev - 1));
-    setStickers(prev => {
-      const existing = prev.find(c => c.stickerId === sticker.id);
-      if (existing) return prev.map(c => c.stickerId === sticker.id ? { ...c, count: c.count + 1 } : c);
-      return [...prev, { stickerId: sticker.id, count: 1 }];
+    updateChild(activeChildId, p => {
+      const existing = p.stickers.find(s => s.stickerId === sticker.id);
+      const newStickers = existing
+        ? p.stickers.map(s => s.stickerId === sticker.id ? { ...s, count: s.count + 1 } : s)
+        : [...p.stickers, { stickerId: sticker.id, count: 1 }];
+      return {
+        ...p,
+        stickerPacks: Math.max(0, p.stickerPacks - 1),
+        stickers: newStickers,
+        avatarOverride: sticker.avatarOverride ?? p.avatarOverride,
+      };
     });
-    if (sticker.avatarOverride) setAvatarOverride(sticker.avatarOverride);
     return sticker;
-  }, []);
+  }, [activeChildId, updateChild]);
 
   // ── Parent XP ──
   const addParentXp = useCallback((xp: number) => {
@@ -157,9 +177,7 @@ export default function Index() {
     });
   }, []);
 
-  const touchStreak = useCallback(() => {
-    setStreak(prev => advanceStreak(prev));
-  }, []);
+  const touchStreak = useCallback(() => setStreak(prev => advanceStreak(prev)), []);
 
   const handleParentAction = (action: ParentAction) => {
     addParentXp(PARENT_ACTION_XP[action]);
@@ -174,8 +192,7 @@ export default function Index() {
   };
 
   const handleBuyPrize = (prizeId: number, cost: number) => {
-    const { totalPoints } = getParentLevelInfo(parentXp);
-    if (totalPoints < cost || purchasedPrizes.includes(prizeId)) return;
+    if (getParentLevelInfo(parentXp).totalPoints < cost || purchasedPrizes.includes(prizeId)) return;
     setPurchasedPrizes(prev => [...prev, prizeId]);
   };
 
@@ -189,47 +206,51 @@ export default function Index() {
     });
   }, [addParentXp]);
 
-  // ── Grade notifications ──
-  type GradeNotif = { id: string; type: "approved" | "rejected"; subject: string; stars?: number };
-  const [gradeNotifParent, setGradeNotifParent] = useState<{ subject: string; grade: number } | null>(null);
-  const [gradeNotifChild, setGradeNotifChild] = useState<GradeNotif | null>(null);
-
-  // ── Grade handlers ──
-  const handleSubmitGrade = (subject: string, grade: GradeValue, date: string) => {
-    const newRequest: GradeRequest = {
+  // ── Grade handlers (per child) ──
+  const handleSubmitGrade = useCallback((childId: number, subject: string, grade: GradeValue, date: string) => {
+    const req: GradeRequest = {
       id: `gr_${Date.now()}`,
-      subject,
-      grade,
-      date,
+      subject, grade, date,
       status: "pending",
       createdAt: new Date().toISOString(),
     };
-    setGradeRequests(prev => [newRequest, ...prev]);
-    setGradeNotifParent({ subject, grade });
-  };
+    updateChild(childId, p => ({ ...p, gradeRequests: [req, ...p.gradeRequests] }));
+    const child = children.find(c => c.id === childId);
+    setGradeNotifParent({ subject, grade, childName: child?.name ?? "" });
+  }, [children, updateChild]);
 
-  const handleApproveGrade = useCallback((id: string) => {
-    setGradeRequests(prev =>
-      prev.map(r => {
-        if (r.id !== id || r.status !== "pending") return r;
-        const stars = GRADE_STARS[r.grade];
-        setStarCount(s => s + stars);
-        prevChildLevelRef.current = getLevelInfo(starCount + stars).level;
-        setGradeNotifChild({ id: r.id, type: "approved", subject: r.subject, stars });
-        return { ...r, status: "approved" as const, starsAwarded: stars };
-      })
-    );
-  }, [starCount]);
+  const handleApproveGrade = useCallback((childId: number, reqId: string) => {
+    const child = children.find(c => c.id === childId);
+    const req = child?.gradeRequests.find(r => r.id === reqId);
+    if (!req || req.status !== "pending") return;
+    const stars = GRADE_STARS[req.grade];
+    updateChild(childId, p => ({
+      ...p,
+      stars: p.stars + stars,
+      gradeRequests: p.gradeRequests.map(r =>
+        r.id === reqId ? { ...r, status: "approved" as const, starsAwarded: stars } : r
+      ),
+    }));
+    setGradeNotifChild({ id: reqId, type: "approved", subject: req.subject, stars, childName: child?.name ?? "" });
+  }, [children, updateChild]);
 
-  const handleRejectGrade = useCallback((id: string) => {
-    setGradeRequests(prev =>
-      prev.map(r => {
-        if (r.id !== id || r.status !== "pending") return r;
-        setGradeNotifChild({ id: r.id, type: "rejected", subject: r.subject });
-        return { ...r, status: "rejected" as const };
-      })
-    );
-  }, []);
+  const handleRejectGrade = useCallback((childId: number, reqId: string) => {
+    const child = children.find(c => c.id === childId);
+    const req = child?.gradeRequests.find(r => r.id === reqId);
+    if (!req) return;
+    updateChild(childId, p => ({
+      ...p,
+      gradeRequests: p.gradeRequests.map(r =>
+        r.id === reqId ? { ...r, status: "rejected" as const } : r
+      ),
+    }));
+    setGradeNotifChild({ id: reqId, type: "rejected", subject: req.subject, childName: child?.name ?? "" });
+  }, [children, updateChild]);
+
+  // All pending grade requests across children (for parent view)
+  const allGradeRequests: (GradeRequest & { childId: number; childName: string })[] = children.flatMap(c =>
+    c.gradeRequests.map(r => ({ ...r, childId: c.id, childName: c.name }))
+  );
 
   return (
     <div
@@ -240,9 +261,7 @@ export default function Index() {
       }`}
       style={{ fontFamily: mode === "child" ? "Nunito, sans-serif" : "Golos Text, sans-serif" }}
     >
-      {levelUpLevel !== null && (
-        <LevelUpModal level={levelUpLevel} onClose={() => setLevelUpLevel(null)} />
-      )}
+      {levelUpLevel !== null && <LevelUpModal level={levelUpLevel} onClose={() => setLevelUpLevel(null)} />}
       {parentLevelUpLevel !== null && (
         <ParentLevelUpModal
           level={parentLevelUpLevel}
@@ -259,29 +278,22 @@ export default function Index() {
         />
       )}
       {newAchievements.length > 0 && (
-        <NewAchievementModal
-          ids={newAchievements}
-          onClose={() => setNewAchievements([])}
-        />
+        <NewAchievementModal ids={newAchievements} onClose={() => setNewAchievements([])} />
       )}
       {showStar && (
         <div className="fixed inset-0 pointer-events-none z-40 flex items-center justify-center">
           <div className="text-8xl animate-star-pop">⭐</div>
         </div>
       )}
-
-      {/* Parent: new grade request toast */}
       {gradeNotifParent && (
         <GradeToast
           emoji="📝"
-          title="Новая оценка от Маши"
+          title={`Новая оценка от ${gradeNotifParent.childName}`}
           subtitle={`${gradeNotifParent.subject} · ${gradeNotifParent.grade} балл — ожидает подтверждения`}
           color="from-[#6B7BFF] to-[#9B6BFF]"
           onClose={() => setGradeNotifParent(null)}
         />
       )}
-
-      {/* Child: grade decision toast */}
       {gradeNotifChild && (
         <GradeToast
           emoji={gradeNotifChild.type === "approved" ? "🌟" : "😔"}
@@ -323,23 +335,25 @@ export default function Index() {
         </div>
       </div>
 
+      {/* Child profile switcher */}
+      {mode === "child" && (
+        <ChildProfileSwitcher
+          profiles={children}
+          activeId={activeChildId}
+          onSwitch={id => { setActiveChildId(id); }}
+        />
+      )}
+
       {mode === "child" && (
         <ChildView
+          key={activeChildId}
           childTab={childTab}
           setChildTab={setChildTab}
-          starCount={starCount}
-          age={9}
-          completedTasks={completedTasks}
-          purchasedItems={purchasedItems}
-          achievements={achievements}
-          stickers={stickers}
-          stickerPacks={stickerPacks}
-          avatarOverride={avatarOverride}
-          gradeRequests={gradeRequests}
+          profile={activeChild}
           handleTaskToggle={handleTaskToggle}
           handleBuy={handleBuy}
           onOpenStickerPack={handleOpenStickerPack}
-          onSubmitGrade={handleSubmitGrade}
+          onSubmitGrade={(subject, grade, date) => handleSubmitGrade(activeChildId, subject, grade, date)}
         />
       )}
 
@@ -352,13 +366,19 @@ export default function Index() {
           streak={streak}
           confirmedTasks={confirmedTasks}
           purchasedPrizes={purchasedPrizes}
-          gradeRequests={gradeRequests}
+          gradeRequests={allGradeRequests}
           onAction={handleParentAction}
           onConfirmTask={handleConfirmTask}
           onBuyPrize={handleBuyPrize}
           onStreakClaim={handleStreakClaim}
-          onApproveGrade={handleApproveGrade}
-          onRejectGrade={handleRejectGrade}
+          onApproveGrade={(id) => {
+            const req = allGradeRequests.find(r => r.id === id);
+            if (req) handleApproveGrade(req.childId, id);
+          }}
+          onRejectGrade={(id) => {
+            const req = allGradeRequests.find(r => r.id === id);
+            if (req) handleRejectGrade(req.childId, id);
+          }}
         />
       )}
     </div>
