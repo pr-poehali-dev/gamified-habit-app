@@ -277,10 +277,11 @@ function ChildView({ user }: { user: Extract<User, { role: "child" }> }) {
       });
       const data = await r.json();
       if (data.tasks) setTasks(data.tasks);
+      if (typeof data.stars === "number") updateStars(data.stars);
     } finally {
       setLoading(false);
     }
-  }, [tid]);
+  }, [tid, updateStars]);
 
   const loadShop = useCallback(async () => {
     setLoading(true);

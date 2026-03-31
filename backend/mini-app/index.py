@@ -113,6 +113,10 @@ def handle_auth(conn, body, bot_token):
 def handle_tasks_child(conn, child_id):
     now = datetime.now(timezone.utc)
     with conn.cursor() as cur:
+        cur.execute(f"SELECT stars FROM {SCHEMA}.children WHERE id = %s", (child_id,))
+        row = cur.fetchone()
+        current_stars = row[0] if row else 0
+
         cur.execute(f"""
             SELECT id, emoji, title, stars, status, deadline, late_stars, created_at, completed_at
             FROM {SCHEMA}.tasks
@@ -146,7 +150,7 @@ def handle_tasks_child(conn, child_id):
             "created_at": created_at.isoformat() if created_at else None,
             "completed_at": completed_at.isoformat() if completed_at else None,
         })
-    return json_response({"tasks": tasks})
+    return json_response({"tasks": tasks, "stars": current_stars})
 
 
 def handle_tasks_parent(conn, parent_id, child_id=None):
