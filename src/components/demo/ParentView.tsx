@@ -10,7 +10,7 @@ import {
   getParentLevelInfo, getParentLevelTier,
   CHILDREN, PARENT_TASKS_LIST, PARENT_ACTION_XP,
   getParentTip,
-  type ParentAction, type ParentTab, type StreakState, type GradeRequest,
+  type ParentAction, type ParentTab, type StreakState, type GradeRequest, type PhotoProof,
 } from "./types";
 
 // ─── Add child form ───────────────────────────────────────────────────────────
@@ -191,29 +191,34 @@ type Props = {
   confirmedTasks: number[];
   purchasedPrizes: number[];
   gradeRequests: (GradeRequest & { childId: number; childName: string })[];
+  photoProofs: (PhotoProof & { childId: number; childName: string; taskTitle: string })[];
   onAction: (action: ParentAction) => void;
   onConfirmTask: (taskId: number) => void;
   onBuyPrize: (prizeId: number, cost: number) => void;
   onStreakClaim: () => void;
   onApproveGrade: (id: string) => void;
   onRejectGrade: (id: string) => void;
+  onApprovePhoto: (childId: number, taskId: number) => void;
+  onRejectPhoto: (childId: number, taskId: number) => void;
 };
 
 export default function ParentView({
-  parentTab,
-  setParentTab,
+  parentTab, setParentTab,
   parentXp,
   parentPoints,
   streak,
   confirmedTasks,
   purchasedPrizes,
   gradeRequests,
+  photoProofs,
   onAction,
   onConfirmTask,
   onBuyPrize,
   onStreakClaim,
   onApproveGrade,
   onRejectGrade,
+  onApprovePhoto,
+  onRejectPhoto,
 }: Props) {
   const { level } = getParentLevelInfo(parentXp);
   const tier = getParentLevelTier(level);
@@ -254,8 +259,11 @@ export default function ParentView({
       {parentTab === "tasks" && (
         <ParentTasksTab
           confirmedTasks={confirmedTasks}
+          photoProofs={photoProofs}
           onAction={onAction}
           onConfirmTask={onConfirmTask}
+          onApprovePhoto={onApprovePhoto}
+          onRejectPhoto={onRejectPhoto}
         />
       )}
 

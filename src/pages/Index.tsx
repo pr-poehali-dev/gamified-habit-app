@@ -12,7 +12,7 @@ import {
   PARENT_ACTION_XP,
   type Mode, type ChildTab, type ParentTab, type ParentAction,
   type StreakState, type AchievementId, type Sticker, type ChildStats,
-  type GradeRequest, type GradeValue, type ChildProfile,
+  type GradeRequest, type GradeValue, type ChildProfile, type PhotoProof,
 } from "@/components/demo/types";
 import { LevelUpModal, ParentLevelUpModal } from "@/components/demo/XpBar";
 import { StreakBonusModal } from "@/components/demo/StreakCard";
@@ -165,6 +165,43 @@ export default function Index() {
     });
     return sticker;
   }, [activeChildId, updateChild]);
+
+  // ── Photo proof handlers ──
+  const handleAttachPhoto = useCallback((taskId: number, dataUrl: string) => {
+    updateChild(activeChildId, p => {
+      const existing = p.photoProofs.find(pp => pp.taskId === taskId);
+      const newProof: PhotoProof = {
+        taskId,
+        dataUrl,
+        uploadedAt: new Date().toISOString(),
+        status: "pending_review",
+      };
+      return {
+        ...p,
+        photoProofs: existing
+          ? p.photoProofs.map(pp => pp.taskId === taskId ? newProof : pp)
+          : [...p.photoProofs, newProof],
+      };
+    });
+  }, [activeChildId, updateChild]);
+
+  const handleApprovePhoto = useCallback((childId: number, taskId: number) => {
+    updateChild(childId, p => ({
+      ...p,
+      photoProofs: p.photoProofs.map(pp =>
+        pp.taskId === taskId ? { ...pp, status: "approved" as const } : pp
+      ),
+    }));
+  }, [updateChild]);
+
+  const handleRejectPhoto = useCallback((childId: number, taskId: number) => {
+    updateChild(childId, p => ({
+      ...p,
+      photoProofs: p.photoProofs.map(pp =>
+        pp.taskId === taskId ? { ...pp, status: "rejected" as const } : pp
+      ),
+    }));
+  }, [updateChild]);
 
   // ── Parent XP ──
   const addParentXp = useCallback((xp: number) => {
@@ -354,6 +391,7 @@ export default function Index() {
           handleBuy={handleBuy}
           onOpenStickerPack={handleOpenStickerPack}
           onSubmitGrade={(subject, grade, date) => handleSubmitGrade(activeChildId, subject, grade, date)}
+          onAttachPhoto={handleAttachPhoto}
         />
       )}
 
@@ -367,6 +405,14 @@ export default function Index() {
           confirmedTasks={confirmedTasks}
           purchasedPrizes={purchasedPrizes}
           gradeRequests={allGradeRequests}
+          photoProofs={children.flatMap(c =>
+            c.photoProofs.map(p => ({
+              ...p,
+              childId: c.id,
+              childName: c.name,
+              taskTitle: c.tasks.find(t => t.id === p.taskId)?.title ?? "",
+            }))
+          )}
           onAction={handleParentAction}
           onConfirmTask={handleConfirmTask}
           onBuyPrize={handleBuyPrize}
@@ -379,6 +425,8 @@ export default function Index() {
             const req = allGradeRequests.find(r => r.id === id);
             if (req) handleRejectGrade(req.childId, id);
           }}
+          onApprovePhoto={handleApprovePhoto}
+          onRejectPhoto={handleRejectPhoto}
         />
       )}
     </div>

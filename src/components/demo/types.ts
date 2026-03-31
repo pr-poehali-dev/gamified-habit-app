@@ -35,14 +35,20 @@ export function getNextTier(level: number) {
 
 // ─── Task templates ───────────────────────────────────────────────────────────
 
-export type Task = { id: number; title: string; stars: number; emoji: string };
+export type Task = {
+  id: number;
+  title: string;
+  stars: number;
+  emoji: string;
+  requirePhoto?: boolean;
+};
 
 export const DEFAULT_TASKS: Task[] = [
-  { id: 1, title: "Убрать комнату", stars: 3, emoji: "🧹" },
-  { id: 2, title: "Сделать домашнее задание", stars: 5, emoji: "📚" },
-  { id: 3, title: "Почистить зубы", stars: 1, emoji: "🦷" },
-  { id: 4, title: "Вынести мусор", stars: 2, emoji: "🗑️" },
-  { id: 5, title: "Прочитать 20 страниц", stars: 4, emoji: "📖" },
+  { id: 1, title: "Убрать комнату", stars: 3, emoji: "🧹", requirePhoto: true },
+  { id: 2, title: "Сделать домашнее задание", stars: 5, emoji: "📚", requirePhoto: false },
+  { id: 3, title: "Почистить зубы", stars: 1, emoji: "🦷", requirePhoto: false },
+  { id: 4, title: "Вынести мусор", stars: 2, emoji: "🗑️", requirePhoto: false },
+  { id: 5, title: "Прочитать 20 страниц", stars: 4, emoji: "📖", requirePhoto: false },
 ];
 
 // For backward compat
@@ -59,6 +65,13 @@ export const SHOP_ITEMS = [
 
 export type CollectedSticker = { stickerId: string; count: number };
 
+export type PhotoProof = {
+  taskId: number;
+  dataUrl: string;
+  uploadedAt: string;
+  status: "pending_review" | "approved" | "rejected";
+};
+
 export type ChildProfile = {
   id: number;
   name: string;
@@ -71,6 +84,7 @@ export type ChildProfile = {
   tasks: Task[];
   completedTaskIds: number[];
   purchasedItemIds: number[];
+  photoProofs: PhotoProof[];
   // Gamification
   achievements: AchievementId[];
   stickers: CollectedSticker[];
@@ -93,7 +107,7 @@ export function createChildProfile(
     id, name, age, avatar,
     stars: 0, starsSpent: 0,
     tasks: [...DEFAULT_TASKS],
-    completedTaskIds: [], purchasedItemIds: [],
+    completedTaskIds: [], purchasedItemIds: [], photoProofs: [],
     achievements: [], stickers: [], stickerPacks: 1,
     gradeRequests: [],
     ...overrides,

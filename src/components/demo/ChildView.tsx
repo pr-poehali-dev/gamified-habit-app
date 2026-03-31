@@ -1,13 +1,15 @@
+import { useState } from "react";
 import Icon from "@/components/ui/icon";
 import {
   getLevelInfo, getLevelTier, getLevelEmoji, LEVEL_TIERS, STARS_PER_LEVEL,
   SHOP_ITEMS, ALL_STICKERS, getChildStatus, GRADE_UNLOCK_LEVEL,
-  type ChildTab, type Sticker, type GradeValue, type ChildProfile,
+  type ChildTab, type Sticker, type GradeValue, type ChildProfile, type PhotoProof,
 } from "./types";
 import { XpBar } from "./XpBar";
 import { AchievementRow, AchievementGrid } from "./AchievementBadge";
 import { StickerCollection } from "./StickerCollection";
 import { ChildGradeView } from "./GradeExchange";
+import { TaskPhotoAttach, PhotoProofBadge } from "./TaskPhotoProof";
 
 type Props = {
   childTab: ChildTab;
@@ -17,15 +19,19 @@ type Props = {
   handleBuy: (itemId: number, cost: number) => void;
   onOpenStickerPack: () => Sticker;
   onSubmitGrade: (subject: string, grade: GradeValue, date: string) => void;
+  onAttachPhoto: (taskId: number, dataUrl: string) => void;
 };
 
 export default function ChildView({
   childTab, setChildTab, profile,
-  handleTaskToggle, handleBuy, onOpenStickerPack, onSubmitGrade,
+  handleTaskToggle, handleBuy, onOpenStickerPack, onSubmitGrade, onAttachPhoto,
 }: Props) {
   const { name, age, stars, completedTaskIds, purchasedItemIds,
           achievements, stickers, stickerPacks, avatarOverride,
-          gradeRequests, tasks } = profile;
+          gradeRequests, tasks, photoProofs } = profile;
+
+  // Track which task has the photo modal open
+  const [photoModalTaskId, setPhotoModalTaskId] = useState<number | null>(null);
 
   const { level } = getLevelInfo(stars);
   const levelEmoji = getLevelEmoji(level);
@@ -71,25 +77,81 @@ export default function ChildView({
           <h2 className="text-lg font-black text-[#2D1B69] mb-3">Мои задачи</h2>
           {tasks.map((task, i) => {
             const done = completedTaskIds.includes(task.id);
+            const proof = photoProofs.find((p: PhotoProof) => p.taskId === task.id);
+            const isPhotoModal = photoModalTaskId === task.id;
+            const needsPhoto = task.requirePhoto && !done;
+            const hasUploadedPhoto = !!proof;
+
+            const handleClick = () => {
+              if (done) return;
+              if (task.requirePhoto && !hasUploadedPhoto) {
+                setPhotoModalTaskId(task.id);
+                return;
+              }
+              handleTaskToggle(task.id, task.stars);
+            };
+
             return (
-              <div
-                key={task.id}
-                onClick={() => handleTaskToggle(task.id, task.stars)}
-                className={`rounded-3xl p-4 flex items-center gap-4 cursor-pointer transition-all duration-300 shadow-sm ${
-                  done ? "bg-gradient-to-r from-green-400 to-emerald-500 scale-[0.98]" : "bg-white/90 hover:shadow-lg hover:scale-[1.02]"
-                }`}
-                style={{ animationDelay: `${i * 0.07}s` }}
-              >
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 ${done ? "bg-white/20" : "bg-gradient-to-br from-[#FF9BE0]/20 to-[#9B6BFF]/20"}`}>
-                  {task.emoji}
+              <div key={task.id} style={{ animationDelay: `${i * 0.07}s` }}>
+                <div
+                  onClick={handleClick}
+                  className={`rounded-3xl p-4 flex items-center gap-4 cursor-pointer transition-all duration-300 shadow-sm ${
+                    done ? "bg-gradient-to-r from-green-400 to-emerald-500 scale-[0.98]" : "bg-white/90 hover:shadow-lg hover:scale-[1.02]"
+                  }`}
+                >
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 ${done ? "bg-white/20" : "bg-gradient-to-br from-[#FF9BE0]/20 to-[#9B6BFF]/20"}`}>
+                    {task.emoji}
+                  </div>
+                  <div className="flex-1">
+                    <p className={`font-black text-base ${done ? "text-white line-through opacity-80" : "text-[#2D1B69]"}`}>{task.title}</p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <p className={`text-sm font-bold ${done ? "text-white/70" : "text-yellow-500"}`}>{task.stars} звезды ⭐</p>
+                      {task.requirePhoto && !done && (
+                        <span className="text-[10px] font-bold bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full">
+                          📸 нужно фото
+                        </span>
+                      )}
+                      {proof && !done && <PhotoProofBadge status={proof.status} />}
+                    </div>
+                  </div>
+                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+                    done ? "bg-white/30"
+                    : needsPhoto && !hasUploadedPhoto ? "bg-purple-100"
+                    : "bg-gradient-to-br from-[#FF6B9D] to-[#FF9B6B]"
+                  }`}>
+                    {done
+                      ? <Icon name="Check" size={16} className="text-white" />
+                      : needsPhoto && !hasUploadedPhoto
+                        ? <span className="text-lg">📸</span>
+                        : <Icon name="ChevronRight" size={16} className="text-white" />
+                    }
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className={`font-black text-base ${done ? "text-white line-through opacity-80" : "text-[#2D1B69]"}`}>{task.title}</p>
-                  <p className={`text-sm font-bold ${done ? "text-white/70" : "text-yellow-500"}`}>{task.stars} звезды ⭐</p>
-                </div>
-                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 ${done ? "bg-white/30" : "bg-gradient-to-br from-[#FF6B9D] to-[#FF9B6B]"}`}>
-                  {done && <Icon name="Check" size={16} className="text-white" />}
-                </div>
+
+                {/* Inline photo attach panel */}
+                {isPhotoModal && !done && (
+                  <div className="mt-2 bg-white rounded-3xl p-4 shadow-sm border border-purple-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm font-black text-[#2D1B69]">📸 Прикрепи фотоотчёт</p>
+                      <button
+                        onClick={() => setPhotoModalTaskId(null)}
+                        className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+                      >×</button>
+                    </div>
+                    <TaskPhotoAttach
+                      taskId={task.id}
+                      taskTitle={task.title}
+                      existingProof={proof}
+                      onAttach={(tid, dataUrl) => {
+                        onAttachPhoto(tid, dataUrl);
+                      }}
+                      onComplete={() => {
+                        setPhotoModalTaskId(null);
+                        handleTaskToggle(task.id, task.stars);
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             );
           })}
