@@ -1,9 +1,102 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Icon from "@/components/ui/icon";
 
 type Mode = "child" | "parent";
 type ChildTab = "tasks" | "stars" | "shop" | "profile";
 type ParentTab = "tasks" | "rewards" | "stats" | "children" | "profile";
+
+const STARS_PER_LEVEL = 10;
+
+function getLevelInfo(totalStars: number) {
+  const level = Math.floor(totalStars / STARS_PER_LEVEL) + 1;
+  const xpInLevel = totalStars % STARS_PER_LEVEL;
+  const xpPct = (xpInLevel / STARS_PER_LEVEL) * 100;
+  return { level, xpInLevel, xpPct };
+}
+
+function getLevelEmoji(level: number) {
+  if (level >= 20) return "🏆";
+  if (level >= 15) return "💎";
+  if (level >= 10) return "🥇";
+  if (level >= 7) return "🥈";
+  if (level >= 4) return "🥉";
+  return "⭐";
+}
+
+function XpBar({ stars }: { stars: number }) {
+  const { level, xpInLevel, xpPct } = getLevelInfo(stars);
+  const emoji = getLevelEmoji(level);
+  const left = STARS_PER_LEVEL - xpInLevel;
+
+  return (
+    <div className="bg-white/80 backdrop-blur rounded-2xl px-4 py-3 shadow-sm">
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-1.5">
+          <span className="text-lg">{emoji}</span>
+          <span className="font-black text-[#2D1B69] text-sm">Уровень {level}</span>
+        </div>
+        <span className="text-gray-400 text-xs font-semibold">
+          {left === 0 ? "🎉 Новый уровень!" : `⚡ Ещё ${left} ${left === 1 ? "звезда" : left < 5 ? "звезды" : "звёзд"} до ур. ${level + 1}`}
+        </span>
+      </div>
+      <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden relative">
+        <div
+          className="h-full bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 rounded-full transition-all duration-700"
+          style={{ width: `${xpPct}%` }}
+        />
+        {[10, 20, 30, 40, 50, 60, 70, 80, 90].map(p => (
+          <div key={p} className="absolute top-0 bottom-0 w-px bg-white/60" style={{ left: `${p}%` }} />
+        ))}
+      </div>
+      <div className="flex justify-between mt-1">
+        <span className="text-[9px] text-gray-300">0%</span>
+        <span className="text-[9px] text-gray-400 font-semibold">{xpInLevel}/10 XP</span>
+        <span className="text-[9px] text-gray-300">100%</span>
+      </div>
+    </div>
+  );
+}
+
+function LevelUpModal({ level, onClose }: { level: number; onClose: () => void }) {
+  const emoji = getLevelEmoji(level);
+  useEffect(() => {
+    const t = setTimeout(onClose, 4000);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-6"
+      style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="relative bg-gradient-to-br from-yellow-400 via-orange-400 to-pink-500 rounded-3xl p-8 text-center shadow-2xl w-full max-w-xs"
+        style={{ animation: "levelUpPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both" }}
+      >
+        <div className="text-7xl mb-3" style={{ animation: "spinOnce 0.6s ease-out 0.2s both" }}>
+          {emoji}
+        </div>
+        <p className="text-white/80 text-sm font-semibold uppercase tracking-widest mb-1">Новый уровень!</p>
+        <p className="text-white text-5xl font-black mb-2">{level}</p>
+        <p className="text-white/90 text-base font-semibold">Так держать! Ты становишься лучше!</p>
+        <div className="mt-5 flex justify-center gap-1">
+          {[...Array(5)].map((_, i) => (
+            <span key={i} className="text-2xl" style={{ animation: `starPop 0.4s ease-out ${0.4 + i * 0.08}s both` }}>
+              ⭐
+            </span>
+          ))}
+        </div>
+        <button
+          onClick={onClose}
+          className="mt-5 bg-white/30 text-white font-bold rounded-2xl px-6 py-2 text-sm active:scale-95 transition-transform"
+        >
+          Ура! 🎉
+        </button>
+      </div>
+    </div>
+  );
+}
 
 const CHILD_TASKS = [
   { id: 1, title: "Убрать комнату", stars: 3, emoji: "🧹" },
@@ -40,11 +133,22 @@ export default function Index() {
   const [purchasedItems, setPurchasedItems] = useState<number[]>([]);
   const [showStar, setShowStar] = useState(false);
   const [starCount, setStarCount] = useState(15);
+  const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
+  const prevLevelRef = useRef(getLevelInfo(15).level);
+
+  const updateStars = useCallback((newStars: number) => {
+    const newLevel = getLevelInfo(newStars).level;
+    if (newLevel > prevLevelRef.current) {
+      setLevelUpLevel(newLevel);
+    }
+    prevLevelRef.current = newLevel;
+    setStarCount(newStars);
+  }, []);
 
   const handleTaskToggle = (taskId: number, taskStars: number) => {
     if (completedTasks.includes(taskId)) return;
     setCompletedTasks(prev => [...prev, taskId]);
-    setStarCount(prev => prev + taskStars);
+    updateStars(starCount + taskStars);
     setShowStar(true);
     setTimeout(() => setShowStar(false), 1000);
   };
@@ -52,8 +156,11 @@ export default function Index() {
   const handleBuy = (itemId: number, cost: number) => {
     if (starCount < cost || purchasedItems.includes(itemId)) return;
     setPurchasedItems(prev => [...prev, itemId]);
-    setStarCount(prev => prev - cost);
+    updateStars(starCount - cost);
   };
+
+  const { level } = getLevelInfo(starCount);
+  const levelEmoji = getLevelEmoji(level);
 
   return (
     <div
@@ -64,8 +171,12 @@ export default function Index() {
       }`}
       style={{ fontFamily: mode === "child" ? "Nunito, sans-serif" : "Golos Text, sans-serif" }}
     >
+      {levelUpLevel !== null && (
+        <LevelUpModal level={levelUpLevel} onClose={() => setLevelUpLevel(null)} />
+      )}
+
       {showStar && (
-        <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
+        <div className="fixed inset-0 pointer-events-none z-40 flex items-center justify-center">
           <div className="text-8xl animate-star-pop">⭐</div>
         </div>
       )}
@@ -102,14 +213,25 @@ export default function Index() {
       {/* ========== CHILD MODE ========== */}
       {mode === "child" && (
         <div className="max-w-md mx-auto px-4 pb-28 animate-fade-in">
-          <div className="mt-6 mb-5 text-center">
-            <div className="text-5xl mb-2 animate-float inline-block">🌟</div>
-            <h1 className="text-2xl font-black text-[#2D1B69]">Привет, Маша!</h1>
-            <div className="inline-flex items-center gap-2 mt-2 bg-white/80 rounded-2xl px-5 py-2.5 shadow-sm">
-              <span className="text-2xl">⭐</span>
-              <span className="text-2xl font-black text-[#FF6B9D]">{starCount}</span>
-              <span className="text-sm font-bold text-gray-500">звёзд</span>
+          {/* Header */}
+          <div className="mt-6 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h1 className="text-2xl font-black text-[#2D1B69]">Привет, Маша! 👋</h1>
+                <p className="text-sm text-gray-400 font-semibold">Выполняй задания — получай звёзды</p>
+              </div>
+              <div className="flex gap-2">
+                <div className="bg-white/80 rounded-2xl px-3 py-2 text-center shadow-sm">
+                  <p className="text-yellow-500 text-xl font-black">{starCount}</p>
+                  <p className="text-gray-400 text-xs font-bold">звёзд ⭐</p>
+                </div>
+                <div className="bg-white/80 rounded-2xl px-3 py-2 text-center shadow-sm">
+                  <p className="text-[#2D1B69] text-xl font-black">{level}</p>
+                  <p className="text-gray-400 text-xs font-bold">ур. {levelEmoji}</p>
+                </div>
+              </div>
             </div>
+            <XpBar stars={starCount} />
           </div>
 
           {childTab === "tasks" && (
@@ -153,23 +275,32 @@ export default function Index() {
           {childTab === "stars" && (
             <div className="animate-fade-in">
               <h2 className="text-lg font-black text-[#2D1B69] mb-4">Мои звёзды</h2>
-              <div className="bg-gradient-to-br from-[#FFD700] to-[#FF9500] rounded-3xl p-6 text-center mb-5 shadow-lg">
+              <div className="bg-gradient-to-br from-[#FFD700] to-[#FF9500] rounded-3xl p-6 text-center mb-4 shadow-lg">
                 <div className="text-7xl mb-2">⭐</div>
                 <div className="text-5xl font-black text-white">{starCount}</div>
                 <div className="text-white/80 font-bold mt-1">звёзд собрано</div>
               </div>
+
+              {/* Level card */}
+              <div className="bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-3xl p-5 text-center mb-4 shadow-lg">
+                <div className="text-5xl mb-1">{levelEmoji}</div>
+                <div className="text-white/80 text-xs font-semibold uppercase tracking-widest mb-1">Текущий уровень</div>
+                <div className="text-white text-4xl font-black">{level}</div>
+                <div className="mt-3">
+                  <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-yellow-300 to-orange-400 rounded-full transition-all duration-700"
+                      style={{ width: `${getLevelInfo(starCount).xpPct}%` }}
+                    />
+                  </div>
+                  <p className="text-white/70 text-xs mt-1.5">
+                    {getLevelInfo(starCount).xpInLevel}/10 XP · до ур. {level + 1} ещё {STARS_PER_LEVEL - getLevelInfo(starCount).xpInLevel} ⭐
+                  </p>
+                </div>
+              </div>
+
               <div className="bg-white/90 rounded-3xl p-5 shadow-sm">
-                <div className="flex justify-between text-sm font-bold text-gray-500 mb-2">
-                  <span>До следующей награды</span>
-                  <span className="text-[#FF6B9D]">{30 - (starCount % 30)}/30 ⭐</span>
-                </div>
-                <div className="h-4 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#FF6B9D] to-[#FF9B6B] rounded-full transition-all duration-500"
-                    style={{ width: `${((starCount % 30) / 30) * 100}%` }}
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-3 mt-5">
+                <div className="grid grid-cols-3 gap-3">
                   {[
                     { label: "Сегодня", value: "3 ⭐", color: "from-pink-100 to-pink-50" },
                     { label: "На неделе", value: "12 ⭐", color: "from-purple-100 to-purple-50" },
@@ -224,10 +355,18 @@ export default function Index() {
                 <div className="text-6xl mb-3">👧</div>
                 <h2 className="text-2xl font-black">Маша</h2>
                 <p className="opacity-80 font-bold">9 лет</p>
+                <div className="mt-3 flex items-center justify-center gap-2 bg-white/20 rounded-2xl px-4 py-2">
+                  <span className="text-xl">{levelEmoji}</span>
+                  <span className="font-black text-lg">Уровень {level}</span>
+                </div>
+              </div>
+              <div className="mb-4">
+                <XpBar stars={starCount} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: "Звёзд", value: starCount, emoji: "⭐" },
+                  { label: "Уровень", value: level, emoji: levelEmoji },
                   { label: "Задач выполнено", value: completedTasks.length, emoji: "✅" },
                   { label: "Наград куплено", value: purchasedItems.length, emoji: "🎁" },
                   { label: "Дней в системе", value: 14, emoji: "📅" },
@@ -351,126 +490,168 @@ export default function Index() {
                   { label: "Задач выполнено", value: "13", sub: "за всё время", color: "from-blue-500 to-indigo-600" },
                   { label: "Звёзд выдано", value: "78", sub: "суммарно", color: "from-amber-400 to-orange-500" },
                   { label: "Наград получено", value: "4", sub: "выкуплено", color: "from-green-400 to-teal-500" },
-                  { label: "Активных задач", value: "3", sub: "в работе", color: "from-purple-500 to-pink-500" },
+                  { label: "Активных задач", value: "3", sub: "в работе", color: "from-violet-500 to-purple-600" },
                 ].map(card => (
-                  <div key={card.label} className={`bg-gradient-to-br ${card.color} rounded-2xl p-4 text-white shadow-md`}>
-                    <div className="text-3xl font-bold">{card.value}</div>
-                    <div className="text-sm font-semibold mt-1 opacity-90">{card.label}</div>
-                    <div className="text-xs opacity-70">{card.sub}</div>
+                  <div key={card.label} className={`bg-gradient-to-br ${card.color} rounded-2xl p-4 shadow-sm`}>
+                    <p className="text-white/80 text-xs">{card.label}</p>
+                    <p className="text-white text-3xl font-black mt-1">{card.value}</p>
+                    <p className="text-white/60 text-xs mt-0.5">{card.sub}</p>
                   </div>
                 ))}
               </div>
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                <h3 className="font-semibold text-[#1E1B4B] mb-3">Активность детей</h3>
-                {CHILDREN.map(child => (
-                  <div key={child.id} className="mb-3 last:mb-0">
-                    <div className="flex justify-between text-sm mb-1.5">
-                      <span className="font-medium text-[#1E1B4B]">{child.avatar} {child.name}</span>
-                      <span className="text-gray-400">{child.tasksDone}/{child.tasksTotal} задач</span>
+
+              {/* Children with level bars */}
+              <h3 className="text-base font-bold text-[#1E1B4B] mt-2">Прогресс детей</h3>
+              {CHILDREN.map(child => {
+                const { level: cLevel, xpPct, xpInLevel } = getLevelInfo(child.stars);
+                const cEmoji = getLevelEmoji(cLevel);
+                const pct = child.tasksTotal > 0 ? Math.round(child.tasksDone / child.tasksTotal * 100) : 0;
+                return (
+                  <div key={child.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl">{child.avatar}</span>
+                        <div>
+                          <p className="font-bold text-[#1E1B4B]">{child.name}</p>
+                          <p className="text-xs text-gray-400">{child.tasksDone} из {child.tasksTotal} задач</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-yellow-500 font-black text-lg">{child.stars}⭐</p>
+                        <div className="flex items-center gap-1 justify-end">
+                          <span className="text-sm">{cEmoji}</span>
+                          <span className="text-xs text-gray-500 font-semibold">ур. {cLevel}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] rounded-full transition-all"
-                        style={{ width: `${(child.tasksDone / child.tasksTotal) * 100}%` }}
-                      />
+                    <div className="space-y-1.5">
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">Задачи: {pct}%</p>
+                        <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-violet-500 to-purple-600 rounded-full transition-all duration-700"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">XP до ур. {cLevel + 1}: {xpInLevel}/10</p>
+                        <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full transition-all duration-700"
+                            style={{ width: `${xpPct}%` }}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           )}
 
           {parentTab === "children" && (
             <div className="animate-fade-in space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-[#1E1B4B]">Мои дети</h2>
-                <button className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm">
-                  + Добавить
-                </button>
-              </div>
-              {CHILDREN.map(child => (
-                <div key={child.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-14 h-14 bg-gradient-to-br from-pink-100 to-purple-100 rounded-2xl flex items-center justify-center text-3xl">
-                      {child.avatar}
+              <h2 className="text-lg font-bold text-[#1E1B4B]">Мои дети</h2>
+              {CHILDREN.map(child => {
+                const { level: cLevel, xpPct } = getLevelInfo(child.stars);
+                const cEmoji = getLevelEmoji(cLevel);
+                const pct = child.tasksTotal > 0 ? Math.round(child.tasksDone / child.tasksTotal * 100) : 0;
+                return (
+                  <div key={child.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-14 h-14 bg-gradient-to-br from-[#6B7BFF]/20 to-[#9B6BFF]/20 rounded-2xl flex items-center justify-center text-3xl">
+                        {child.avatar}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold text-[#1E1B4B] text-lg">{child.name}</p>
+                        <p className="text-sm text-gray-400">{child.age} лет</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-yellow-500 font-black text-xl">{child.stars}⭐</p>
+                        <div className="flex items-center gap-1 justify-end">
+                          <span>{cEmoji}</span>
+                          <span className="text-sm font-bold text-[#6B7BFF]">ур. {cLevel}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-[#1E1B4B]">{child.name}</h3>
-                      <p className="text-sm text-gray-400">{child.age} лет</p>
-                    </div>
-                    <div className="ml-auto text-right">
-                      <div className="text-xl font-bold text-amber-500">{child.stars} ⭐</div>
-                      <div className="text-xs text-gray-400">звёзд</div>
+                    <div className="space-y-2">
+                      <div>
+                        <div className="flex justify-between text-xs text-gray-400 mb-1">
+                          <span>Задачи выполнены</span>
+                          <span>{pct}%</span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] rounded-full transition-all duration-700"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-xs text-gray-400 mb-1">
+                          <span>Опыт до ур. {cLevel + 1}</span>
+                          <span>{Math.round(xpPct)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full transition-all duration-700"
+                            style={{ width: `${xpPct}%` }}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <div className="flex-1 bg-gray-50 rounded-xl p-3 text-center">
-                      <div className="text-lg font-bold text-[#1E1B4B]">{child.tasksDone}</div>
-                      <div className="text-xs text-gray-400">выполнено</div>
-                    </div>
-                    <div className="flex-1 bg-gray-50 rounded-xl p-3 text-center">
-                      <div className="text-lg font-bold text-[#1E1B4B]">{child.tasksTotal - child.tasksDone}</div>
-                      <div className="text-xs text-gray-400">в работе</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
           {parentTab === "profile" && (
-            <div className="animate-fade-in space-y-4">
-              <div className="bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] rounded-2xl p-6 text-white shadow-lg">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-4xl">👨</div>
-                  <div>
-                    <h2 className="text-xl font-bold">Андрей Иванов</h2>
-                    <p className="opacity-75 text-sm">andrey@example.com</p>
-                  </div>
-                </div>
+            <div className="animate-fade-in">
+              <div className="bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] rounded-3xl p-6 text-center text-white shadow-lg mb-4">
+                <div className="text-6xl mb-3">👨</div>
+                <h2 className="text-2xl font-black">Андрей Иванов</h2>
+                <p className="opacity-80 font-bold mt-1">{CHILDREN.length} {CHILDREN.length === 1 ? "ребёнок" : "детей"}</p>
               </div>
-              {[
-                { icon: "Users", label: "Детей в системе", value: "2" },
-                { icon: "ClipboardList", label: "Всего задач создано", value: "17" },
-                { icon: "Gift", label: "Наград добавлено", value: "4" },
-                { icon: "Calendar", label: "Дней в системе", value: "14" },
-              ].map(item => (
-                <div key={item.label} className="bg-white rounded-2xl px-5 py-4 shadow-sm border border-gray-100 flex items-center gap-3">
-                  <div className="w-9 h-9 bg-indigo-50 rounded-xl flex items-center justify-center">
-                    <Icon name={item.icon} size={18} className="text-[#6B7BFF]" />
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: "Детей", value: CHILDREN.length, emoji: "👨‍👧‍👦" },
+                  { label: "Задач создано", value: PARENT_TASKS_LIST.length, emoji: "📋" },
+                  { label: "Выполнено", value: PARENT_TASKS_LIST.filter(t => t.status === "done").length, emoji: "✅" },
+                  { label: "Дней в системе", value: 14, emoji: "📅" },
+                ].map(stat => (
+                  <div key={stat.label} className="bg-white/90 rounded-3xl p-4 text-center shadow-sm">
+                    <div className="text-3xl mb-1">{stat.emoji}</div>
+                    <div className="text-2xl font-black text-[#1E1B4B]">{stat.value}</div>
+                    <div className="text-xs font-bold text-gray-500">{stat.label}</div>
                   </div>
-                  <span className="flex-1 text-sm font-medium text-[#1E1B4B]">{item.label}</span>
-                  <span className="font-bold text-[#6B7BFF]">{item.value}</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
           {/* Parent bottom nav */}
           <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-4 px-4">
-            <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl px-2 py-2 flex gap-1 border border-gray-100">
+            <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl px-3 py-2 flex gap-1 border border-white">
               {([
-                { key: "tasks", icon: "ClipboardList", label: "Задачи" },
-                { key: "rewards", icon: "Gift", label: "Награды" },
-                { key: "stats", icon: "BarChart2", label: "Статистика" },
-                { key: "children", icon: "Users", label: "Дети" },
-                { key: "profile", icon: "User", label: "Профиль" },
-              ] as { key: ParentTab; icon: string; label: string }[]).map(tab => (
+                { key: "tasks", emoji: "📋", label: "Задачи" },
+                { key: "rewards", emoji: "🎁", label: "Награды" },
+                { key: "stats", emoji: "📊", label: "Стат." },
+                { key: "children", emoji: "👨‍👧", label: "Дети" },
+                { key: "profile", emoji: "👤", label: "Профиль" },
+              ] as { key: ParentTab; emoji: string; label: string }[]).map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setParentTab(tab.key)}
-                  className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all duration-300 ${
+                  className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-2xl transition-all duration-300 ${
                     parentTab === tab.key
-                      ? "bg-gradient-to-b from-[#6B7BFF] to-[#9B6BFF] shadow-md"
+                      ? "bg-gradient-to-b from-[#6B7BFF] to-[#9B6BFF] scale-110 shadow-md"
                       : "hover:bg-gray-50"
                   }`}
                 >
-                  <Icon
-                    name={tab.icon}
-                    size={18}
-                    className={parentTab === tab.key ? "text-white" : "text-gray-400"}
-                  />
-                  <span className={`text-xs font-semibold ${parentTab === tab.key ? "text-white" : "text-gray-400"}`}>
+                  <span className="text-xl">{tab.emoji}</span>
+                  <span className={`text-xs font-black ${parentTab === tab.key ? "text-white" : "text-gray-400"}`}>
                     {tab.label}
                   </span>
                 </button>
