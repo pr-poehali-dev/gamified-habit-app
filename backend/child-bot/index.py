@@ -9,6 +9,7 @@ import psycopg2
 import urllib.request
 import random
 import string
+from datetime import datetime, timezone
 
 
 SCHEMA = "t_p84704826_gamified_habit_app"
@@ -83,19 +84,39 @@ def cmd_start(conn, token, chat_id, telegram_id, username, full_name):
 
 
 def main_keyboard():
-    return {
-        "keyboard": [
-            [{"text": "📋 Мои задачи"}, {"text": "⭐ Мои звёзды"}],
-            [{"text": "🛍️ Магазин"}, {"text": "👤 Профиль"}]
-        ],
-        "resize_keyboard": True
-    }
+    mini_app_url = os.environ.get("MINI_APP_URL", "")
+    rows = [
+        [{"text": "📋 Мои задачи"}, {"text": "⭐ Мои звёзды"}],
+        [{"text": "🛍️ Магазин"}, {"text": "👤 Профиль"}],
+    ]
+    if mini_app_url:
+        rows.append([{"text": "🚀 Открыть приложение", "web_app": {"url": mini_app_url}}])
+    return {"keyboard": rows, "resize_keyboard": True}
+
+
+def format_deadline_child(dt):
+    if not dt:
+        return None
+    now = datetime.now(timezone.utc)
+    if hasattr(dt, 'tzinfo') and dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    diff = dt - now
+    if diff.total_seconds() < 0:
+        return "🔴 просрочено!"
+    days = diff.days
+    hours = int(diff.total_seconds() / 3600)
+    if hours <= 2:
+        return f"🚨 осталось {hours}ч!"
+    if days >= 1:
+        return f"⏳ {days}д {hours % 24}ч"
+    return f"⏳ {hours}ч"
 
 
 def cmd_tasks(conn, token, chat_id, child_id):
+    now = datetime.now(timezone.utc)
     with conn.cursor() as cur:
         cur.execute(f"""
-            SELECT id, emoji, title, stars, status FROM {SCHEMA}.tasks
+            SELECT id, emoji, title, stars, status, deadline, late_stars FROM {SCHEMA}.tasks
             WHERE child_id = %s AND status IN ('pending', 'done')
             ORDER BY created_at DESC LIMIT 10
         """, (child_id,))
@@ -108,12 +129,28 @@ def cmd_tasks(conn, token, chat_id, child_id):
     text = "📋 <b>Твои задачи:</b>\n\n"
     buttons = []
     for t in tasks:
-        tid, emoji, title, stars, status = t
+        tid, emoji, title, stars, status, deadline, late_stars = t
+        if deadline and hasattr(deadline, 'tzinfo') and deadline.tzinfo is None:
+            deadline = deadline.replace(tzinfo=timezone.utc)
+        is_overdue = deadline and now > deadline
+        actual_stars = late_stars if (is_overdue and late_stars) else stars
+
         if status == "done":
-            text += f"✅ {emoji} {title} (+{stars}⭐) — <i>выполнено</i>\n"
+            text += f"🕐 {emoji} {title} (+{actual_stars}⭐) — <i>ждёт подтверждения</i>\n"
         else:
-            text += f"◻️ {emoji} <b>{title}</b> — {stars}⭐\n"
-            buttons.append([{"text": f"✅ Выполнил: {title[:25]}", "callback_data": f"done_{tid}"}])
+            dl_str = ""
+            if deadline:
+                dl_label = format_deadline_child(deadline)
+                dl_str = f" [{dl_label}]"
+            stars_str = f"{actual_stars}⭐"
+            if is_overdue and late_stars and late_stars < stars:
+                stars_str = f"~{stars}⭐→<b>{late_stars}⭐</b>"
+            elif is_overdue and not late_stars:
+                stars_str = f"~{stars}⭐ (нельзя выполнить)"
+            icon = "🔴" if is_overdue else "◻️"
+            text += f"{icon} {emoji} <b>{title}</b> — {stars_str}{dl_str}\n"
+            if not (is_overdue and not late_stars):
+                buttons.append([{"text": f"✅ Выполнил: {title[:25]}", "callback_data": f"done_{tid}"}])
 
     markup = {"inline_keyboard": buttons} if buttons else None
     tg_send(token, chat_id, text, reply_markup=markup)
@@ -210,34 +247,56 @@ def handle_callback(conn, token, callback_query):
 
     if data.startswith("done_"):
         task_id = int(data.split("_")[1])
+        now = datetime.now(timezone.utc)
         with conn.cursor() as cur:
             cur.execute(f"""
-                UPDATE {SCHEMA}.tasks SET status = 'done', completed_at = NOW()
+                SELECT id, stars, title, parent_id, deadline, late_stars
+                FROM {SCHEMA}.tasks
                 WHERE id = %s AND child_id = %s AND status = 'pending'
-                RETURNING stars, title, parent_id
             """, (task_id, child["id"]))
-            row = cur.fetchone()
+            task = cur.fetchone()
+
+        if not task:
+            tg_answer_callback(token, cq_id, "Задание уже выполнено!")
+            return
+
+        tid, stars, title, parent_id, deadline, late_stars = task
+        if deadline and hasattr(deadline, 'tzinfo') and deadline.tzinfo is None:
+            deadline = deadline.replace(tzinfo=timezone.utc)
+        is_overdue = deadline and now > deadline
+        # Если просрочено и late_stars=None — нельзя выполнить
+        if is_overdue and late_stars is None and deadline:
+            tg_answer_callback(token, cq_id, "⏰ Срок вышел — задание нельзя выполнить!")
+            return
+
+        actual_stars = late_stars if (is_overdue and late_stars is not None) else stars
+
+        with conn.cursor() as cur:
+            cur.execute(f"""
+                UPDATE {SCHEMA}.tasks SET status = 'done', completed_at = NOW(), stars = %s
+                WHERE id = %s
+            """, (actual_stars, tid))
         conn.commit()
 
-        if row:
-            stars_earned, title, parent_id = row
-            tg_answer_callback(token, cq_id, "✅ Отправлено на проверку!")
-            tg_send(token, chat_id,
-                f"🎉 Отлично! Ты выполнил задание <b>«{title}»</b>!\n"
-                f"Ждёт подтверждения родителя — тогда получишь {stars_earned}⭐")
-            # Уведомляем родителя через родительский бот
-            parent_token = os.environ.get("PARENT_BOT_TOKEN", "")
-            if parent_token and parent_id:
-                with conn.cursor() as cur:
-                    cur.execute(f"SELECT telegram_id FROM {SCHEMA}.parents WHERE id = %s", (parent_id,))
-                    p_row = cur.fetchone()
-                if p_row:
-                    tg_send(parent_token, p_row[0],
-                        f"🔔 <b>{child['name']}</b> выполнил задание <b>«{title}»</b>!\n\n"
-                        f"Награда: {stars_earned}⭐\n\n"
-                        f"Нажмите «📋 Задачи» чтобы подтвердить и начислить звёзды.")
-        else:
-            tg_answer_callback(token, cq_id, "Задание уже выполнено!")
+        overdue_note = ""
+        if is_overdue and late_stars is not None and late_stars < stars:
+            overdue_note = f"\n⏰ Задание выполнено после срока, начислено {actual_stars}⭐ (вместо {stars}⭐)"
+
+        tg_answer_callback(token, cq_id, "✅ Отправлено на проверку!")
+        tg_send(token, chat_id,
+            f"🎉 Отлично! Ты выполнил задание <b>«{title}»</b>!\n"
+            f"Ждёт подтверждения родителя — тогда получишь {actual_stars}⭐{overdue_note}")
+        parent_token = os.environ.get("PARENT_BOT_TOKEN", "")
+        if parent_token and parent_id:
+            with conn.cursor() as cur:
+                cur.execute(f"SELECT telegram_id FROM {SCHEMA}.parents WHERE id = %s", (parent_id,))
+                p_row = cur.fetchone()
+            if p_row:
+                late_note = f"\n⏰ <i>Выполнено после срока — начислено {actual_stars}⭐</i>" if (is_overdue and late_stars is not None and late_stars < stars) else ""
+                tg_send(parent_token, p_row[0],
+                    f"🔔 <b>{child['name']}</b> выполнил задание <b>«{title}»</b>!{late_note}\n\n"
+                    f"Награда: {actual_stars}⭐\n\n"
+                    f"Нажмите «📋 Задачи» чтобы подтвердить.")
 
     elif data.startswith("buy_"):
         reward_id = int(data.split("_")[1])
