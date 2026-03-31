@@ -10,7 +10,7 @@ import {
   getParentLevelInfo, getParentLevelTier,
   CHILDREN, PARENT_TASKS_LIST, PARENT_ACTION_XP,
   getParentTip,
-  type ParentAction, type ParentTab, type StreakState, type GradeRequest, type PhotoProof,
+  type ParentAction, type ParentTab, type StreakState, type GradeRequest, type PhotoProof, type Task,
 } from "./types";
 
 // ─── Add child form ───────────────────────────────────────────────────────────
@@ -192,7 +192,9 @@ type Props = {
   purchasedPrizes: number[];
   gradeRequests: (GradeRequest & { childId: number; childName: string })[];
   photoProofs: (PhotoProof & { childId: number; childName: string; taskTitle: string })[];
+  childNames: { id: number; name: string }[];
   onAction: (action: ParentAction) => void;
+  onAddTask: (task: Omit<Task, "id">, childId: number) => void;
   onConfirmTask: (taskId: number) => void;
   onBuyPrize: (prizeId: number, cost: number) => void;
   onStreakClaim: () => void;
@@ -211,7 +213,9 @@ export default function ParentView({
   purchasedPrizes,
   gradeRequests,
   photoProofs,
+  childNames,
   onAction,
+  onAddTask,
   onConfirmTask,
   onBuyPrize,
   onStreakClaim,
@@ -260,7 +264,9 @@ export default function ParentView({
         <ParentTasksTab
           confirmedTasks={confirmedTasks}
           photoProofs={photoProofs}
+          childNames={childNames}
           onAction={onAction}
+          onAddTask={onAddTask}
           onConfirmTask={onConfirmTask}
           onApprovePhoto={onApprovePhoto}
           onRejectPhoto={onRejectPhoto}

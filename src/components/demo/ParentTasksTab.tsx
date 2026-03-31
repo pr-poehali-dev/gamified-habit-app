@@ -1,37 +1,217 @@
+import { useState } from "react";
 import Icon from "@/components/ui/icon";
 import { PhotoReviewCard, PhotoProofBadge } from "./TaskPhotoProof";
 import {
   SHOP_ITEMS, PARENT_TASKS_LIST, PARENT_ACTION_XP,
-  type ParentAction, type PhotoProof,
+  type ParentAction, type PhotoProof, type Task,
 } from "./types";
+
+// ─── Task emoji picker options ────────────────────────────────────────────────
+
+const TASK_EMOJIS = ["🧹", "📚", "🦷", "🗑️", "📖", "🌸", "🐕", "🍽️", "🛁", "🧺", "🏃", "🎨", "🎵", "💤", "🌿"];
+const TASK_STAR_OPTIONS = [1, 2, 3, 4, 5];
+
+// ─── Add task form ────────────────────────────────────────────────────────────
+
+type AddTaskFormProps = {
+  childNames: { id: number; name: string }[];
+  onSave: (task: Omit<Task, "id">, childId: number) => void;
+  onClose: () => void;
+};
+
+function AddTaskForm({ childNames, onSave, onClose }: AddTaskFormProps) {
+  const [title, setTitle] = useState("");
+  const [stars, setStars] = useState(3);
+  const [emoji, setEmoji] = useState("🧹");
+  const [requirePhoto, setRequirePhoto] = useState(false);
+  const [childId, setChildId] = useState(childNames[0]?.id ?? 0);
+  const [error, setError] = useState("");
+
+  const handleSave = () => {
+    if (!title.trim()) { setError("Введи название задачи"); return; }
+    setError("");
+    onSave({ title: title.trim(), stars, emoji, requirePhoto }, childId);
+    onClose();
+  };
+
+  return (
+    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] px-5 py-4 flex items-center justify-between">
+        <p className="text-white font-black text-base">📋 Новая задача</p>
+        <button onClick={onClose} className="text-white/70 hover:text-white text-xl leading-none">×</button>
+      </div>
+
+      <div className="p-5 space-y-4">
+        {/* Child selector */}
+        {childNames.length > 1 && (
+          <div>
+            <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-2">Для кого</label>
+            <div className="flex gap-2">
+              {childNames.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => setChildId(c.id)}
+                  className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${
+                    childId === c.id
+                      ? "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white shadow-sm"
+                      : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Emoji */}
+        <div>
+          <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-2">Иконка</label>
+          <div className="flex gap-2 flex-wrap">
+            {TASK_EMOJIS.map(e => (
+              <button
+                key={e}
+                onClick={() => setEmoji(e)}
+                className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center transition-all ${
+                  emoji === e
+                    ? "bg-gradient-to-br from-[#6B7BFF]/20 to-[#9B6BFF]/20 ring-2 ring-[#6B7BFF] scale-110"
+                    : "bg-gray-50 hover:bg-gray-100"
+                }`}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Title */}
+        <div>
+          <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-1.5">
+            Название <span className="text-red-400">*</span>
+          </label>
+          <input
+            type="text"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="Например: Убрать комнату"
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-gray-50 font-semibold focus:outline-none focus:ring-2 focus:ring-[#6B7BFF]/40"
+          />
+        </div>
+
+        {/* Stars */}
+        <div>
+          <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-2">Награда</label>
+          <div className="flex gap-2">
+            {TASK_STAR_OPTIONS.map(s => (
+              <button
+                key={s}
+                onClick={() => setStars(s)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-black transition-all ${
+                  stars === s
+                    ? "bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm scale-105"
+                    : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                {s} ⭐
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Require photo toggle */}
+        <div
+          onClick={() => setRequirePhoto(v => !v)}
+          className={`flex items-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+            requirePhoto
+              ? "border-purple-400 bg-purple-50"
+              : "border-gray-200 bg-gray-50 hover:border-gray-300"
+          }`}
+        >
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${
+            requirePhoto ? "bg-purple-100" : "bg-white border border-gray-200"
+          }`}>
+            📸
+          </div>
+          <div className="flex-1">
+            <p className={`text-sm font-black ${requirePhoto ? "text-purple-700" : "text-gray-600"}`}>
+              Требовать фотоотчёт
+            </p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {requirePhoto
+                ? "Ребёнок должен приложить фото перед отметкой"
+                : "Задача выполняется без подтверждения фото"}
+            </p>
+          </div>
+          <div className={`w-12 h-6 rounded-full transition-all duration-300 flex-shrink-0 ${
+            requirePhoto ? "bg-purple-500" : "bg-gray-300"
+          }`}>
+            <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-all duration-300 mt-0.5 ${
+              requirePhoto ? "ml-6" : "ml-0.5"
+            }`} />
+          </div>
+        </div>
+
+        {error && (
+          <p className="text-red-500 text-xs font-bold bg-red-50 rounded-xl px-3 py-2">{error}</p>
+        )}
+
+        <button
+          onClick={handleSave}
+          className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-black text-sm shadow-sm active:scale-95 transition-all"
+        >
+          Добавить задачу
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // ─── Tasks tab ────────────────────────────────────────────────────────────────
 
 type TasksTabProps = {
   confirmedTasks: number[];
   photoProofs: (PhotoProof & { childName: string; taskTitle: string })[];
+  childNames: { id: number; name: string }[];
   onAction: (action: ParentAction) => void;
+  onAddTask: (task: Omit<Task, "id">, childId: number) => void;
   onConfirmTask: (taskId: number) => void;
   onApprovePhoto: (childId: number, taskId: number) => void;
   onRejectPhoto: (childId: number, taskId: number) => void;
 };
 
 export function ParentTasksTab({
-  confirmedTasks, photoProofs, onAction, onConfirmTask, onApprovePhoto, onRejectPhoto,
+  confirmedTasks, photoProofs, childNames,
+  onAction, onAddTask, onConfirmTask, onApprovePhoto, onRejectPhoto,
 }: TasksTabProps) {
+  const [showForm, setShowForm] = useState(false);
   const pendingPhotos = photoProofs.filter(p => p.status === "pending_review");
+
+  const handleSave = (task: Omit<Task, "id">, childId: number) => {
+    onAddTask(task, childId);
+    onAction("task_create");
+    setShowForm(false);
+  };
 
   return (
     <div className="animate-fade-in space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-[#1E1B4B]">Задачи</h2>
         <button
-          onClick={() => onAction("task_create")}
+          onClick={() => setShowForm(v => !v)}
           className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95"
         >
-          + Добавить
+          {showForm ? "✕ Закрыть" : "+ Добавить"}
         </button>
       </div>
+
+      {/* Inline add form */}
+      {showForm && (
+        <AddTaskForm
+          childNames={childNames}
+          onSave={handleSave}
+          onClose={() => setShowForm(false)}
+        />
+      )}
 
       {/* Pending photo reviews */}
       {pendingPhotos.length > 0 && (
@@ -100,13 +280,6 @@ export function ParentTasksTab({
                   <span className="text-xs font-semibold text-green-500">✓ Выполнено</span>
                 ) : proof?.status === "pending_review" ? (
                   <span className="text-xs font-semibold text-purple-500">📸 Ждёт проверки</span>
-                ) : proof?.status === "approved" ? (
-                  <button
-                    onClick={() => onConfirmTask(item.id)}
-                    className="text-xs bg-green-100 text-green-600 font-bold px-2 py-0.5 rounded-lg hover:bg-green-200 transition-colors active:scale-95"
-                  >
-                    Подтвердить
-                  </button>
                 ) : (
                   <button
                     onClick={() => onConfirmTask(item.id)}

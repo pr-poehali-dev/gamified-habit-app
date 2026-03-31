@@ -12,7 +12,8 @@ import {
   PARENT_ACTION_XP,
   type Mode, type ChildTab, type ParentTab, type ParentAction,
   type StreakState, type AchievementId, type Sticker, type ChildStats,
-  type GradeRequest, type GradeValue, type ChildProfile, type PhotoProof,
+  type GradeRequest, type GradeValue, type ChildProfile, type PhotoProof, type Task,
+  makeTask,
 } from "@/components/demo/types";
 import { LevelUpModal, ParentLevelUpModal } from "@/components/demo/XpBar";
 import { StreakBonusModal } from "@/components/demo/StreakCard";
@@ -284,10 +285,19 @@ export default function Index() {
     setGradeNotifChild({ id: reqId, type: "rejected", subject: req.subject, childName: child?.name ?? "" });
   }, [children, updateChild]);
 
+  // ── Add task to a child ──
+  const handleAddTask = useCallback((taskData: Omit<Task, "id">, childId: number) => {
+    const base = makeTask(taskData.title, taskData.stars, taskData.emoji);
+    const newTask: Task = { ...base, requirePhoto: taskData.requirePhoto };
+    updateChild(childId, p => ({ ...p, tasks: [...p.tasks, newTask] }));
+  }, [updateChild]);
+
   // All pending grade requests across children (for parent view)
   const allGradeRequests: (GradeRequest & { childId: number; childName: string })[] = children.flatMap(c =>
     c.gradeRequests.map(r => ({ ...r, childId: c.id, childName: c.name }))
   );
+
+  const childNames = children.map(c => ({ id: c.id, name: c.name }));
 
   return (
     <div
@@ -413,7 +423,9 @@ export default function Index() {
               taskTitle: c.tasks.find(t => t.id === p.taskId)?.title ?? "",
             }))
           )}
+          childNames={childNames}
           onAction={handleParentAction}
+          onAddTask={handleAddTask}
           onConfirmTask={handleConfirmTask}
           onBuyPrize={handleBuyPrize}
           onStreakClaim={handleStreakClaim}
