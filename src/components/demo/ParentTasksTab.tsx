@@ -6,6 +6,40 @@ import {
   type ParentAction, type PhotoProof, type Task,
 } from "./types";
 
+// ─── Reusable toggle row ──────────────────────────────────────────────────────
+
+function ToggleRow({
+  icon, label, desc, active,
+  activeColor, activeTextColor, activeIconBg, activeToggleBg,
+  onToggle,
+}: {
+  icon: string; label: string; desc: string; active: boolean;
+  activeColor: string; activeTextColor: string; activeIconBg: string; activeToggleBg: string;
+  onToggle: () => void;
+}) {
+  return (
+    <div
+      onClick={onToggle}
+      className={`flex items-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+        active ? activeColor : "border-gray-200 bg-gray-50 hover:border-gray-300"
+      }`}
+    >
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${
+        active ? activeIconBg : "bg-white border border-gray-200"
+      }`}>
+        {icon}
+      </div>
+      <div className="flex-1">
+        <p className={`text-sm font-black ${active ? activeTextColor : "text-gray-600"}`}>{label}</p>
+        <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
+      </div>
+      <div className={`w-12 h-6 rounded-full transition-all duration-300 flex-shrink-0 ${active ? activeToggleBg : "bg-gray-300"}`}>
+        <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-all duration-300 mt-0.5 ${active ? "ml-6" : "ml-0.5"}`} />
+      </div>
+    </div>
+  );
+}
+
 // ─── Task emoji picker options ────────────────────────────────────────────────
 
 const TASK_EMOJIS = ["🧹", "📚", "🦷", "🗑️", "📖", "🌸", "🐕", "🍽️", "🛁", "🧺", "🏃", "🎨", "🎵", "💤", "🌿"];
@@ -24,13 +58,14 @@ function AddTaskForm({ childNames, onSave, onClose }: AddTaskFormProps) {
   const [stars, setStars] = useState(3);
   const [emoji, setEmoji] = useState("🧹");
   const [requirePhoto, setRequirePhoto] = useState(false);
+  const [requireConfirm, setRequireConfirm] = useState(false);
   const [childId, setChildId] = useState(childNames[0]?.id ?? 0);
   const [error, setError] = useState("");
 
   const handleSave = () => {
     if (!title.trim()) { setError("Введи название задачи"); return; }
     setError("");
-    onSave({ title: title.trim(), stars, emoji, requirePhoto }, childId);
+    onSave({ title: title.trim(), stars, emoji, requirePhoto, requireConfirm }, childId);
     onClose();
   };
 
@@ -118,38 +153,35 @@ function AddTaskForm({ childNames, onSave, onClose }: AddTaskFormProps) {
           </div>
         </div>
 
+        {/* Require confirmation toggle */}
+        <ToggleRow
+          icon="✅"
+          label="Требовать подтверждение"
+          desc={requireConfirm
+            ? "Звёзды начисляются только после проверки родителем"
+            : "Звёзды начисляются сразу при отметке"}
+          active={requireConfirm}
+          activeColor="border-green-400 bg-green-50"
+          activeTextColor="text-green-700"
+          activeIconBg="bg-green-100"
+          activeToggleBg="bg-green-500"
+          onToggle={() => setRequireConfirm(v => !v)}
+        />
+
         {/* Require photo toggle */}
-        <div
-          onClick={() => setRequirePhoto(v => !v)}
-          className={`flex items-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-            requirePhoto
-              ? "border-purple-400 bg-purple-50"
-              : "border-gray-200 bg-gray-50 hover:border-gray-300"
-          }`}
-        >
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${
-            requirePhoto ? "bg-purple-100" : "bg-white border border-gray-200"
-          }`}>
-            📸
-          </div>
-          <div className="flex-1">
-            <p className={`text-sm font-black ${requirePhoto ? "text-purple-700" : "text-gray-600"}`}>
-              Требовать фотоотчёт
-            </p>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {requirePhoto
-                ? "Ребёнок должен приложить фото перед отметкой"
-                : "Задача выполняется без подтверждения фото"}
-            </p>
-          </div>
-          <div className={`w-12 h-6 rounded-full transition-all duration-300 flex-shrink-0 ${
-            requirePhoto ? "bg-purple-500" : "bg-gray-300"
-          }`}>
-            <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-all duration-300 mt-0.5 ${
-              requirePhoto ? "ml-6" : "ml-0.5"
-            }`} />
-          </div>
-        </div>
+        <ToggleRow
+          icon="📸"
+          label="Требовать фотоотчёт"
+          desc={requirePhoto
+            ? "Ребёнок должен приложить фото перед отметкой"
+            : "Задача выполняется без подтверждения фото"}
+          active={requirePhoto}
+          activeColor="border-purple-400 bg-purple-50"
+          activeTextColor="text-purple-700"
+          activeIconBg="bg-purple-100"
+          activeToggleBg="bg-purple-500"
+          onToggle={() => setRequirePhoto(v => !v)}
+        />
 
         {error && (
           <p className="text-red-500 text-xs font-bold bg-red-50 rounded-xl px-3 py-2">{error}</p>
@@ -168,20 +200,32 @@ function AddTaskForm({ childNames, onSave, onClose }: AddTaskFormProps) {
 
 // ─── Tasks tab ────────────────────────────────────────────────────────────────
 
+export type PendingConfirmTask = {
+  taskId: number;
+  childId: number;
+  childName: string;
+  childAvatar: string;
+  taskTitle: string;
+  taskEmoji: string;
+  taskStars: number;
+};
+
 type TasksTabProps = {
   confirmedTasks: number[];
   photoProofs: (PhotoProof & { childName: string; taskTitle: string })[];
+  pendingConfirmTasks: PendingConfirmTask[];
   childNames: { id: number; name: string }[];
   onAction: (action: ParentAction) => void;
   onAddTask: (task: Omit<Task, "id">, childId: number) => void;
-  onConfirmTask: (taskId: number) => void;
+  onConfirmTask: (taskId: number, childId?: number) => void;
+  onRejectConfirmTask: (childId: number, taskId: number) => void;
   onApprovePhoto: (childId: number, taskId: number) => void;
   onRejectPhoto: (childId: number, taskId: number) => void;
 };
 
 export function ParentTasksTab({
-  confirmedTasks, photoProofs, childNames,
-  onAction, onAddTask, onConfirmTask, onApprovePhoto, onRejectPhoto,
+  confirmedTasks, photoProofs, pendingConfirmTasks, childNames,
+  onAction, onAddTask, onConfirmTask, onRejectConfirmTask, onApprovePhoto, onRejectPhoto,
 }: TasksTabProps) {
   const [showForm, setShowForm] = useState(false);
   const pendingPhotos = photoProofs.filter(p => p.status === "pending_review");
@@ -237,6 +281,56 @@ export function ParentTasksTab({
                   if (task) onRejectPhoto(task.childId, taskId);
                 }}
               />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pending confirm tasks */}
+      {pendingConfirmTasks.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-base">✅</span>
+            <p className="text-sm font-black text-[#1E1B4B]">Ждут подтверждения</p>
+            <span className="bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
+              {pendingConfirmTasks.length}
+            </span>
+          </div>
+          <div className="space-y-3">
+            {pendingConfirmTasks.map(pt => (
+              <div key={`${pt.childId}-${pt.taskId}`} className="bg-white rounded-2xl shadow-sm border border-amber-100 overflow-hidden">
+                <div className="flex items-center gap-3 p-4">
+                  <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">
+                    {pt.taskEmoji}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-black text-[#1E1B4B]">{pt.taskTitle}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {pt.childAvatar} {pt.childName} · {pt.taskStars} ⭐
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-amber-500 font-black text-lg">{pt.taskStars} ⭐</p>
+                  </div>
+                </div>
+                <div className="mx-4 mb-3 bg-amber-50 rounded-xl px-3 py-2 flex items-center justify-between">
+                  <span className="text-xs text-gray-500 font-semibold">Ребёнок отметил задачу выполненной</span>
+                </div>
+                <div className="flex gap-2 px-4 pb-4">
+                  <button
+                    onClick={() => onRejectConfirmTask(pt.childId, pt.taskId)}
+                    className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-500 font-bold text-sm hover:bg-red-50 hover:text-red-500 transition-colors active:scale-95"
+                  >
+                    ✗ Вернуть
+                  </button>
+                  <button
+                    onClick={() => onConfirmTask(pt.taskId, pt.childId)}
+                    className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-green-400 to-emerald-500 text-white font-bold text-sm shadow-sm hover:shadow-md active:scale-95 transition-all"
+                  >
+                    ✓ Подтвердить
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         </div>

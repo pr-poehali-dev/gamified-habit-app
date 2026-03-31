@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ParentXpBar } from "./XpBar";
 import { StreakCard } from "./StreakCard";
 import { ParentGradePanel } from "./GradeExchange";
-import { ParentTasksTab, ParentRewardsTab } from "./ParentTasksTab";
+import { ParentTasksTab, ParentRewardsTab, type PendingConfirmTask } from "./ParentTasksTab";
 import { ParentBonusTab } from "./ParentBonusTab";
 import { ParentStatsTab, ParentProfileTab } from "./ParentStatsTab";
 import {
@@ -192,10 +192,12 @@ type Props = {
   purchasedPrizes: number[];
   gradeRequests: (GradeRequest & { childId: number; childName: string })[];
   photoProofs: (PhotoProof & { childId: number; childName: string; taskTitle: string })[];
+  pendingConfirmTasks: PendingConfirmTask[];
   childNames: { id: number; name: string }[];
   onAction: (action: ParentAction) => void;
   onAddTask: (task: Omit<Task, "id">, childId: number) => void;
-  onConfirmTask: (taskId: number) => void;
+  onConfirmTask: (taskId: number, childId?: number) => void;
+  onRejectConfirmTask: (childId: number, taskId: number) => void;
   onBuyPrize: (prizeId: number, cost: number) => void;
   onStreakClaim: () => void;
   onApproveGrade: (id: string) => void;
@@ -213,10 +215,12 @@ export default function ParentView({
   purchasedPrizes,
   gradeRequests,
   photoProofs,
+  pendingConfirmTasks,
   childNames,
   onAction,
   onAddTask,
   onConfirmTask,
+  onRejectConfirmTask,
   onBuyPrize,
   onStreakClaim,
   onApproveGrade,
@@ -264,10 +268,12 @@ export default function ParentView({
         <ParentTasksTab
           confirmedTasks={confirmedTasks}
           photoProofs={photoProofs}
+          pendingConfirmTasks={pendingConfirmTasks}
           childNames={childNames}
           onAction={onAction}
           onAddTask={onAddTask}
           onConfirmTask={onConfirmTask}
+          onRejectConfirmTask={onRejectConfirmTask}
           onApprovePhoto={onApprovePhoto}
           onRejectPhoto={onRejectPhoto}
         />
@@ -332,6 +338,11 @@ export default function ParentView({
                   : "hover:bg-gray-50"
               }`}
             >
+              {tab.key === "tasks" && (pendingConfirmTasks.length + photoProofs.filter(p => p.status === "pending_review").length) > 0 && parentTab !== "tasks" && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full text-[9px] font-black text-white flex items-center justify-center">
+                  {pendingConfirmTasks.length + photoProofs.filter(p => p.status === "pending_review").length}
+                </span>
+              )}
               {tab.key === "grades" && gradeRequests.filter(r => r.status === "pending").length > 0 && parentTab !== "grades" && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] font-black text-white flex items-center justify-center">
                   {gradeRequests.filter(r => r.status === "pending").length}

@@ -26,7 +26,7 @@ export default function ChildView({
   childTab, setChildTab, profile,
   handleTaskToggle, handleBuy, onOpenStickerPack, onSubmitGrade, onAttachPhoto,
 }: Props) {
-  const { name, age, stars, completedTaskIds, purchasedItemIds,
+  const { name, age, stars, completedTaskIds, pendingConfirmTaskIds, purchasedItemIds,
           achievements, stickers, stickerPacks, avatarOverride,
           gradeRequests, tasks, photoProofs } = profile;
 
@@ -77,13 +77,14 @@ export default function ChildView({
           <h2 className="text-lg font-black text-[#2D1B69] mb-3">Мои задачи</h2>
           {tasks.map((task, i) => {
             const done = completedTaskIds.includes(task.id);
+            const pendingConfirm = pendingConfirmTaskIds.includes(task.id);
             const proof = photoProofs.find((p: PhotoProof) => p.taskId === task.id);
             const isPhotoModal = photoModalTaskId === task.id;
-            const needsPhoto = task.requirePhoto && !done;
+            const needsPhoto = task.requirePhoto && !done && !pendingConfirm;
             const hasUploadedPhoto = !!proof;
 
             const handleClick = () => {
-              if (done) return;
+              if (done || pendingConfirm) return;
               if (task.requirePhoto && !hasUploadedPhoto) {
                 setPhotoModalTaskId(task.id);
                 return;
@@ -95,32 +96,54 @@ export default function ChildView({
               <div key={task.id} style={{ animationDelay: `${i * 0.07}s` }}>
                 <div
                   onClick={handleClick}
-                  className={`rounded-3xl p-4 flex items-center gap-4 cursor-pointer transition-all duration-300 shadow-sm ${
-                    done ? "bg-gradient-to-r from-green-400 to-emerald-500 scale-[0.98]" : "bg-white/90 hover:shadow-lg hover:scale-[1.02]"
+                  className={`rounded-3xl p-4 flex items-center gap-4 transition-all duration-300 shadow-sm ${
+                    done ? "bg-gradient-to-r from-green-400 to-emerald-500 scale-[0.98]"
+                    : pendingConfirm ? "bg-gradient-to-r from-amber-300 to-orange-400 scale-[0.98]"
+                    : "bg-white/90 hover:shadow-lg hover:scale-[1.02] cursor-pointer"
                   }`}
                 >
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 ${done ? "bg-white/20" : "bg-gradient-to-br from-[#FF9BE0]/20 to-[#9B6BFF]/20"}`}>
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 ${
+                    done || pendingConfirm ? "bg-white/20" : "bg-gradient-to-br from-[#FF9BE0]/20 to-[#9B6BFF]/20"
+                  }`}>
                     {task.emoji}
                   </div>
                   <div className="flex-1">
-                    <p className={`font-black text-base ${done ? "text-white line-through opacity-80" : "text-[#2D1B69]"}`}>{task.title}</p>
+                    <p className={`font-black text-base ${
+                      done ? "text-white line-through opacity-80"
+                      : pendingConfirm ? "text-white"
+                      : "text-[#2D1B69]"
+                    }`}>{task.title}</p>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <p className={`text-sm font-bold ${done ? "text-white/70" : "text-yellow-500"}`}>{task.stars} звезды ⭐</p>
-                      {task.requirePhoto && !done && (
-                        <span className="text-[10px] font-bold bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full">
-                          📸 нужно фото
-                        </span>
+                      {pendingConfirm ? (
+                        <span className="text-white/90 text-xs font-bold">⏳ Ждёт проверки родителя</span>
+                      ) : (
+                        <>
+                          <p className={`text-sm font-bold ${done ? "text-white/70" : "text-yellow-500"}`}>{task.stars} звезды ⭐</p>
+                          {task.requireConfirm && !done && (
+                            <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
+                              ✅ нужна проверка
+                            </span>
+                          )}
+                          {task.requirePhoto && !done && (
+                            <span className="text-[10px] font-bold bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full">
+                              📸 нужно фото
+                            </span>
+                          )}
+                          {proof && !done && <PhotoProofBadge status={proof.status} />}
+                        </>
                       )}
-                      {proof && !done && <PhotoProofBadge status={proof.status} />}
                     </div>
                   </div>
                   <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 ${
                     done ? "bg-white/30"
+                    : pendingConfirm ? "bg-white/30"
                     : needsPhoto && !hasUploadedPhoto ? "bg-purple-100"
                     : "bg-gradient-to-br from-[#FF6B9D] to-[#FF9B6B]"
                   }`}>
                     {done
                       ? <Icon name="Check" size={16} className="text-white" />
+                      : pendingConfirm
+                        ? <span className="text-lg">⏳</span>
                       : needsPhoto && !hasUploadedPhoto
                         ? <span className="text-lg">📸</span>
                         : <Icon name="ChevronRight" size={16} className="text-white" />

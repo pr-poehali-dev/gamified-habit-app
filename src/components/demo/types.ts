@@ -41,14 +41,15 @@ export type Task = {
   stars: number;
   emoji: string;
   requirePhoto?: boolean;
+  requireConfirm?: boolean;
 };
 
 export const DEFAULT_TASKS: Task[] = [
-  { id: 1, title: "Убрать комнату", stars: 3, emoji: "🧹", requirePhoto: true },
-  { id: 2, title: "Сделать домашнее задание", stars: 5, emoji: "📚", requirePhoto: false },
-  { id: 3, title: "Почистить зубы", stars: 1, emoji: "🦷", requirePhoto: false },
-  { id: 4, title: "Вынести мусор", stars: 2, emoji: "🗑️", requirePhoto: false },
-  { id: 5, title: "Прочитать 20 страниц", stars: 4, emoji: "📖", requirePhoto: false },
+  { id: 1, title: "Убрать комнату",           stars: 3, emoji: "🧹", requirePhoto: true,  requireConfirm: true  },
+  { id: 2, title: "Сделать домашнее задание", stars: 5, emoji: "📚", requirePhoto: false, requireConfirm: true  },
+  { id: 3, title: "Почистить зубы",           stars: 1, emoji: "🦷", requirePhoto: false, requireConfirm: false },
+  { id: 4, title: "Вынести мусор",            stars: 2, emoji: "🗑️", requirePhoto: false, requireConfirm: false },
+  { id: 5, title: "Прочитать 20 страниц",     stars: 4, emoji: "📖", requirePhoto: false, requireConfirm: false },
 ];
 
 // For backward compat
@@ -83,6 +84,7 @@ export type ChildProfile = {
   // Tasks
   tasks: Task[];
   completedTaskIds: number[];
+  pendingConfirmTaskIds: number[];  // done by child, awaiting parent confirm
   purchasedItemIds: number[];
   photoProofs: PhotoProof[];
   // Gamification
@@ -107,7 +109,7 @@ export function createChildProfile(
     id, name, age, avatar,
     stars: 0, starsSpent: 0,
     tasks: [...DEFAULT_TASKS],
-    completedTaskIds: [], purchasedItemIds: [], photoProofs: [],
+    completedTaskIds: [], pendingConfirmTaskIds: [], purchasedItemIds: [], photoProofs: [],
     achievements: [], stickers: [], stickerPacks: 1,
     gradeRequests: [],
     ...overrides,
