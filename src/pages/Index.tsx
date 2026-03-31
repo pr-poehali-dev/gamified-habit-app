@@ -328,6 +328,7 @@ export default function Index() {
           childTab={childTab}
           setChildTab={setChildTab}
           starCount={starCount}
+          age={9}
           completedTasks={completedTasks}
           purchasedItems={purchasedItems}
           achievements={achievements}

@@ -15,6 +15,7 @@ type Props = {
   childTab: ChildTab;
   setChildTab: (tab: ChildTab) => void;
   starCount: number;
+  age: number;
   completedTasks: number[];
   purchasedItems: number[];
   achievements: AchievementId[];
@@ -30,7 +31,7 @@ type Props = {
 
 export default function ChildView({
   childTab, setChildTab,
-  starCount, completedTasks, purchasedItems,
+  starCount, age, completedTasks, purchasedItems,
   achievements, stickers, stickerPacks, avatarOverride,
   gradeRequests, handleTaskToggle, handleBuy, onOpenStickerPack, onSubmitGrade,
 }: Props) {
@@ -225,6 +226,7 @@ export default function ChildView({
           <ChildGradeView
             requests={gradeRequests}
             level={level}
+            age={age}
             onSubmit={onSubmitGrade}
           />
         </div>

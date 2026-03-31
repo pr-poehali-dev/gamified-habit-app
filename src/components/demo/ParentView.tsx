@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Icon from "@/components/ui/icon";
 import { ParentXpBar } from "./XpBar";
 import { StreakCard } from "./StreakCard";
@@ -11,6 +12,183 @@ import {
   getParentTip,
   type ParentAction, type ParentTab, type StreakState, type GradeRequest,
 } from "./types";
+
+// ─── Add child form ───────────────────────────────────────────────────────────
+
+const CHILD_AVATARS = ["👧", "👦", "🧒", "👶"];
+
+function ChildrenTab({ onAction }: { onAction: (a: ParentAction) => void }) {
+  const [showForm, setShowForm] = useState(false);
+  const [name, setName] = useState("");
+  const [age, setAge] = useState<number | "">("");
+  const [avatar, setAvatar] = useState("👧");
+  const [error, setError] = useState("");
+
+  const handleAdd = () => {
+    if (!name.trim()) { setError("Введи имя ребёнка"); return; }
+    if (age === "" || age < 1 || age > 18) { setError("Укажи возраст от 1 до 18 лет"); return; }
+    setError("");
+    onAction("child_add");
+    setShowForm(false);
+    setName("");
+    setAge("");
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-[#1E1B4B]">Мои дети</h2>
+        <button
+          onClick={() => setShowForm(v => !v)}
+          className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95"
+        >
+          {showForm ? "✕ Закрыть" : "+ Добавить"}
+        </button>
+      </div>
+
+      {/* Add child form */}
+      {showForm && (
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] px-5 py-4">
+            <p className="text-white font-black text-base">👶 Добавить ребёнка</p>
+          </div>
+          <div className="p-5 space-y-4">
+            {/* Avatar */}
+            <div>
+              <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-2">Аватар</label>
+              <div className="flex gap-3">
+                {CHILD_AVATARS.map(a => (
+                  <button
+                    key={a}
+                    onClick={() => setAvatar(a)}
+                    className={`w-12 h-12 rounded-2xl text-2xl flex items-center justify-center transition-all ${
+                      avatar === a ? "bg-gradient-to-br from-[#6B7BFF]/20 to-[#9B6BFF]/20 ring-2 ring-[#6B7BFF] scale-110" : "bg-gray-50 hover:bg-gray-100"
+                    }`}
+                  >
+                    {a}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Name */}
+            <div>
+              <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-1.5">
+                Имя <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Имя ребёнка"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-gray-50 font-semibold focus:outline-none focus:ring-2 focus:ring-[#6B7BFF]/40"
+              />
+            </div>
+
+            {/* Age — required */}
+            <div>
+              <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-1.5">
+                Возраст <span className="text-red-400">*</span>
+                <span className="text-gray-300 font-normal ml-1 normal-case">(от этого зависят предметы в школе)</span>
+              </label>
+              <div className="flex gap-2 flex-wrap">
+                {Array.from({ length: 13 }, (_, i) => i + 6).map(a => (
+                  <button
+                    key={a}
+                    onClick={() => setAge(a)}
+                    className={`w-10 h-10 rounded-xl text-sm font-bold transition-all ${
+                      age === a
+                        ? "bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] text-white shadow-sm scale-110"
+                        : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                    }`}
+                  >
+                    {a}
+                  </button>
+                ))}
+              </div>
+              {age !== "" && (
+                <p className="text-xs text-[#6B7BFF] font-semibold mt-1.5">
+                  Возраст {age} лет — {age <= 7 ? "1 класс" : age <= 9 ? "2–3 класс" : age <= 11 ? "4–5 класс" : age <= 13 ? "6–7 класс" : "8–11 класс"}
+                </p>
+              )}
+            </div>
+
+            {error && (
+              <p className="text-red-500 text-xs font-bold bg-red-50 rounded-xl px-3 py-2">{error}</p>
+            )}
+
+            <button
+              onClick={handleAdd}
+              className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-black text-sm shadow-sm active:scale-95 transition-all"
+            >
+              Добавить ребёнка
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Invite relative */}
+      <button
+        onClick={() => onAction("invite_relative")}
+        className="w-full bg-white border-2 border-dashed border-[#6B7BFF]/40 rounded-2xl p-4 flex items-center gap-3 hover:border-[#6B7BFF] transition-colors group"
+      >
+        <span className="text-2xl">👨‍👩‍👧</span>
+        <div className="flex-1 text-left">
+          <p className="font-bold text-[#1E1B4B] text-sm">Пригласить родственника</p>
+          <p className="text-xs text-gray-400">Бабушка, дедушка, тёти и дяди</p>
+        </div>
+        <span className="text-xs font-bold text-[#6B7BFF] group-hover:translate-x-1 transition-transform">
+          +{PARENT_ACTION_XP.invite_relative} XP →
+        </span>
+      </button>
+
+      {/* Children list */}
+      {CHILDREN.map(child => {
+        const { level: cLevel, xpPct } = getLevelInfo(child.stars);
+        const cEmoji = getLevelEmoji(cLevel);
+        const pct = child.tasksTotal > 0 ? Math.round(child.tasksDone / child.tasksTotal * 100) : 0;
+        return (
+          <div key={child.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-[#6B7BFF]/20 to-[#9B6BFF]/20 rounded-2xl flex items-center justify-center text-3xl">
+                {child.avatar}
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-[#1E1B4B] text-lg">{child.name}</p>
+                <p className="text-sm text-gray-400">{child.age} лет</p>
+              </div>
+              <div className="text-right">
+                <p className="text-yellow-500 font-black text-xl">{child.stars}⭐</p>
+                <div className="flex items-center gap-1 justify-end">
+                  <span>{cEmoji}</span>
+                  <span className="text-sm font-bold text-[#6B7BFF]">ур. {cLevel}</span>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div>
+                <div className="flex justify-between text-xs text-gray-400 mb-1">
+                  <span>Задачи выполнены</span><span>{pct}%</span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-xs text-gray-400 mb-1">
+                  <span>Опыт до ур. {cLevel + 1}</span><span>{Math.round(xpPct)}%</span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full transition-all duration-700" style={{ width: `${xpPct}%` }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 type Props = {
   parentTab: ParentTab;
@@ -354,76 +532,10 @@ export default function ParentView({
       )}
 
       {parentTab === "children" && (
-        <div className="animate-fade-in space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-[#1E1B4B]">Мои дети</h2>
-            <button
-              onClick={() => onAction("child_add")}
-              className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95"
-            >
-              + Добавить
-            </button>
-          </div>
-
-          <button
-            onClick={() => onAction("invite_relative")}
-            className="w-full bg-white border-2 border-dashed border-[#6B7BFF]/40 rounded-2xl p-4 flex items-center gap-3 hover:border-[#6B7BFF] transition-colors group"
-          >
-            <span className="text-2xl">👨‍👩‍👧</span>
-            <div className="flex-1 text-left">
-              <p className="font-bold text-[#1E1B4B] text-sm">Пригласить родственника</p>
-              <p className="text-xs text-gray-400">Бабушка, дедушка, тёти и дяди</p>
-            </div>
-            <span className="text-xs font-bold text-[#6B7BFF] group-hover:translate-x-1 transition-transform">
-              +{PARENT_ACTION_XP.invite_relative} XP →
-            </span>
-          </button>
-
-          {CHILDREN.map(child => {
-            const { level: cLevel, xpPct } = getLevelInfo(child.stars);
-            const cEmoji = getLevelEmoji(cLevel);
-            const pct = child.tasksTotal > 0 ? Math.round(child.tasksDone / child.tasksTotal * 100) : 0;
-            return (
-              <div key={child.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-[#6B7BFF]/20 to-[#9B6BFF]/20 rounded-2xl flex items-center justify-center text-3xl">
-                    {child.avatar}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-[#1E1B4B] text-lg">{child.name}</p>
-                    <p className="text-sm text-gray-400">{child.age} лет</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-yellow-500 font-black text-xl">{child.stars}⭐</p>
-                    <div className="flex items-center gap-1 justify-end">
-                      <span>{cEmoji}</span>
-                      <span className="text-sm font-bold text-[#6B7BFF]">ур. {cLevel}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div>
-                    <div className="flex justify-between text-xs text-gray-400 mb-1">
-                      <span>Задачи выполнены</span><span>{pct}%</span>
-                    </div>
-                    <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs text-gray-400 mb-1">
-                      <span>Опыт до ур. {cLevel + 1}</span><span>{Math.round(xpPct)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full transition-all duration-700" style={{ width: `${xpPct}%` }} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <ChildrenTab onAction={onAction} />
       )}
+
+      
 
       {parentTab === "profile" && (
         <div className="animate-fade-in">

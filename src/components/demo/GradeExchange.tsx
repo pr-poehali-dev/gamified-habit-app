@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import {
-  SUBJECTS, GRADE_STARS, GRADE_EMOJI, GRADE_LABEL, GRADE_UNLOCK_LEVEL,
+  getSubjectsByAge, GRADE_STARS, GRADE_EMOJI, GRADE_LABEL, GRADE_UNLOCK_LEVEL,
   type GradeRequest, type GradeValue,
 } from "./types";
 
@@ -9,15 +9,20 @@ import {
 type ChildGradeProps = {
   requests: GradeRequest[];
   level: number;
+  age: number;
   onSubmit: (subject: string, grade: GradeValue, date: string) => void;
 };
 
-export function ChildGradeView({ requests, level, onSubmit }: ChildGradeProps) {
-  const [subject, setSubject] = useState(SUBJECTS[0]);
+export function ChildGradeView({ requests, level, age, onSubmit }: ChildGradeProps) {
+  const subjects = getSubjectsByAge(age);
+  const [subject, setSubject] = useState(subjects[0]);
   const [grade, setGrade] = useState<GradeValue>(5);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [sent, setSent] = useState(false);
   const locked = level < GRADE_UNLOCK_LEVEL;
+
+  // Reset subject if age changes
+  useEffect(() => { setSubject(subjects[0]); }, [age]);
 
   const handleSubmit = () => {
     if (locked) return;
@@ -41,10 +46,7 @@ export function ChildGradeView({ requests, level, onSubmit }: ChildGradeProps) {
           </p>
           <div className="mt-3 flex justify-center gap-1">
             {Array.from({ length: GRADE_UNLOCK_LEVEL }).map((_, i) => (
-              <div
-                key={i}
-                className={`w-8 h-2 rounded-full ${i < level ? "bg-[#FF6B9D]" : "bg-gray-200"}`}
-              />
+              <div key={i} className={`w-8 h-2 rounded-full ${i < level ? "bg-[#FF6B9D]" : "bg-gray-200"}`} />
             ))}
           </div>
         </div>
@@ -57,15 +59,17 @@ export function ChildGradeView({ requests, level, onSubmit }: ChildGradeProps) {
           <p className="text-white/70 text-xs mt-0.5">Курс обмена: 1 балл оценки = 1 звезда ⭐</p>
         </div>
         <div className="p-5 space-y-4">
-          {/* Subject */}
+          {/* Subject — only buttons, no dropdown */}
           <div>
-            <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-1.5">Предмет</label>
+            <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-1.5">
+              Предмет · {age} лет
+            </label>
             <div className="grid grid-cols-3 gap-1.5">
-              {SUBJECTS.slice(0, 9).map(s => (
+              {subjects.map(s => (
                 <button
                   key={s}
                   onClick={() => setSubject(s)}
-                  className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${
+                  className={`py-2 px-1 rounded-xl text-xs font-bold transition-all leading-tight ${
                     subject === s
                       ? "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white shadow-sm"
                       : "bg-gray-50 text-gray-600 hover:bg-gray-100"
@@ -75,13 +79,6 @@ export function ChildGradeView({ requests, level, onSubmit }: ChildGradeProps) {
                 </button>
               ))}
             </div>
-            <select
-              value={subject}
-              onChange={e => setSubject(e.target.value)}
-              className="mt-2 w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 bg-gray-50 font-semibold"
-            >
-              {SUBJECTS.map(s => <option key={s}>{s}</option>)}
-            </select>
           </div>
 
           {/* Grade */}
