@@ -112,7 +112,7 @@ export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, o
   };
 
   // Tasks with extension requests
-  const extensionTasks = tasks.filter(t => t.extensionRequested && !t.extensionGranted && t.status === "pending");
+  const extensionTasks = tasks.filter(t => t.extensionRequested && t.status === "pending");
 
   return (
     <div className="space-y-4">

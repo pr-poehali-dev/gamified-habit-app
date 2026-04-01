@@ -745,7 +745,7 @@ def handle_request_extension(conn, body):
         return error_response("Extension already requested")
     with conn.cursor() as cur:
         cur.execute(
-            f"UPDATE {SCHEMA}.tasks SET extension_requested = TRUE WHERE id = %s",
+            f"UPDATE {SCHEMA}.tasks SET extension_requested = TRUE, extension_granted = FALSE WHERE id = %s",
             (t_id,)
         )
     conn.commit()
