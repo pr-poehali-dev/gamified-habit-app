@@ -1,12 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { apiCall } from "@/components/miniapp/useApi";
+import { tg } from "@/components/miniapp/types";
 
 type Props = { onConnected: () => void };
 
 export function ChildConnectScreen({ onConnected }: Props) {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [autoConnecting, setAutoConnecting] = useState(false);
   const [error, setError] = useState("");
+
+  // Read invite code from Telegram start_param (passed via ?startapp=CODE or initDataUnsafe.start_param)
+  useEffect(() => {
+    const webapp = tg();
+
+    // Try initDataUnsafe.start_param (standard Telegram deep link via ?start=CODE)
+    const startParam = webapp?.initDataUnsafe?.start_param;
+
+    // Also try URL search params (passed as ?startapp=CODE in web_app url)
+    const urlParams = new URLSearchParams(window.location.search);
+    const startApp = urlParams.get("startapp");
+
+    const inviteCode = (startParam || startApp || "").trim().toUpperCase();
+
+    if (inviteCode && inviteCode.length >= 4) {
+      setCode(inviteCode);
+      setAutoConnecting(true);
+      handleAutoConnect(inviteCode);
+    }
+  }, []);
+
+  const handleAutoConnect = async (inviteCode: string) => {
+    setLoading(true);
+    setError("");
+    const res = await apiCall("child/connect", { invite_code: inviteCode });
+    if (res.ok) {
+      tg()?.HapticFeedback?.notificationOccurred("success");
+      onConnected();
+    } else {
+      setAutoConnecting(false);
+      setError(String(res.error || "Неверный код, попробуй ещё раз"));
+      setLoading(false);
+    }
+  };
 
   const handleConnect = async () => {
     if (code.trim().length < 4) return;
@@ -14,12 +50,31 @@ export function ChildConnectScreen({ onConnected }: Props) {
     setError("");
     const res = await apiCall("child/connect", { invite_code: code.trim().toUpperCase() });
     if (res.ok) {
+      tg()?.HapticFeedback?.notificationOccurred("success");
       onConnected();
     } else {
       setError(String(res.error || "Неверный код, попробуй ещё раз"));
       setLoading(false);
     }
   };
+
+  // Auto-connecting screen — shown while we silently connect via start_param
+  if (autoConnecting && !error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#FFF0F5] via-[#F0EEFF] to-[#E8F8FF] px-6" style={{ fontFamily: "Nunito, sans-serif" }}>
+        <div className="text-7xl mb-6 animate-bounce">🌟</div>
+        <h1 className="text-2xl font-black text-[#2D1B69] mb-2 text-center">Подключаемся...</h1>
+        <p className="text-gray-500 text-sm text-center mb-8 leading-relaxed">
+          Используем код <b className="text-[#FF6B9D]">{code}</b>
+        </p>
+        <div className="flex gap-2">
+          <span className="w-3 h-3 bg-[#FF6B9D] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+          <span className="w-3 h-3 bg-[#C96BD9] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+          <span className="w-3 h-3 bg-[#6B9DFF] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#FFF0F5] via-[#F0EEFF] to-[#E8F8FF] px-6" style={{ fontFamily: "Nunito, sans-serif" }}>

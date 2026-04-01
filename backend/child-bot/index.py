@@ -44,18 +44,34 @@ def handler(event: dict, context) -> dict:
     first_name = message.get("from", {}).get("first_name", "")
 
     if chat_id and text.startswith("/start"):
-        tg(token, chat_id,
-            f"🌟 Привет, <b>{first_name}</b>!\n\n"
-            f"Я помогаю выполнять задания и зарабатывать звёзды ⭐\n\n"
-            f"<b>Как начать:</b>\n"
-            f"1️⃣ Попроси родителя открыть <b>@parenttask_bot</b>\n"
-            f"2️⃣ Родитель добавит тебя в разделе «Дети» и даст код\n"
-            f"3️⃣ Нажми кнопку ниже и введи код 👇",
-            reply_markup={
-                "inline_keyboard": [[
-                    {"text": "⭐ Открыть СтарКидс", "web_app": {"url": MINI_APP_URL}}
-                ]]
-            }
-        )
+        parts = text.split(maxsplit=1)
+        invite_code = parts[1].strip() if len(parts) > 1 else None
+
+        if invite_code:
+            # Deep link with invite code — pass it as startapp parameter
+            mini_app_url_with_code = f"{MINI_APP_URL}?startapp={invite_code}"
+            tg(token, chat_id,
+                f"🌟 Привет, <b>{first_name}</b>!\n\n"
+                f"Код приглашения <b>{invite_code}</b> уже подставлен — просто нажми кнопку ниже и подключись! 👇",
+                reply_markup={
+                    "inline_keyboard": [[
+                        {"text": "⭐ Войти в СтарКидс", "web_app": {"url": mini_app_url_with_code}}
+                    ]]
+                }
+            )
+        else:
+            tg(token, chat_id,
+                f"🌟 Привет, <b>{first_name}</b>!\n\n"
+                f"Я помогаю выполнять задания и зарабатывать звёзды ⭐\n\n"
+                f"<b>Как начать:</b>\n"
+                f"1️⃣ Попроси родителя открыть <b>@parenttask_bot</b>\n"
+                f"2️⃣ Родитель добавит тебя в разделе «Дети» и даст код\n"
+                f"3️⃣ Нажми кнопку ниже и введи код 👇",
+                reply_markup={
+                    "inline_keyboard": [[
+                        {"text": "⭐ Открыть СтарКидс", "web_app": {"url": MINI_APP_URL}}
+                    ]]
+                }
+            )
 
     return {"statusCode": 200, "body": "ok"}
