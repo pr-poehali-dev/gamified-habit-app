@@ -35,6 +35,7 @@ type Task = {
   id: number; title: string; stars: number; emoji: string;
   status: string; childId: number; requirePhoto: boolean;
   requireConfirm: boolean; photoStatus: string;
+  photoUrl?: string | null;
   childName?: string;
   deadline?: string | null;
   extensionRequested?: boolean;

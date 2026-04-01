@@ -370,8 +370,8 @@ def handle_auth_parent(conn, body):
     with conn.cursor() as cur:
         cur.execute(f"SELECT id, name, stars, avatar, age, invite_code, telegram_id FROM {SCHEMA}.children WHERE parent_id = %s ORDER BY created_at", (parent["id"],))
         children = [{"id": r[0], "name": r[1], "stars": r[2], "avatar": r[3] or "👧", "age": r[4] or 9, "inviteCode": r[5], "connected": r[6] is not None} for r in cur.fetchall()]
-        cur.execute(f"SELECT id, title, stars, emoji, status, child_id, require_photo, require_confirm, photo_status, deadline, extension_requested, extension_granted FROM {SCHEMA}.tasks WHERE parent_id = %s ORDER BY created_at DESC LIMIT 50", (parent["id"],))
-        tasks = [{"id": r[0], "title": r[1], "stars": r[2], "emoji": r[3], "status": r[4], "childId": r[5], "requirePhoto": r[6], "requireConfirm": r[7], "photoStatus": r[8], "deadline": r[9].isoformat() if r[9] else None, "extensionRequested": bool(r[10]), "extensionGranted": bool(r[11])} for r in cur.fetchall()]
+        cur.execute(f"SELECT id, title, stars, emoji, status, child_id, require_photo, require_confirm, photo_status, deadline, extension_requested, extension_granted, photo_url FROM {SCHEMA}.tasks WHERE parent_id = %s ORDER BY created_at DESC LIMIT 50", (parent["id"],))
+        tasks = [{"id": r[0], "title": r[1], "stars": r[2], "emoji": r[3], "status": r[4], "childId": r[5], "requirePhoto": r[6], "requireConfirm": r[7], "photoStatus": r[8], "deadline": r[9].isoformat() if r[9] else None, "extensionRequested": bool(r[10]), "extensionGranted": bool(r[11]), "photoUrl": r[12]} for r in cur.fetchall()]
         # Pending grade requests from children
         if children:
             child_ids = [c["id"] for c in children]
@@ -396,17 +396,34 @@ def handle_complete_task(conn, body):
     if not task_id:
         return error_response("task_id required")
     with conn.cursor() as cur:
-        cur.execute(f"SELECT id, stars, title, require_confirm, parent_id FROM {SCHEMA}.tasks WHERE id = %s AND child_id = %s AND status = 'pending'", (task_id, child["id"]))
+        cur.execute(f"SELECT id, stars, title, require_confirm, require_photo, parent_id FROM {SCHEMA}.tasks WHERE id = %s AND child_id = %s AND status = 'pending'", (task_id, child["id"]))
         task = cur.fetchone()
     if not task:
         return error_response("Task not found", 404)
-    t_id, stars, title, require_confirm, parent_id = task
-    new_status = "pending_confirm" if require_confirm else "approved"
-    with conn.cursor() as cur:
-        cur.execute(f"UPDATE {SCHEMA}.tasks SET status = %s, completed_at = NOW() WHERE id = %s", (new_status, t_id))
+    t_id, stars, title, require_confirm, require_photo, parent_id = task
+
+    # Проверяем фото, если оно требуется
+    photo_base64 = body.get("photo_base64")
+    if require_photo and not photo_base64:
+        return error_response("photo_required")
+
+    # Если задача требует фото — require_confirm тоже должен быть True (автоматически)
+    effective_require_confirm = require_confirm or require_photo
+
+    new_status = "pending_confirm" if effective_require_confirm else "approved"
+
+    if photo_base64:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"UPDATE {SCHEMA}.tasks SET status = %s, completed_at = NOW(), photo_url = %s, photo_status = 'uploaded' WHERE id = %s",
+                (new_status, photo_base64, t_id)
+            )
+    else:
+        with conn.cursor() as cur:
+            cur.execute(f"UPDATE {SCHEMA}.tasks SET status = %s, completed_at = NOW() WHERE id = %s", (new_status, t_id))
     conn.commit()
 
-    if not require_confirm:
+    if not effective_require_confirm:
         with conn.cursor() as cur:
             cur.execute(f"UPDATE {SCHEMA}.children SET stars = stars + %s WHERE id = %s RETURNING stars", (stars, child["id"]))
             new_stars = cur.fetchone()[0]
@@ -428,7 +445,8 @@ def handle_complete_task(conn, body):
                 cur.execute(f"SELECT telegram_id FROM {SCHEMA}.parents WHERE id = %s", (parent_id,))
                 p_row = cur.fetchone()
             if p_row:
-                send_tg_message(PARENT_TOKEN, p_row[0], f"✅ <b>{child['name']}</b> выполнил «<b>{title}</b>» — ждёт твоего подтверждения!\n\n💫 Награда: {stars}⭐\n\nОткрой @parenttask_bot → Задачи.")
+                photo_note = "\n📸 Ребёнок прикрепил фото — проверь в приложении!" if photo_base64 else ""
+                send_tg_message(PARENT_TOKEN, p_row[0], f"✅ <b>{child['name']}</b> выполнил «<b>{title}</b>» — ждёт твоего подтверждения!\n\n💫 Награда: {stars}⭐{photo_note}\n\nОткрой @parenttask_bot → Задачи.")
         return json_response({"ok": True, "pending_confirm": True})
 
 

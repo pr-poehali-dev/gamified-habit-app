@@ -1,3 +1,5 @@
+import { useRef, useState } from "react";
+
 type Task = {
   id: number; title: string; stars: number; emoji: string;
   status: string; requirePhoto: boolean; requireConfirm: boolean; photoStatus: string;
@@ -11,7 +13,7 @@ type Props = {
   pendingTasks: Task[];
   doneTasks: Task[];
   approvedTasks: Task[];
-  onCompleteTask: (id: number) => void;
+  onCompleteTask: (id: number, photoBase64?: string) => void;
   onRequestExtension: (id: number) => void;
 };
 
@@ -31,9 +33,168 @@ function formatDeadlineChild(deadline: string): { text: string; urgent: boolean;
   return { text: `⏰ ${m}м`, urgent: true, overdue: false };
 }
 
+// Компонент выбора фото для задачи
+function PhotoPicker({
+  taskId,
+  taskTitle,
+  taskEmoji,
+  onConfirm,
+  onCancel,
+}: {
+  taskId: number;
+  taskTitle: string;
+  taskEmoji: string;
+  onConfirm: (photoBase64: string) => void;
+  onCancel: () => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleFile = (file: File) => {
+    setLoading(true);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string;
+      setPreview(base64);
+      setLoading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const openCamera = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = "image/*";
+      fileInputRef.current.capture = "environment";
+      fileInputRef.current.click();
+    }
+  };
+
+  const openGallery = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = "image/*";
+      fileInputRef.current.removeAttribute("capture");
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+    // сброс значения, чтобы можно было выбрать то же фото повторно
+    e.target.value = "";
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm" style={{ animation: "fadeIn 0.2s ease" }}>
+      <div className="w-full max-w-md bg-white rounded-t-3xl px-5 pt-5 pb-8 shadow-2xl" style={{ animation: "slideUp 0.3s ease" }}>
+        <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-5" />
+
+        <div className="flex items-center gap-3 mb-5">
+          <span className="text-3xl">{taskEmoji}</span>
+          <div>
+            <p className="font-black text-[#2D1B69] text-base">{taskTitle}</p>
+            <p className="text-sm text-purple-500 font-bold">📸 Прикрепи фото выполнения</p>
+          </div>
+        </div>
+
+        {/* Скрытый input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={handleInputChange}
+        />
+
+        {loading && (
+          <div className="flex justify-center py-8">
+            <div className="w-8 h-8 border-4 border-purple-300 border-t-purple-600 rounded-full animate-spin" />
+          </div>
+        )}
+
+        {!loading && !preview && (
+          <div className="space-y-3 mb-5">
+            <button
+              onClick={openCamera}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-black text-base active:scale-95 transition-transform flex items-center justify-center gap-3 shadow-sm">
+              <span className="text-2xl">📷</span>
+              Сделать фото
+            </button>
+            <button
+              onClick={openGallery}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-black text-base active:scale-95 transition-transform flex items-center justify-center gap-3 shadow-sm">
+              <span className="text-2xl">🖼️</span>
+              Выбрать из галереи
+            </button>
+          </div>
+        )}
+
+        {!loading && preview && (
+          <div className="mb-5">
+            <img
+              src={preview}
+              alt="Фото выполнения"
+              className="w-full rounded-2xl object-cover max-h-64 shadow-sm border border-purple-100"
+            />
+            <button
+              onClick={() => setPreview(null)}
+              className="mt-2 w-full py-2 rounded-xl bg-gray-100 text-gray-500 font-bold text-sm active:scale-95 transition-transform">
+              🔄 Выбрать другое фото
+            </button>
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-3 rounded-2xl bg-gray-100 text-gray-500 font-bold text-sm active:scale-95 transition-transform">
+            Отмена
+          </button>
+          <button
+            disabled={!preview}
+            onClick={() => preview && onConfirm(preview)}
+            className={`flex-1 py-3 rounded-2xl font-black text-sm transition-all ${preview ? "bg-gradient-to-r from-green-400 to-emerald-500 text-white active:scale-95" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}>
+            ✓ Отправить
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ChildTabTasks({ tasks, pendingTasks, doneTasks, approvedTasks, onCompleteTask, onRequestExtension }: Props) {
+  // Задача, для которой открыт пикер фото
+  const [photoPickerTask, setPhotoPickerTask] = useState<Task | null>(null);
+
+  const handleTaskClick = (task: Task) => {
+    if (task.requirePhoto) {
+      // Открываем пикер фото
+      setPhotoPickerTask(task);
+    } else {
+      onCompleteTask(task.id);
+    }
+  };
+
+  const handlePhotoConfirm = (photoBase64: string) => {
+    if (photoPickerTask) {
+      onCompleteTask(photoPickerTask.id, photoBase64);
+      setPhotoPickerTask(null);
+    }
+  };
+
   return (
     <>
+      {/* Пикер фото поверх всего */}
+      {photoPickerTask && (
+        <PhotoPicker
+          taskId={photoPickerTask.id}
+          taskTitle={photoPickerTask.title}
+          taskEmoji={photoPickerTask.emoji}
+          onConfirm={handlePhotoConfirm}
+          onCancel={() => setPhotoPickerTask(null)}
+        />
+      )}
+
       <h2 className="text-lg font-black text-[#2D1B69]">Мои задачи</h2>
 
       {doneTasks.map(task => (
@@ -52,7 +213,7 @@ export function ChildTabTasks({ tasks, pendingTasks, doneTasks, approvedTasks, o
       {pendingTasks.map((task, i) => {
         const deadlineInfo = task.deadline ? formatDeadlineChild(task.deadline) : null;
         const isOverdue = deadlineInfo?.overdue ?? false;
-        const canComplete = !isOverdue; // нельзя выполнить после просрочки (только запросить продление)
+        const canComplete = !isOverdue;
         const extensionAlreadyRequested = task.extensionRequested;
 
         return (
@@ -60,7 +221,7 @@ export function ChildTabTasks({ tasks, pendingTasks, doneTasks, approvedTasks, o
             className="rounded-3xl overflow-hidden bg-white/90 shadow-sm"
             style={{ animationDelay: `${i * 0.07}s` }}>
             <div
-              onClick={() => canComplete && !extensionAlreadyRequested ? onCompleteTask(task.id) : undefined}
+              onClick={() => canComplete && !extensionAlreadyRequested ? handleTaskClick(task) : undefined}
               className={`p-4 flex items-center gap-4 ${canComplete && !extensionAlreadyRequested ? "cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-300" : ""}`}>
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl bg-gradient-to-br from-[#FF9BE0]/20 to-[#9B6BFF]/20">{task.emoji}</div>
               <div className="flex-1">
@@ -83,8 +244,8 @@ export function ChildTabTasks({ tasks, pendingTasks, doneTasks, approvedTasks, o
                 )}
               </div>
               {canComplete && !extensionAlreadyRequested && (
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#FF6B9D] to-[#FF9B6B]">
-                  <span className="text-white text-sm">→</span>
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${task.requirePhoto ? "bg-gradient-to-br from-purple-400 to-pink-500" : "bg-gradient-to-br from-[#FF6B9D] to-[#FF9B6B]"}`}>
+                  <span className="text-white text-sm">{task.requirePhoto ? "📸" : "→"}</span>
                 </div>
               )}
             </div>
@@ -104,9 +265,9 @@ export function ChildTabTasks({ tasks, pendingTasks, doneTasks, approvedTasks, o
             {!isOverdue && deadlineInfo?.urgent && !extensionAlreadyRequested && (
               <div className="px-4 pb-4 flex gap-2">
                 <button
-                  onClick={() => onCompleteTask(task.id)}
-                  className="flex-1 py-2.5 rounded-2xl bg-gradient-to-br from-[#FF6B9D] to-[#FF9B6B] text-white font-bold text-sm active:scale-95 transition-transform">
-                  ✓ Выполнил!
+                  onClick={() => handleTaskClick(task)}
+                  className={`flex-1 py-2.5 rounded-2xl text-white font-bold text-sm active:scale-95 transition-transform ${task.requirePhoto ? "bg-gradient-to-br from-purple-400 to-pink-500" : "bg-gradient-to-br from-[#FF6B9D] to-[#FF9B6B]"}`}>
+                  {task.requirePhoto ? "📸 Фото!" : "✓ Выполнил!"}
                 </button>
                 <button
                   onClick={() => onRequestExtension(task.id)}

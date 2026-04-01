@@ -95,9 +95,11 @@ export default function ChildMiniApp() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const completeTask = useCallback(async (taskId: number) => {
+  const completeTask = useCallback(async (taskId: number, photoBase64?: string) => {
     tg()?.HapticFeedback?.impactOccurred("light");
-    const res = await apiCall("child/complete", { task_id: taskId });
+    const body: Record<string, unknown> = { task_id: taskId };
+    if (photoBase64) body.photo_base64 = photoBase64;
+    const res = await apiCall("child/complete", body);
     if (res.ok) {
       tg()?.HapticFeedback?.notificationOccurred("success");
       if (res.pending_confirm) {
