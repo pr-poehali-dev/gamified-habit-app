@@ -55,9 +55,42 @@ function PhotoPicker({
     setLoading(true);
     const reader = new FileReader();
     reader.onload = (e) => {
-      const base64 = e.target?.result as string;
-      setPreview(base64);
-      setLoading(false);
+      const originalBase64 = e.target?.result as string;
+      // Сжимаем фото через canvas, чтобы избежать ошибки 413 (слишком большой запрос)
+      const img = new Image();
+      img.onload = () => {
+        const MAX_SIZE = 1024; // макс. сторона в пикселях
+        const QUALITY = 0.7;   // качество JPEG 70%
+        let { width, height } = img;
+        if (width > MAX_SIZE || height > MAX_SIZE) {
+          if (width > height) {
+            height = Math.round((height * MAX_SIZE) / width);
+            width = MAX_SIZE;
+          } else {
+            width = Math.round((width * MAX_SIZE) / height);
+            height = MAX_SIZE;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL("image/jpeg", QUALITY);
+          setPreview(compressed);
+        } else {
+          // fallback — используем оригинал
+          setPreview(originalBase64);
+        }
+        setLoading(false);
+      };
+      img.onerror = () => {
+        // fallback — используем оригинал
+        setPreview(originalBase64);
+        setLoading(false);
+      };
+      img.src = originalBase64;
     };
     reader.readAsDataURL(file);
   };
