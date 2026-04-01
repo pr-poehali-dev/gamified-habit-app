@@ -3,7 +3,8 @@ import { tg } from "@/components/miniapp/types";
 import { apiCall } from "@/components/miniapp/useApi";
 import { StreakCard } from "@/components/ui/StreakCard";
 import { ParentXpBar } from "@/components/ui/XpBar";
-import { getParentLevelInfo, getParentLevelTier, getParentTip, type StreakState } from "@/lib/gameTypes";
+import { getParentLevelInfo, getParentLevelTier, getParentTip, PARENT_TIPS, type StreakState } from "@/lib/gameTypes";
+import { TipCard } from "@/components/ui/TipCard";
 import { Loading, ErrorScreen } from "@/components/parent/ParentScreens";
 import { ParentTabTasks } from "@/components/parent/ParentTabTasks";
 import { ParentTabGrades, ParentTabBonuses, ParentTabProfile, ParentTabPartners } from "@/components/parent/ParentTabContent";
@@ -246,13 +247,7 @@ export default function ParentMiniApp() {
           </div>
         </div>
         <ParentXpBar xp={data.parent_xp} points={data.parent_points} />
-        <div className="mt-3 bg-gradient-to-r from-[#6B7BFF]/10 to-[#9B6BFF]/10 border border-[#6B7BFF]/20 rounded-2xl px-4 py-3 flex gap-3 items-start">
-          <span className="text-xl">💡</span>
-          <div>
-            <p className="text-xs font-bold text-[#6B7BFF] uppercase tracking-wide mb-0.5">Совет уровня {level}</p>
-            <p className="text-sm text-gray-600">{tip}</p>
-          </div>
-        </div>
+        <TipCard tips={PARENT_TIPS} storageKey="parent_tip_dismissed" theme="parent" />
       </div>
 
       <div className="px-4 pb-32">

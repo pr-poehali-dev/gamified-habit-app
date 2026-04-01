@@ -176,3 +176,37 @@
     transform: translateY(0);
   }
 }
+
+@keyframes tipSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scaleY(0.9);
+    transform-origin: top;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    transform-origin: top;
+  }
+}
+
+@keyframes tipSlideUp {
+  from {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    max-height: 120px;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    transform-origin: top;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scaleY(0.85);
+    max-height: 0;
+    margin-top: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    transform-origin: top;
+  }
+}

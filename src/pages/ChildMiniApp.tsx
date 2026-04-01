@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { tg } from "@/components/miniapp/types";
 import { apiCall } from "@/components/miniapp/useApi";
-import { getLevelInfo, getLevelEmoji, getSubjectsByAge, type GradeValue, type AchievementId } from "@/lib/gameTypes";
+import { getLevelInfo, getLevelEmoji, getSubjectsByAge, CHILD_TIPS, type GradeValue, type AchievementId } from "@/lib/gameTypes";
 import { XpBar, LevelUpModal } from "@/components/ui/XpBar";
+import { TipCard } from "@/components/ui/TipCard";
 import { Loading, ErrorScreen } from "@/components/child/ChildScreens";
 import { ChildTabTasks } from "@/components/child/ChildTabTasks";
 import { ChildTabShop, ChildTabGrades, ChildTabAchievements, ChildTabProfile } from "@/components/child/ChildTabContent";
@@ -247,6 +248,7 @@ export default function ChildMiniApp() {
         <div className="bg-white/80 backdrop-blur rounded-2xl px-4 py-3 shadow-sm">
           <XpBar stars={data.total_stars_earned ?? data.stars} />
         </div>
+        <TipCard tips={CHILD_TIPS} storageKey="child_tip_dismissed" theme="child" />
       </div>
 
       <div className="px-4 pb-32 space-y-3">
