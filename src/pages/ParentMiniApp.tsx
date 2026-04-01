@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { tg } from "@/components/miniapp/types";
 import { apiCall } from "@/components/miniapp/useApi";
 import { StreakCard } from "@/components/ui/StreakCard";
@@ -9,6 +9,8 @@ import { ParentTabTasks } from "@/components/parent/ParentTabTasks";
 import { ParentTabGrades, ParentTabChildren, ParentTabBonuses, ParentTabProfile } from "@/components/parent/ParentTabContent";
 import { ParentBottomNav, type ParentTab } from "@/components/parent/ParentBottomNav";
 import { ParentOnboarding } from "@/components/parent/ParentOnboarding";
+
+const POLL_INTERVAL = 10_000; // 10 секунд
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -54,21 +56,33 @@ export default function ParentMiniApp() {
   const [tab, setTab] = useState<ParentTab>("tasks");
   const [toast, setToast] = useState<string | null>(null);
   const [onboardingDone, setOnboardingDone] = useState(() => !!localStorage.getItem("parent_onboarding_done"));
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const webapp = tg();
     if (webapp) { webapp.ready(); webapp.expand(); }
-    load();
+    load(false);
+
+    // Запускаем polling
+    pollingRef.current = setInterval(() => {
+      if (!document.hidden) {
+        load(true);
+      }
+    }, POLL_INTERVAL);
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
   }, []);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async (silent = false) => {
+    if (!silent) setLoading(true);
     const webapp = tg();
     const tgId = webapp?.initDataUnsafe?.user?.id;
     const firstName = webapp?.initDataUnsafe?.user?.first_name || "";
     const initDataLen = webapp?.initData?.length ?? 0;
 
-    setDebugInfo(`tg: ${webapp ? "✓" : "✗"} | id: ${tgId ?? "—"} | initData: ${initDataLen}б`);
+    if (!silent) setDebugInfo(`tg: ${webapp ? "✓" : "✗"} | id: ${tgId ?? "—"} | initData: ${initDataLen}б`);
 
     const res = await apiCall("parent/auth", {
       ...(tgId ? { telegram_id: tgId, first_name: firstName } : {}),
@@ -76,12 +90,14 @@ export default function ParentMiniApp() {
     if (res.role === "parent") {
       setData(res as unknown as ParentData);
     } else if (res.role === "unknown") {
-      setTimeout(() => load(), 1000);
-      return;
+      if (!silent) {
+        setTimeout(() => load(false), 1000);
+        return;
+      }
     } else {
-      setError("Не удалось подключиться. Попробуй открыть через @parenttask_bot");
+      if (!silent) setError("Не удалось подключиться. Попробуй открыть через @parenttask_bot");
     }
-    setLoading(false);
+    if (!silent) setLoading(false);
   };
 
   const showToast = (msg: string) => {
@@ -92,53 +108,53 @@ export default function ParentMiniApp() {
 
   const confirmTask = useCallback(async (taskId: number) => {
     const res = await apiCall("parent/task/confirm", { task_id: taskId, action: "approve" });
-    if (res.ok) { showToast("✅ Задача подтверждена!"); load(); }
+    if (res.ok) { showToast("✅ Задача подтверждена!"); load(false); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const rejectTask = useCallback(async (taskId: number) => {
     const res = await apiCall("parent/task/confirm", { task_id: taskId, action: "reject" });
-    if (res.ok) { showToast("↩️ Задача возвращена"); load(); }
+    if (res.ok) { showToast("↩️ Задача возвращена"); load(false); }
   }, []);
 
   const approveGrade = useCallback(async (reqId: number) => {
     const res = await apiCall("parent/grade/approve", { request_id: reqId, action: "approve" });
-    if (res.ok) { showToast(`🌟 Оценка подтверждена! +${res.stars_awarded}⭐`); load(); }
+    if (res.ok) { showToast(`🌟 Оценка подтверждена! +${res.stars_awarded}⭐`); load(false); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const rejectGrade = useCallback(async (reqId: number) => {
     const res = await apiCall("parent/grade/approve", { request_id: reqId, action: "reject" });
-    if (res.ok) { showToast("↩️ Оценка отклонена"); load(); }
+    if (res.ok) { showToast("↩️ Оценка отклонена"); load(false); }
   }, []);
 
   const addTask = useCallback(async (newTask: { title: string; stars: number; emoji: string; childId: number; requirePhoto: boolean; requireConfirm: boolean }) => {
     const res = await apiCall("parent/task/add", { ...newTask, child_id: newTask.childId, require_photo: newTask.requirePhoto, require_confirm: newTask.requireConfirm });
-    if (res.ok) { showToast("📋 Задача создана!"); load(); }
+    if (res.ok) { showToast("📋 Задача создана!"); load(false); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, [data]);
 
   const claimStreak = useCallback(async () => {
     const res = await apiCall("parent/streak/claim");
-    if (res.ok) { showToast(`🔥 +${res.xp} XP и +${res.points} баллов!`); load(); }
+    if (res.ok) { showToast(`🔥 +${res.xp} XP и +${res.points} баллов!`); load(false); }
     else showToast(String(res.error || "Уже получено сегодня"));
   }, []);
 
   const addChild = useCallback(async (name: string, age: number, avatar: string) => {
     const res = await apiCall("parent/child/add", { name, age, avatar });
-    if (res.ok) { showToast("👶 Ребёнок добавлен!"); load(); }
+    if (res.ok) { showToast("👶 Ребёнок добавлен!"); load(false); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const refreshInvite = useCallback(async (childId: number) => {
     const res = await apiCall("parent/child/invite", { child_id: childId });
-    if (res.ok) { showToast("🔑 Новый код создан!"); load(); }
+    if (res.ok) { showToast("🔑 Новый код создан!"); load(false); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const removeChild = useCallback(async (childId: number) => {
     const res = await apiCall("parent/child/remove", { child_id: childId });
-    if (res.ok) { showToast("🗑 Профиль удалён"); load(); }
+    if (res.ok) { showToast("🗑 Профиль удалён"); load(false); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 

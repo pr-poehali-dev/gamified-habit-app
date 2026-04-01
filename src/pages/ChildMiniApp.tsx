@@ -35,6 +35,8 @@ type GradeReq = {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
+const POLL_INTERVAL = 10_000; // 10 секунд
+
 export default function ChildMiniApp() {
   const [data, setData] = useState<ChildData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,30 +46,42 @@ export default function ChildMiniApp() {
   const [onboardingDone, setOnboardingDone] = useState(() => !!localStorage.getItem("child_onboarding_done"));
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
   const prevLevelRef = useRef<number>(1);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const webapp = tg();
     if (webapp) { webapp.ready(); webapp.expand(); }
-    load();
+    load(false);
+
+    // Запускаем polling
+    pollingRef.current = setInterval(() => {
+      if (!document.hidden) {
+        load(true);
+      }
+    }, POLL_INTERVAL);
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
   }, []);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async (silent = false) => {
+    if (!silent) setLoading(true);
     const tgId = tg()?.initDataUnsafe?.user?.id;
     const res = await apiCall("child/auth", tgId ? { telegram_id: tgId } : {});
     if (res.role === "child") {
       const d = res as unknown as ChildData;
       const lvl = getLevelInfo(d.stars).level;
-      prevLevelRef.current = lvl;
+      if (!silent) prevLevelRef.current = lvl;
       // Запоминаем, что ребёнок был успешно подключён
       localStorage.setItem("child_was_connected", "1");
       setData(d);
     } else if (res.role === "unknown") {
-      setError("not_connected");
+      if (!silent) setError("not_connected");
     } else {
-      setError(String(res.error || "Ошибка авторизации"));
+      if (!silent) setError(String(res.error || "Ошибка авторизации"));
     }
-    setLoading(false);
+    if (!silent) setLoading(false);
   };
 
   const showToast = (msg: string) => {
@@ -85,7 +99,7 @@ export default function ChildMiniApp() {
       } else {
         showToast(`🎉 +${res.stars_earned}⭐ начислено!`);
       }
-      load();
+      load(false);
     } else {
       showToast("❌ " + String(res.error || "Ошибка"));
     }
@@ -96,7 +110,7 @@ export default function ChildMiniApp() {
     if (res.ok) {
       tg()?.HapticFeedback?.notificationOccurred("success");
       showToast("📝 Запрос отправлен родителю!");
-      load();
+      load(false);
     } else {
       showToast("❌ " + String(res.error || "Ошибка"));
     }
@@ -119,7 +133,7 @@ export default function ChildMiniApp() {
       <ChildConnectScreen
         onConnected={() => {
           setError(null);
-          load();
+          load(false);
         }}
         wasDeleted={wasConnected}
       />
