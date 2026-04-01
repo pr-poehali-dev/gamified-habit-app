@@ -410,20 +410,36 @@ def upload_photo_to_s3(photo_base64: str, task_id: int) -> str:
     image_bytes = base64.b64decode(data)
     file_key = f"files/task_photos/{task_id}_{uuid.uuid4().hex[:8]}.{ext}"
 
+    access_key = os.environ.get("AWS_ACCESS_KEY_ID", "")
+    secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
+    bucket = os.environ.get("S3_BUCKET", "")
+
+    # Если S3_BUCKET не задан — пробуем вывести из access_key (обычно совпадает с именем бакета на poehali.dev)
+    if not bucket and access_key:
+        # На poehali.dev бакет обычно называется как проект: pXXXXXXXX
+        # Берём первую часть access_key до разделителя, либо используем часть ключа
+        bucket = access_key.split(":")[0] if ":" in access_key else "p84704826"
+
+    print(f"[S3] bucket={bucket!r}, key_prefix={access_key[:8] if access_key else 'EMPTY'}..., file_key={file_key}")
+
     s3 = boto3.client(
         "s3",
         endpoint_url="https://s3.poehali.dev",
-        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID", ""),
-        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY", ""),
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
         region_name="us-east-1",
     )
-    bucket = os.environ.get("S3_BUCKET", "p84704826")
-    s3.put_object(
-        Bucket=bucket,
-        Key=file_key,
-        Body=image_bytes,
-        ContentType=f"image/{ext}",
-    )
+    try:
+        s3.put_object(
+            Bucket=bucket,
+            Key=file_key,
+            Body=image_bytes,
+            ContentType=f"image/{ext}",
+            ACL="public-read",
+        )
+    except Exception as e:
+        print(f"[S3] put_object error: {e} | bucket={bucket!r} | key={file_key}")
+        raise
     return f"https://s3.poehali.dev/{bucket}/{file_key}"
 
 
