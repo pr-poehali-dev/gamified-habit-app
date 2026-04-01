@@ -159,6 +159,18 @@ export default function ParentMiniApp() {
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
+  const addReward = useCallback(async (title: string, cost: number, emoji: string) => {
+    const res = await apiCall("parent/reward/add", { title, cost, emoji });
+    if (res.ok) { showToast("🎁 Награда добавлена в магазин!"); load(false); }
+    else showToast("❌ " + String(res.error || "Ошибка"));
+  }, []);
+
+  const removeReward = useCallback(async (rewardId: number) => {
+    const res = await apiCall("parent/reward/remove", { reward_id: rewardId });
+    if (res.ok) { showToast("🗑 Награда удалена"); load(false); }
+    else showToast("❌ " + String(res.error || "Ошибка"));
+  }, []);
+
   if (loading) return <Loading debug={debugInfo} />;
   if (error || !data) return <ErrorScreen msg={error || "Нет данных"} />;
 
@@ -247,6 +259,9 @@ export default function ParentMiniApp() {
             parent_points={data.parent_points}
             parent_xp={data.parent_xp}
             onClaimStreak={claimStreak}
+            rewards={data.rewards}
+            onAddReward={addReward}
+            onRemoveReward={removeReward}
           />
         )}
         {tab === "profile" && (

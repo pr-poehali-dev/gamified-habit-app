@@ -326,10 +326,14 @@ def handle_auth_child(conn, body):
         grades = [{"id": r[0], "subject": r[1], "grade": r[2], "date": str(r[3]), "status": r[4], "starsAwarded": r[5], "createdAt": str(r[6])} for r in cur.fetchall()]
         cur.execute(f"SELECT id, title, stars, emoji, status, require_photo, require_confirm, photo_status FROM {SCHEMA}.tasks WHERE child_id = %s ORDER BY created_at DESC LIMIT 50", (child["id"],))
         tasks = [{"id": r[0], "title": r[1], "stars": r[2], "emoji": r[3], "status": r[4], "requirePhoto": r[5], "requireConfirm": r[6], "photoStatus": r[7]} for r in cur.fetchall()]
+        rewards = []
+        if child.get("parent_id"):
+            cur.execute(f"SELECT id, title, cost, emoji FROM {SCHEMA}.rewards WHERE parent_id = %s ORDER BY created_at", (child["parent_id"],))
+            rewards = [{"id": r[0], "title": r[1], "cost": r[2], "emoji": r[3]} for r in cur.fetchall()]
     return json_response({
         **child, "telegram_id": tid, "level": level, "xpInLevel": xp_in,
         "achievements": achievements, "stickers": stickers,
-        "gradeRequests": grades, "tasks": tasks,
+        "gradeRequests": grades, "tasks": tasks, "rewards": rewards,
     })
 
 
@@ -702,6 +706,55 @@ def handle_remove_child(conn, body):
     return json_response({"ok": True})
 
 
+def handle_add_reward(conn, body):
+    """Родитель добавляет награду для ребёнка."""
+    tid = resolve_telegram_id(body, PARENT_TOKEN)
+    if not tid:
+        return error_response("Unauthorized", 401)
+    parent = get_parent_by_tg(conn, tid)
+    if not parent:
+        return error_response("Parent not found", 404)
+    title = (body.get("title") or "").strip()
+    cost = body.get("cost", 10)
+    emoji = body.get("emoji", "🎁")
+    if not title:
+        return error_response("Название обязательно", 400)
+    try:
+        cost = int(cost)
+        if cost < 1:
+            raise ValueError
+    except (ValueError, TypeError):
+        return error_response("Стоимость должна быть числом >= 1", 400)
+    with conn.cursor() as cur:
+        cur.execute(
+            f"INSERT INTO {SCHEMA}.rewards (parent_id, title, cost, emoji) VALUES (%s, %s, %s, %s) RETURNING id",
+            (parent["id"], title, cost, emoji)
+        )
+        reward_id = cur.fetchone()[0]
+    conn.commit()
+    return json_response({"ok": True, "reward_id": reward_id})
+
+
+def handle_remove_reward(conn, body):
+    """Родитель удаляет награду."""
+    tid = resolve_telegram_id(body, PARENT_TOKEN)
+    if not tid:
+        return error_response("Unauthorized", 401)
+    parent = get_parent_by_tg(conn, tid)
+    if not parent:
+        return error_response("Parent not found", 404)
+    reward_id = body.get("reward_id")
+    if not reward_id:
+        return error_response("reward_id required", 400)
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT id FROM {SCHEMA}.rewards WHERE id = %s AND parent_id = %s", (reward_id, parent["id"]))
+        if not cur.fetchone():
+            return error_response("Reward not found", 404)
+        cur.execute(f"DELETE FROM {SCHEMA}.rewards WHERE id = %s", (reward_id,))
+    conn.commit()
+    return json_response({"ok": True})
+
+
 def handler(event: dict, context) -> dict:
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": cors_headers(), "body": ""}
@@ -747,6 +800,10 @@ def handler(event: dict, context) -> dict:
             return handle_remove_child(conn, body)
         if action == "parent/child/invite":
             return handle_child_invite(conn, body)
+        if action == "parent/reward/add":
+            return handle_add_reward(conn, body)
+        if action == "parent/reward/remove":
+            return handle_remove_reward(conn, body)
 
         return error_response("Not found", 404)
     finally:

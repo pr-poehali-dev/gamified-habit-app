@@ -25,11 +25,16 @@ type ChildrenProps = {
 
 const CHILD_AVATARS = ["👦", "👧", "🧒", "👶", "🐱", "🦊", "🐼", "🦁", "🐸", "🐧", "🦋", "🌟"];
 
+type Reward = { id: number; title: string; cost: number; emoji: string };
+
 type BonusesProps = {
   streak: StreakState;
   parent_points: number;
   parent_xp: number;
   onClaimStreak: () => void;
+  rewards: Reward[];
+  onAddReward: (title: string, cost: number, emoji: string) => void;
+  onRemoveReward: (id: number) => void;
 };
 
 type ProfileProps = {
@@ -252,13 +257,103 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
   );
 }
 
-export function ParentTabBonuses({ streak, parent_points, parent_xp, onClaimStreak }: BonusesProps) {
+const REWARD_EMOJIS = ["🎁", "🍕", "🍦", "🎮", "🎬", "📚", "🎨", "🧸", "🎠", "🏆", "🚀", "⚽", "🎯", "🎪", "🛍️", "🍫"];
+
+export function ParentTabBonuses({ streak, parent_points, parent_xp, onClaimStreak, rewards, onAddReward, onRemoveReward }: BonusesProps) {
   const { level } = getParentLevelInfo(parent_xp);
   const tier = getParentLevelTier(level);
+  const [showForm, setShowForm] = useState(false);
+  const [title, setTitle] = useState("");
+  const [cost, setCost] = useState(10);
+  const [emoji, setEmoji] = useState("🎁");
+  const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
+
+  const handleAdd = () => {
+    if (!title.trim() || cost < 1) return;
+    onAddReward(title.trim(), cost, emoji);
+    setTitle("");
+    setCost(10);
+    setEmoji("🎁");
+    setShowForm(false);
+  };
 
   return (
     <div className="space-y-4">
       <StreakCard streak={streak} onClaim={onClaimStreak} />
+
+      {/* Магазин наград для детей */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-base font-bold text-[#1E1B4B]">🛍️ Магазин наград для детей</h3>
+          <button onClick={() => setShowForm(v => !v)} className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white text-xs font-semibold px-3 py-1.5 rounded-xl shadow-sm active:scale-95 transition-transform">
+            {showForm ? "✕" : "+ Добавить"}
+          </button>
+        </div>
+
+        {showForm && (
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-3">
+            <div className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] px-5 py-4">
+              <p className="text-white font-black text-base">🎁 Новая награда</p>
+              <p className="text-white/70 text-xs mt-0.5">Ребёнок сможет купить её за звёзды</p>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-2">Эмодзи</label>
+                <div className="flex gap-2 flex-wrap">
+                  {REWARD_EMOJIS.map(e => (
+                    <button key={e} onClick={() => setEmoji(e)}
+                      className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center transition-all ${emoji === e ? "ring-2 ring-[#6B7BFF] bg-[#6B7BFF]/10 scale-110" : "bg-gray-50"}`}>
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-1.5">Название *</label>
+                <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Например: Поход в кино"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-gray-50 font-semibold focus:outline-none focus:ring-2 focus:ring-[#6B7BFF]/40" />
+              </div>
+              <div>
+                <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-1.5">Стоимость (звёзды) *</label>
+                <input type="number" min={1} value={cost} onChange={e => setCost(Number(e.target.value))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-gray-50 font-semibold focus:outline-none focus:ring-2 focus:ring-[#6B7BFF]/40" />
+              </div>
+              <button onClick={handleAdd} disabled={!title.trim() || cost < 1}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-black text-sm shadow-sm active:scale-95 transition-transform disabled:opacity-50">
+                Добавить награду
+              </button>
+            </div>
+          </div>
+        )}
+
+        {rewards.length === 0 && !showForm && (
+          <div className="text-center py-8 bg-white/60 rounded-2xl">
+            <div className="text-4xl mb-2">🎁</div>
+            <p className="font-bold text-gray-400">Нет наград в магазине</p>
+            <p className="text-xs text-gray-300 mt-1">Добавь награды, чтобы мотивировать ребёнка!</p>
+          </div>
+        )}
+
+        {rewards.map(reward => (
+          <div key={reward.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-2 flex items-center gap-3">
+            <span className="text-3xl">{reward.emoji}</span>
+            <div className="flex-1">
+              <p className="font-bold text-[#1E1B4B] text-sm">{reward.title}</p>
+              <p className="text-xs font-black text-amber-500 mt-0.5">{reward.cost} ⭐</p>
+            </div>
+            {confirmRemove === reward.id ? (
+              <div className="flex gap-1">
+                <button onClick={() => setConfirmRemove(null)} className="text-xs px-2 py-1.5 rounded-lg bg-gray-100 text-gray-500 font-bold">Нет</button>
+                <button onClick={() => { onRemoveReward(reward.id); setConfirmRemove(null); }} className="text-xs px-2 py-1.5 rounded-lg bg-red-500 text-white font-bold">Да</button>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmRemove(reward.id)} className="text-xs px-2 py-1.5 rounded-lg bg-gray-100 text-gray-400 font-bold hover:bg-red-50 hover:text-red-400 transition-colors">🗑</button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Баллы родителя */}
       <div className="bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] rounded-3xl p-5 text-white shadow-lg">
         <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">Ваш баланс</p>
         <p className="text-4xl font-black">{parent_points.toLocaleString()} <span className="text-2xl font-bold">баллов</span></p>
@@ -269,7 +364,7 @@ export function ParentTabBonuses({ streak, parent_points, parent_xp, onClaimStre
         </div>
       </div>
       <div>
-        <h3 className="text-base font-bold text-[#1E1B4B] mb-3">Магазин призов</h3>
+        <h3 className="text-base font-bold text-[#1E1B4B] mb-3">Магазин призов партнёров</h3>
         {PARTNER_PRIZES.map(prize => {
           const canBuy = parent_points >= prize.cost;
           return (

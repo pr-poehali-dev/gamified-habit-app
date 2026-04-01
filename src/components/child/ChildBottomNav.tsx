@@ -1,6 +1,6 @@
 import { tg } from "@/components/miniapp/types";
 
-export type ChildTab = "tasks" | "stars" | "grades" | "achievements" | "profile";
+export type ChildTab = "tasks" | "shop" | "grades" | "achievements" | "profile";
 
 type Props = {
   tab: ChildTab;
@@ -13,7 +13,7 @@ type Props = {
 
 const NAV_ITEMS: { key: ChildTab; emoji: string; label: string }[] = [
   { key: "tasks",        emoji: "📋", label: "Задачи" },
-  { key: "stars",        emoji: "⭐", label: "Звёзды" },
+  { key: "shop",         emoji: "🛍️", label: "Магазин" },
   { key: "grades",       emoji: "📝", label: "Оценки" },
   { key: "achievements", emoji: "🏅", label: "Ачивки" },
   { key: "profile",      emoji: "👤", label: "Профиль" },

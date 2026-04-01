@@ -191,7 +191,63 @@ export function ChildTabAchievements({ achievements }: AchievementsProps) {
   );
 }
 
-// ─── Profile tab ──────────────────────────────────────────────────────────────
+// ─── Shop tab ─────────────────────────────────────────────────────────────────
+
+type Reward = { id: number; title: string; cost: number; emoji: string };
+
+type ShopProps = {
+  stars: number;
+  rewards: Reward[];
+  onBuy: (rewardId: number) => void;
+};
+
+export function ChildTabShop({ stars, rewards, onBuy }: ShopProps) {
+  return (
+    <>
+      <h2 className="text-lg font-black text-[#2D1B69]">Магазин наград</h2>
+      <div className="bg-gradient-to-br from-[#FFD700] to-[#FF9500] rounded-3xl p-4 flex items-center gap-3 shadow-lg">
+        <span className="text-4xl">⭐</span>
+        <div>
+          <p className="text-white/80 text-xs font-semibold uppercase tracking-widest">Твой баланс</p>
+          <p className="text-3xl font-black text-white">{stars} <span className="text-xl font-bold">звёзд</span></p>
+        </div>
+      </div>
+      {rewards.length === 0 ? (
+        <div className="text-center py-10">
+          <div className="text-5xl mb-3">🛍️</div>
+          <p className="font-bold text-gray-400 text-base">Магазин пока пуст</p>
+          <p className="text-sm text-gray-300 mt-1">Попроси родителя добавить награды!</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {rewards.map(reward => {
+            const canBuy = stars >= reward.cost;
+            return (
+              <div key={reward.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+                <span className="text-4xl">{reward.emoji}</span>
+                <div className="flex-1">
+                  <p className="font-bold text-[#2D1B69] text-sm">{reward.title}</p>
+                  <p className="text-xs text-amber-500 font-black mt-0.5">{reward.cost} ⭐</p>
+                </div>
+                <button
+                  onClick={() => onBuy(reward.id)}
+                  disabled={!canBuy}
+                  className={`text-xs font-bold px-4 py-2 rounded-xl transition-all active:scale-95 ${
+                    canBuy
+                      ? "bg-gradient-to-r from-[#FF6B9D] to-[#FF9B6B] text-white shadow-sm"
+                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  {canBuy ? "Купить" : "Мало ⭐"}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+}
 
 type ProfileProps = {
   name: string; avatar: string; age: number;

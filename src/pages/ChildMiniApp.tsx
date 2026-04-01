@@ -5,12 +5,14 @@ import { getLevelInfo, getLevelEmoji, getSubjectsByAge, type GradeValue, type Ac
 import { XpBar, LevelUpModal } from "@/components/ui/XpBar";
 import { Loading, ErrorScreen } from "@/components/child/ChildScreens";
 import { ChildTabTasks } from "@/components/child/ChildTabTasks";
-import { ChildTabStars, ChildTabGrades, ChildTabAchievements, ChildTabProfile } from "@/components/child/ChildTabContent";
+import { ChildTabShop, ChildTabGrades, ChildTabAchievements, ChildTabProfile } from "@/components/child/ChildTabContent";
 import { ChildBottomNav, type ChildTab } from "@/components/child/ChildBottomNav";
 import { ChildOnboarding } from "@/components/child/ChildOnboarding";
 import { ChildConnectScreen } from "@/components/child/ChildConnectScreen";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+type Reward = { id: number; title: string; cost: number; emoji: string };
 
 type ChildData = {
   role: "child";
@@ -21,6 +23,7 @@ type ChildData = {
   stickers: { stickerId: string; count: number }[];
   gradeRequests: GradeReq[];
   tasks: Task[];
+  rewards: Reward[];
 };
 
 type Task = {
@@ -116,6 +119,18 @@ export default function ChildMiniApp() {
     }
   }, []);
 
+  const buyReward = useCallback(async (rewardId: number) => {
+    tg()?.HapticFeedback?.impactOccurred("medium");
+    const res = await apiCall("child/reward/buy", { reward_id: rewardId });
+    if (res.ok) {
+      tg()?.HapticFeedback?.notificationOccurred("success");
+      showToast("🎁 Награда куплена! Родитель получил уведомление.");
+      load(false);
+    } else {
+      showToast("❌ " + String(res.error || "Не хватает звёзд"));
+    }
+  }, []);
+
   useEffect(() => {
     if (!data) return;
     const newLevel = getLevelInfo(data.stars).level;
@@ -201,8 +216,12 @@ export default function ChildMiniApp() {
             onCompleteTask={completeTask}
           />
         )}
-        {tab === "stars" && (
-          <ChildTabStars stars={data.stars} level={level} levelEmoji={levelEmoji} />
+        {tab === "shop" && (
+          <ChildTabShop
+            stars={data.stars}
+            rewards={data.rewards || []}
+            onBuy={buyReward}
+          />
         )}
         {tab === "grades" && (
           <ChildTabGrades
