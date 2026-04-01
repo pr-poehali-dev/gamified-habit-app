@@ -188,7 +188,13 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
                 {c.inviteCode ? (
                   <div className="flex items-center gap-2">
                     <p className="text-xs text-gray-500 flex-1">Код для @task4kids_bot:</p>
-                    <span className="font-black text-base tracking-widest text-[#1E1B4B] bg-white border border-amber-200 rounded-lg px-2 py-0.5">{c.inviteCode}</span>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(c.inviteCode!); }}
+                      className="font-black text-base tracking-widest text-[#1E1B4B] bg-white border border-amber-200 rounded-lg px-2 py-0.5 active:scale-95 transition-transform active:bg-amber-100"
+                      title="Нажми чтобы скопировать"
+                    >
+                      {c.inviteCode} 📋
+                    </button>
                   </div>
                 ) : (
                   <button onClick={() => onRefreshInvite(c.id)} className="text-xs font-bold text-[#6B7BFF]">Создать код →</button>
