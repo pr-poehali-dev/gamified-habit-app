@@ -187,21 +187,30 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
                 <button onClick={() => onRefreshInvite(c.id)} className="text-[10px] font-bold text-gray-400 underline">сбросить</button>
               </div>
             ) : (
-              <div className="mb-3 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
-                <div className="flex items-center justify-between mb-1">
+              <div className="mb-3 bg-amber-50 border border-amber-100 rounded-xl px-3 py-3 space-y-2.5">
+                <div className="flex items-center justify-between">
                   <p className="text-xs font-bold text-amber-600">⏳ Ожидает подключения</p>
                   <button onClick={() => onRefreshInvite(c.id)} className="text-[10px] font-bold text-gray-400 underline">новый код</button>
                 </div>
+
                 {c.inviteCode ? (
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs text-gray-500 flex-1">Код для @task4kids_bot:</p>
-                    <button
-                      onClick={() => copyCode(c.id, c.inviteCode!)}
-                      className="font-black text-base tracking-widest text-[#1E1B4B] bg-white border border-amber-200 rounded-lg px-2 py-0.5 active:scale-95 transition-all"
-                    >
-                      {copiedId === c.id ? <span className="text-green-500 text-xs">✅ Скопировано!</span> : <>{c.inviteCode} 📋</>}
-                    </button>
-                  </div>
+                  <>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-gray-500 flex-1">Код для ребёнка:</p>
+                      <button
+                        onClick={() => copyCode(c.id, c.inviteCode!)}
+                        className="font-black text-base tracking-widest text-[#1E1B4B] bg-white border border-amber-200 rounded-lg px-2 py-0.5 active:scale-95 transition-all"
+                      >
+                        {copiedId === c.id ? <span className="text-green-500 text-xs">✅ Скопировано!</span> : <>{c.inviteCode} 📋</>}
+                      </button>
+                    </div>
+                    <div className="bg-white/70 rounded-xl px-3 py-2 space-y-1">
+                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-wide">Инструкция для {c.name}:</p>
+                      <p className="text-xs text-gray-600">1️⃣ Открыть Telegram → найти <b>@task4kids_bot</b></p>
+                      <p className="text-xs text-gray-600">2️⃣ Нажать кнопку <b>«Открыть СтарКидс»</b></p>
+                      <p className="text-xs text-gray-600">3️⃣ Ввести код <b>{c.inviteCode}</b></p>
+                    </div>
+                  </>
                 ) : (
                   <button onClick={() => onRefreshInvite(c.id)} className="text-xs font-bold text-[#6B7BFF]">Создать код →</button>
                 )}
