@@ -22,7 +22,7 @@ type ParentData = {
   streak_last_date: string | null;
   streak_claimed_today: boolean;
   streak_longest: number;
-  children: { id: number; name: string; stars: number; avatar: string; age: number }[];
+  children: { id: number; name: string; stars: number; avatar: string; age: number; inviteCode: string | null; connected: boolean }[];
   tasks: Task[];
   gradeRequests: GradeRequest[];
   rewards: Reward[];
@@ -128,6 +128,12 @@ export default function ParentMiniApp() {
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
+  const refreshInvite = useCallback(async (childId: number) => {
+    const res = await apiCall("parent/child/invite", { child_id: childId });
+    if (res.ok) { showToast("🔑 Новый код создан!"); load(); }
+    else showToast("❌ " + String(res.error || "Ошибка"));
+  }, []);
+
   const removeChild = useCallback(async (childId: number) => {
     const res = await apiCall("parent/child/remove", { child_id: childId });
     if (res.ok) { showToast("🗑 Профиль удалён"); load(); }
@@ -202,6 +208,7 @@ export default function ParentMiniApp() {
             children={data.children}
             onAddChild={addChild}
             onRemoveChild={removeChild}
+            onRefreshInvite={refreshInvite}
           />
         )}
         {tab === "bonuses" && (

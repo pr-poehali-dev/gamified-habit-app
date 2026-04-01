@@ -310,8 +310,8 @@ def handle_auth_parent(conn, body):
         if not parent:
             return json_response({"role": "unknown", "telegram_id": tid})
     with conn.cursor() as cur:
-        cur.execute(f"SELECT id, name, stars, avatar, age FROM {SCHEMA}.children WHERE parent_id = %s ORDER BY created_at", (parent["id"],))
-        children = [{"id": r[0], "name": r[1], "stars": r[2], "avatar": r[3] or "👧", "age": r[4] or 9} for r in cur.fetchall()]
+        cur.execute(f"SELECT id, name, stars, avatar, age, invite_code, telegram_id FROM {SCHEMA}.children WHERE parent_id = %s ORDER BY created_at", (parent["id"],))
+        children = [{"id": r[0], "name": r[1], "stars": r[2], "avatar": r[3] or "👧", "age": r[4] or 9, "inviteCode": r[5], "connected": r[6] is not None} for r in cur.fetchall()]
         cur.execute(f"SELECT id, title, stars, emoji, status, child_id, require_photo, require_confirm, photo_status FROM {SCHEMA}.tasks WHERE parent_id = %s ORDER BY created_at DESC LIMIT 50", (parent["id"],))
         tasks = [{"id": r[0], "title": r[1], "stars": r[2], "emoji": r[3], "status": r[4], "childId": r[5], "requirePhoto": r[6], "requireConfirm": r[7], "photoStatus": r[8]} for r in cur.fetchall()]
         # Pending grade requests from children
@@ -563,6 +563,12 @@ def handle_streak_claim(conn, body):
 
 CHILD_AVATARS = ["👦", "👧", "🧒", "👶", "🐱", "🦊", "🐼", "🦁", "🐸", "🐧", "🦋", "🌟"]
 
+import random
+import string
+
+def gen_invite_code():
+    return "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
 
 def handle_add_child(conn, body):
     """Добавить ребёнка родителю (без Telegram — оффлайн профиль)."""
@@ -577,14 +583,37 @@ def handle_add_child(conn, body):
     avatar = body.get("avatar", "👧")
     if not name:
         return error_response("Имя обязательно", 400)
+    code = gen_invite_code()
     with conn.cursor() as cur:
         cur.execute(
-            f"INSERT INTO {SCHEMA}.children (parent_id, name, age, avatar, stars) VALUES (%s, %s, %s, %s, 0) RETURNING id",
-            (parent["id"], name, age, avatar)
+            f"INSERT INTO {SCHEMA}.children (parent_id, name, age, avatar, stars, invite_code) VALUES (%s, %s, %s, %s, 0, %s) RETURNING id",
+            (parent["id"], name, age, avatar, code)
         )
         child_id = cur.fetchone()[0]
     conn.commit()
-    return json_response({"ok": True, "child_id": child_id})
+    return json_response({"ok": True, "child_id": child_id, "invite_code": code})
+
+
+def handle_child_invite(conn, body):
+    """Сгенерировать новый код приглашения для ребёнка (если уже подключён — сбросить)."""
+    tid = resolve_telegram_id(body, PARENT_TOKEN)
+    if not tid:
+        return error_response("Unauthorized", 401)
+    parent = get_parent_by_tg(conn, tid)
+    if not parent:
+        return error_response("Parent not found", 404)
+    child_id = body.get("child_id")
+    if not child_id:
+        return error_response("child_id required", 400)
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT id FROM {SCHEMA}.children WHERE id = %s AND parent_id = %s", (child_id, parent["id"]))
+        if not cur.fetchone():
+            return error_response("Child not found", 404)
+    code = gen_invite_code()
+    with conn.cursor() as cur:
+        cur.execute(f"UPDATE {SCHEMA}.children SET invite_code = %s WHERE id = %s", (code, child_id))
+    conn.commit()
+    return json_response({"ok": True, "invite_code": code})
 
 
 def handle_remove_child(conn, body):
@@ -651,6 +680,8 @@ def handler(event: dict, context) -> dict:
             return handle_add_child(conn, body)
         if action == "parent/child/remove":
             return handle_remove_child(conn, body)
+        if action == "parent/child/invite":
+            return handle_child_invite(conn, body)
 
         return error_response("Not found", 404)
     finally:

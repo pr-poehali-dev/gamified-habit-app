@@ -2,7 +2,7 @@ import { useState } from "react";
 import { StreakCard } from "@/components/demo/StreakCard";
 import { getParentLevelInfo, getParentLevelTier, PARTNER_PRIZES, type StreakState } from "@/components/demo/types";
 
-type Child = { id: number; name: string; stars: number; avatar: string; age: number };
+type Child = { id: number; name: string; stars: number; avatar: string; age: number; inviteCode: string | null; connected: boolean };
 type GradeRequest = {
   id: number; childId: number; childName: string;
   subject: string; grade: number; date: string;
@@ -20,6 +20,7 @@ type ChildrenProps = {
   children: Child[];
   onAddChild: (name: string, age: number, avatar: string) => void;
   onRemoveChild: (id: number) => void;
+  onRefreshInvite: (id: number) => void;
 };
 
 const CHILD_AVATARS = ["👦", "👧", "🧒", "👶", "🐱", "🦊", "🐼", "🦁", "🐸", "🐧", "🦋", "🌟"];
@@ -87,7 +88,7 @@ export function ParentTabGrades({ gradeRequests, pendingGrades, onApproveGrade, 
   );
 }
 
-export function ParentTabChildren({ children, onAddChild, onRemoveChild }: ChildrenProps) {
+export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefreshInvite }: ChildrenProps) {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [age, setAge] = useState(9);
@@ -171,6 +172,30 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild }: Child
             <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden mb-3">
               <div className="h-full bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
             </div>
+
+            {c.connected ? (
+              <div className="flex items-center gap-2 mb-3 bg-green-50 border border-green-100 rounded-xl px-3 py-2">
+                <span className="text-green-500 text-sm">✅</span>
+                <p className="text-xs font-bold text-green-600 flex-1">Telegram подключён</p>
+                <button onClick={() => onRefreshInvite(c.id)} className="text-[10px] font-bold text-gray-400 underline">сбросить</button>
+              </div>
+            ) : (
+              <div className="mb-3 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs font-bold text-amber-600">⏳ Ожидает подключения</p>
+                  <button onClick={() => onRefreshInvite(c.id)} className="text-[10px] font-bold text-gray-400 underline">новый код</button>
+                </div>
+                {c.inviteCode ? (
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-gray-500 flex-1">Код для @task4kids_bot:</p>
+                    <span className="font-black text-base tracking-widest text-[#1E1B4B] bg-white border border-amber-200 rounded-lg px-2 py-0.5">{c.inviteCode}</span>
+                  </div>
+                ) : (
+                  <button onClick={() => onRefreshInvite(c.id)} className="text-xs font-bold text-[#6B7BFF]">Создать код →</button>
+                )}
+              </div>
+            )}
+
             {confirmRemove === c.id ? (
               <div className="flex gap-2">
                 <button onClick={() => setConfirmRemove(null)} className="flex-1 py-2 rounded-xl bg-gray-100 text-gray-500 font-bold text-sm">Отмена</button>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-type Child = { id: number; name: string; stars: number; avatar: string; age: number };
+type Child = { id: number; name: string; stars: number; avatar: string; age: number; inviteCode?: string | null; connected?: boolean };
 type Task = {
   id: number; title: string; stars: number; emoji: string;
   status: string; childId: number; requirePhoto: boolean;
