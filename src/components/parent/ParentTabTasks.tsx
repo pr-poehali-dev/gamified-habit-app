@@ -6,8 +6,15 @@ type Task = {
   status: string; childId: number; requirePhoto: boolean;
   requireConfirm: boolean; photoStatus: string;
   childName?: string;
+  deadline?: string | null;
+  extensionRequested?: boolean;
+  extensionGranted?: boolean;
 };
-type NewTask = { title: string; stars: number; emoji: string; childId: number; requirePhoto: boolean; requireConfirm: boolean };
+type NewTask = {
+  title: string; stars: number; emoji: string; childId: number;
+  requirePhoto: boolean; requireConfirm: boolean;
+  deadline: string | null;
+};
 
 type Props = {
   tasks: Task[];
@@ -16,24 +23,90 @@ type Props = {
   onConfirmTask: (id: number) => void;
   onRejectTask: (id: number) => void;
   onAddTask: (task: NewTask) => void;
+  onGrantExtension?: (taskId: number, hours: number) => void;
+  onDenyExtension?: (taskId: number) => void;
 };
 
 const TASK_EMOJIS = ["📋", "🧹", "📚", "🦷", "🗑️", "📖", "🌸", "🐕", "🍽️", "🛁", "🧺", "🏃", "🎨", "🎵"];
 
-export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, onRejectTask, onAddTask }: Props) {
+const DEADLINE_OPTIONS = [
+  { label: "Без срока", value: null },
+  { label: "1 час", hours: 1 },
+  { label: "2 часа", hours: 2 },
+  { label: "Сегодня", hours: "today" as const },
+  { label: "Завтра", hours: "tomorrow" as const },
+  { label: "3 дня", hours: 72 },
+  { label: "Неделя", hours: 168 },
+];
+
+function getDeadlineDate(option: typeof DEADLINE_OPTIONS[number]): string | null {
+  if (option.value === null) return null;
+  const now = new Date();
+  if (option.hours === "today") {
+    const d = new Date(now);
+    d.setHours(23, 59, 0, 0);
+    return d.toISOString();
+  }
+  if (option.hours === "tomorrow") {
+    const d = new Date(now);
+    d.setDate(d.getDate() + 1);
+    d.setHours(23, 59, 0, 0);
+    return d.toISOString();
+  }
+  const hours = option.hours as number;
+  return new Date(now.getTime() + hours * 60 * 60 * 1000).toISOString();
+}
+
+function formatDeadline(deadline: string): string {
+  const d = new Date(deadline);
+  const now = new Date();
+  const diff = d.getTime() - now.getTime();
+  if (diff < 0) return "⚠️ Просрочено";
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  if (h > 48) {
+    const days = Math.ceil(h / 24);
+    return `⏰ ${days} дн.`;
+  }
+  if (h > 0) return `⏰ ${h}ч ${m}м`;
+  return `⏰ ${m}м`;
+}
+
+function isOverdue(deadline: string): boolean {
+  return new Date(deadline).getTime() < Date.now();
+}
+
+const EXTENSION_HOURS_OPTIONS = [
+  { label: "+1 час", hours: 1 },
+  { label: "+2 часа", hours: 2 },
+  { label: "+1 день", hours: 24 },
+  { label: "+2 дня", hours: 48 },
+];
+
+export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, onRejectTask, onAddTask, onGrantExtension, onDenyExtension }: Props) {
   const [showAddTask, setShowAddTask] = useState(false);
+  const [selectedDeadlineIdx, setSelectedDeadlineIdx] = useState(0);
   const [newTask, setNewTask] = useState<NewTask>({
     title: "", stars: 3, emoji: "📋",
     childId: children[0]?.id ?? 0,
     requirePhoto: false, requireConfirm: false,
+    deadline: null,
   });
+  const [extensionTaskId, setExtensionTaskId] = useState<number | null>(null);
+  const [extensionHours, setExtensionHours] = useState(24);
 
   const handleAdd = () => {
     if (!newTask.title.trim() || !newTask.childId) return;
-    onAddTask(newTask);
+    const deadlineOpt = DEADLINE_OPTIONS[selectedDeadlineIdx];
+    const deadline = getDeadlineDate(deadlineOpt);
+    onAddTask({ ...newTask, deadline });
     setShowAddTask(false);
-    setNewTask({ title: "", stars: 3, emoji: "📋", childId: children[0]?.id ?? 0, requirePhoto: false, requireConfirm: false });
+    setSelectedDeadlineIdx(0);
+    setNewTask({ title: "", stars: 3, emoji: "📋", childId: children[0]?.id ?? 0, requirePhoto: false, requireConfirm: false, deadline: null });
   };
+
+  // Tasks with extension requests
+  const extensionTasks = tasks.filter(t => t.extensionRequested && !t.extensionGranted && t.status === "pending");
 
   return (
     <div className="space-y-4">
@@ -90,6 +163,25 @@ export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, o
                 ))}
               </div>
             </div>
+
+            {/* Deadline picker */}
+            <div>
+              <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-2">⏰ Срок выполнения</label>
+              <div className="flex gap-2 flex-wrap">
+                {DEADLINE_OPTIONS.map((opt, idx) => (
+                  <button key={idx} onClick={() => setSelectedDeadlineIdx(idx)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${selectedDeadlineIdx === idx ? "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white scale-105" : "bg-gray-50 text-gray-600"}`}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {selectedDeadlineIdx > 0 && (
+                <p className="text-xs text-gray-400 mt-1.5">
+                  Ребёнок должен выполнить задачу до истечения срока. Иначе он сможет запросить дополнительное время.
+                </p>
+              )}
+            </div>
+
             {[
               { key: "requireConfirm", icon: "✅", label: "Требовать подтверждение", desc: "Звёзды после проверки", color: "green" },
               { key: "requirePhoto", icon: "📸", label: "Требовать фото", desc: "Приложить фотоотчёт", color: "purple" },
@@ -116,6 +208,57 @@ export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, o
         </div>
       )}
 
+      {/* Extension requests */}
+      {extensionTasks.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <span>⏰</span>
+            <p className="text-sm font-black text-[#1E1B4B]">Запросы доп. времени</p>
+            <span className="bg-blue-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{extensionTasks.length}</span>
+          </div>
+          {extensionTasks.map(task => (
+            <div key={task.id} className="bg-white rounded-2xl shadow-sm border border-blue-100 overflow-hidden mb-3">
+              <div className="flex items-center gap-3 p-4">
+                <span className="text-2xl">{task.emoji}</span>
+                <div className="flex-1">
+                  <p className="font-black text-[#1E1B4B]">{task.title}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{children.find(c => c.id === task.childId)?.name} · {task.stars}⭐</p>
+                  {task.deadline && (
+                    <p className={`text-xs font-bold mt-0.5 ${isOverdue(task.deadline) ? "text-red-500" : "text-orange-500"}`}>
+                      {isOverdue(task.deadline) ? "⚠️ Срок истёк" : formatDeadline(task.deadline)}
+                    </p>
+                  )}
+                  <p className="text-xs text-blue-600 font-bold mt-0.5">⏰ Ребёнок просит доп. время</p>
+                </div>
+              </div>
+
+              {extensionTaskId === task.id ? (
+                <div className="px-4 pb-4 space-y-2">
+                  <p className="text-xs font-black text-gray-500 uppercase tracking-wide">Сколько добавить?</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {EXTENSION_HOURS_OPTIONS.map(opt => (
+                      <button key={opt.hours} onClick={() => setExtensionHours(opt.hours)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${extensionHours === opt.hours ? "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white" : "bg-gray-100 text-gray-600"}`}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => setExtensionTaskId(null)} className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-500 font-bold text-sm active:scale-95 transition-transform">Отмена</button>
+                    <button onClick={() => { onGrantExtension?.(task.id, extensionHours); setExtensionTaskId(null); }} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-bold text-sm active:scale-95 transition-transform">✓ Продлить</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2 px-4 pb-4">
+                  <button onClick={() => onDenyExtension?.(task.id)} className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-500 font-bold text-sm active:scale-95 transition-transform">✗ Отказать</button>
+                  <button onClick={() => setExtensionTaskId(task.id)} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-blue-400 to-indigo-500 text-white font-bold text-sm active:scale-95 transition-transform">⏰ Продлить</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       {pendingTasks.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-2">
@@ -130,6 +273,11 @@ export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, o
                 <div className="flex-1">
                   <p className="font-black text-[#1E1B4B]">{task.title}</p>
                   <p className="text-xs text-gray-400 mt-0.5">{children.find(c => c.id === task.childId)?.name} · {task.stars}⭐</p>
+                  {task.deadline && (
+                    <p className={`text-xs font-bold mt-0.5 ${isOverdue(task.deadline) ? "text-green-600" : "text-orange-500"}`}>
+                      {isOverdue(task.deadline) ? "✅ Выполнено вовремя" : formatDeadline(task.deadline)}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2 px-4 pb-4">
@@ -142,7 +290,7 @@ export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, o
       )}
 
       <div className="space-y-2">
-        {tasks.filter(t => !["pending_confirm", "done"].includes(t.status)).map(task => (
+        {tasks.filter(t => !["pending_confirm", "done"].includes(t.status) && !t.extensionRequested).map(task => (
           <div key={task.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
             <span className="text-2xl">{task.emoji}</span>
             <div className="flex-1">
@@ -152,6 +300,11 @@ export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, o
                 {task.requirePhoto && " · 📸"}
                 {task.requireConfirm && " · ✅"}
               </p>
+              {task.deadline && task.status === "pending" && (
+                <p className={`text-xs font-bold mt-0.5 ${isOverdue(task.deadline) ? "text-red-500" : "text-orange-500"}`}>
+                  {formatDeadline(task.deadline)}
+                </p>
+              )}
             </div>
             <span className={`text-sm font-bold ${task.status === "approved" ? "text-green-500" : "text-amber-500"}`}>
               {task.status === "approved" ? "✓" : ""}{task.stars}⭐

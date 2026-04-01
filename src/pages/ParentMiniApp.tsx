@@ -36,6 +36,9 @@ type Task = {
   status: string; childId: number; requirePhoto: boolean;
   requireConfirm: boolean; photoStatus: string;
   childName?: string;
+  deadline?: string | null;
+  extensionRequested?: boolean;
+  extensionGranted?: boolean;
 };
 
 type GradeRequest = {
@@ -129,11 +132,23 @@ export default function ParentMiniApp() {
     if (res.ok) { showToast("↩️ Оценка отклонена"); load(false); }
   }, []);
 
-  const addTask = useCallback(async (newTask: { title: string; stars: number; emoji: string; childId: number; requirePhoto: boolean; requireConfirm: boolean }) => {
-    const res = await apiCall("parent/task/add", { ...newTask, child_id: newTask.childId, require_photo: newTask.requirePhoto, require_confirm: newTask.requireConfirm });
+  const addTask = useCallback(async (newTask: { title: string; stars: number; emoji: string; childId: number; requirePhoto: boolean; requireConfirm: boolean; deadline: string | null }) => {
+    const res = await apiCall("parent/task/add", { ...newTask, child_id: newTask.childId, require_photo: newTask.requirePhoto, require_confirm: newTask.requireConfirm, deadline: newTask.deadline });
     if (res.ok) { showToast("📋 Задача создана!"); load(false); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, [data]);
+
+  const grantExtension = useCallback(async (taskId: number, hours: number) => {
+    const res = await apiCall("parent/task/extension", { task_id: taskId, action: "grant", hours });
+    if (res.ok) { showToast(`⏰ Продлено на ${hours}ч!`); load(false); }
+    else showToast("❌ " + String(res.error || "Ошибка"));
+  }, []);
+
+  const denyExtension = useCallback(async (taskId: number) => {
+    const res = await apiCall("parent/task/extension", { task_id: taskId, action: "deny" });
+    if (res.ok) { showToast("✗ Запрос на продление отклонён"); load(false); }
+    else showToast("❌ " + String(res.error || "Ошибка"));
+  }, []);
 
   const claimStreak = useCallback(async () => {
     const res = await apiCall("parent/streak/claim");
@@ -235,6 +250,8 @@ export default function ParentMiniApp() {
             onConfirmTask={confirmTask}
             onRejectTask={rejectTask}
             onAddTask={addTask}
+            onGrantExtension={grantExtension}
+            onDenyExtension={denyExtension}
           />
         )}
         {tab === "grades" && (

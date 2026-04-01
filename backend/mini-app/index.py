@@ -324,8 +324,8 @@ def handle_auth_child(conn, body):
         stickers = [{"stickerId": r[0], "count": r[1]} for r in cur.fetchall()]
         cur.execute(f"SELECT id, subject, grade, date, status, stars_awarded, created_at FROM {SCHEMA}.grade_requests WHERE child_id = %s ORDER BY created_at DESC LIMIT 20", (child["id"],))
         grades = [{"id": r[0], "subject": r[1], "grade": r[2], "date": str(r[3]), "status": r[4], "starsAwarded": r[5], "createdAt": str(r[6])} for r in cur.fetchall()]
-        cur.execute(f"SELECT id, title, stars, emoji, status, require_photo, require_confirm, photo_status FROM {SCHEMA}.tasks WHERE child_id = %s ORDER BY created_at DESC LIMIT 50", (child["id"],))
-        tasks = [{"id": r[0], "title": r[1], "stars": r[2], "emoji": r[3], "status": r[4], "requirePhoto": r[5], "requireConfirm": r[6], "photoStatus": r[7]} for r in cur.fetchall()]
+        cur.execute(f"SELECT id, title, stars, emoji, status, require_photo, require_confirm, photo_status, deadline, extension_requested, extension_granted FROM {SCHEMA}.tasks WHERE child_id = %s ORDER BY created_at DESC LIMIT 50", (child["id"],))
+        tasks = [{"id": r[0], "title": r[1], "stars": r[2], "emoji": r[3], "status": r[4], "requirePhoto": r[5], "requireConfirm": r[6], "photoStatus": r[7], "deadline": r[8].isoformat() if r[8] else None, "extensionRequested": bool(r[9]), "extensionGranted": bool(r[10])} for r in cur.fetchall()]
         rewards = []
         if child.get("parent_id"):
             cur.execute(f"SELECT id, title, cost, emoji FROM {SCHEMA}.rewards WHERE parent_id = %s ORDER BY created_at", (child["parent_id"],))
@@ -370,8 +370,8 @@ def handle_auth_parent(conn, body):
     with conn.cursor() as cur:
         cur.execute(f"SELECT id, name, stars, avatar, age, invite_code, telegram_id FROM {SCHEMA}.children WHERE parent_id = %s ORDER BY created_at", (parent["id"],))
         children = [{"id": r[0], "name": r[1], "stars": r[2], "avatar": r[3] or "👧", "age": r[4] or 9, "inviteCode": r[5], "connected": r[6] is not None} for r in cur.fetchall()]
-        cur.execute(f"SELECT id, title, stars, emoji, status, child_id, require_photo, require_confirm, photo_status FROM {SCHEMA}.tasks WHERE parent_id = %s ORDER BY created_at DESC LIMIT 50", (parent["id"],))
-        tasks = [{"id": r[0], "title": r[1], "stars": r[2], "emoji": r[3], "status": r[4], "childId": r[5], "requirePhoto": r[6], "requireConfirm": r[7], "photoStatus": r[8]} for r in cur.fetchall()]
+        cur.execute(f"SELECT id, title, stars, emoji, status, child_id, require_photo, require_confirm, photo_status, deadline, extension_requested, extension_granted FROM {SCHEMA}.tasks WHERE parent_id = %s ORDER BY created_at DESC LIMIT 50", (parent["id"],))
+        tasks = [{"id": r[0], "title": r[1], "stars": r[2], "emoji": r[3], "status": r[4], "childId": r[5], "requirePhoto": r[6], "requireConfirm": r[7], "photoStatus": r[8], "deadline": r[9].isoformat() if r[9] else None, "extensionRequested": bool(r[10]), "extensionGranted": bool(r[11])} for r in cur.fetchall()]
         # Pending grade requests from children
         if children:
             child_ids = [c["id"] for c in children]
@@ -491,12 +491,20 @@ def handle_add_task(conn, body):
     emoji = body.get("emoji", "📋")
     require_photo = bool(body.get("require_photo", False))
     require_confirm = bool(body.get("require_confirm", False))
+    deadline_str = body.get("deadline")  # ISO string or None
     if not title:
         return error_response("title required")
+    deadline_val = None
+    if deadline_str:
+        try:
+            from datetime import timezone as _tz
+            deadline_val = datetime.fromisoformat(deadline_str.replace("Z", "+00:00"))
+        except Exception:
+            deadline_val = None
     with conn.cursor() as cur:
         cur.execute(
-            f"INSERT INTO {SCHEMA}.tasks (parent_id, child_id, title, stars, emoji, require_photo, require_confirm) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
-            (parent["id"], child_id, title, stars, emoji, require_photo, require_confirm)
+            f"INSERT INTO {SCHEMA}.tasks (parent_id, child_id, title, stars, emoji, require_photo, require_confirm, deadline) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            (parent["id"], child_id, title, stars, emoji, require_photo, require_confirm, deadline_val)
         )
         task_id = cur.fetchone()[0]
     conn.commit()
@@ -509,7 +517,10 @@ def handle_add_task(conn, body):
     if c_row and CHILD_TOKEN:
         photo_note = "\n📸 Нужен фотоотчёт" if require_photo else ""
         confirm_note = "\n✅ Нужно подтверждение родителя" if require_confirm else ""
-        send_tg_message(CHILD_TOKEN, c_row[0], f"📋 Новое задание от родителя!\n\n{emoji} <b>{title}</b>\n💫 Награда: {stars}⭐{photo_note}{confirm_note}\n\nОткрой @task4kids_bot для выполнения.")
+        deadline_note = ""
+        if deadline_val:
+            deadline_note = f"\n⏰ Срок: до {deadline_val.strftime('%d.%m %H:%M')}"
+        send_tg_message(CHILD_TOKEN, c_row[0], f"📋 Новое задание от родителя!\n\n{emoji} <b>{title}</b>\n💫 Награда: {stars}⭐{photo_note}{confirm_note}{deadline_note}\n\nОткрой @task4kids_bot для выполнения.")
     return json_response({"ok": True, "task_id": task_id})
 
 
@@ -575,6 +586,111 @@ def handle_approve_grade(conn, body):
             cur.execute(f"UPDATE {SCHEMA}.grade_requests SET status = 'rejected' WHERE id = %s", (r_id,))
         conn.commit()
         return json_response({"ok": True, "rejected": True})
+
+
+def handle_request_extension(conn, body):
+    """Ребёнок запрашивает дополнительное время для задачи."""
+    tid = resolve_telegram_id(body, CHILD_TOKEN)
+    if not tid:
+        return error_response("Unauthorized", 401)
+    child = get_child_by_tg(conn, tid)
+    if not child:
+        return error_response("Child not found", 404)
+    task_id = body.get("task_id")
+    if not task_id:
+        return error_response("task_id required")
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT id, title, parent_id, deadline, extension_requested FROM {SCHEMA}.tasks WHERE id = %s AND child_id = %s AND status = 'pending'",
+            (task_id, child["id"])
+        )
+        task = cur.fetchone()
+    if not task:
+        return error_response("Task not found", 404)
+    t_id, title, parent_id, deadline, already_requested = task
+    if already_requested:
+        return error_response("Extension already requested")
+    with conn.cursor() as cur:
+        cur.execute(
+            f"UPDATE {SCHEMA}.tasks SET extension_requested = TRUE WHERE id = %s",
+            (t_id,)
+        )
+    conn.commit()
+    # Уведомить родителя
+    if PARENT_TOKEN and parent_id:
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT telegram_id FROM {SCHEMA}.parents WHERE id = %s", (parent_id,))
+            p_row = cur.fetchone()
+        if p_row:
+            deadline_info = ""
+            if deadline:
+                deadline_info = f"\n⏰ Срок был: {deadline.strftime('%d.%m %H:%M')}"
+            send_tg_message(
+                PARENT_TOKEN, p_row[0],
+                f"⏰ <b>{child['name']}</b> просит доп. время для задачи «<b>{title}</b>»!{deadline_info}\n\nОткрой @parenttask_bot → Задачи чтобы продлить или отказать."
+            )
+    return json_response({"ok": True})
+
+
+def handle_task_extension(conn, body):
+    """Родитель отвечает на запрос дополнительного времени."""
+    tid = resolve_telegram_id(body, PARENT_TOKEN)
+    if not tid:
+        return error_response("Unauthorized", 401)
+    parent = get_parent_by_tg(conn, tid)
+    if not parent:
+        return error_response("Parent not found", 404)
+    task_id = body.get("task_id")
+    action = body.get("action", "grant")  # grant | deny
+    hours = int(body.get("hours", 24))
+    if not task_id:
+        return error_response("task_id required")
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT id, title, child_id, deadline FROM {SCHEMA}.tasks WHERE id = %s AND parent_id = %s AND extension_requested = TRUE",
+            (task_id, parent["id"])
+        )
+        task = cur.fetchone()
+    if not task:
+        return error_response("Task not found or no extension request", 404)
+    t_id, title, child_id, current_deadline = task
+    if action == "grant":
+        now = datetime.now(timezone.utc)
+        base = current_deadline if current_deadline and current_deadline > now else now
+        new_deadline = base + timedelta(hours=hours)
+        with conn.cursor() as cur:
+            cur.execute(
+                f"UPDATE {SCHEMA}.tasks SET deadline = %s, extension_requested = FALSE, extension_granted = TRUE, extension_hours = %s WHERE id = %s",
+                (new_deadline, hours, t_id)
+            )
+        conn.commit()
+        # Уведомить ребёнка
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT telegram_id FROM {SCHEMA}.children WHERE id = %s", (child_id,))
+            c_row = cur.fetchone()
+        if c_row and CHILD_TOKEN:
+            send_tg_message(
+                CHILD_TOKEN, c_row[0],
+                f"✅ Родитель продлил срок для задачи «<b>{title}</b>»!\n\n⏰ Новый дедлайн: {new_deadline.strftime('%d.%m %H:%M')}\n\nУдачи! Открой @task4kids_bot."
+            )
+        return json_response({"ok": True, "new_deadline": new_deadline.isoformat(), "hours_granted": hours})
+    else:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"UPDATE {SCHEMA}.tasks SET extension_requested = FALSE WHERE id = %s",
+                (t_id,)
+            )
+        conn.commit()
+        # Уведомить ребёнка
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT telegram_id FROM {SCHEMA}.children WHERE id = %s", (child_id,))
+            c_row = cur.fetchone()
+        if c_row and CHILD_TOKEN:
+            send_tg_message(
+                CHILD_TOKEN, c_row[0],
+                f"⏰ Родитель не продлил срок для задачи «<b>{title}</b>».\n\nПостарайся выполнить как можно скорее! Открой @task4kids_bot."
+            )
+        return json_response({"ok": True, "denied": True})
 
 
 def handle_buy_reward(conn, body):
@@ -782,6 +898,8 @@ def handler(event: dict, context) -> dict:
             return handle_submit_grade(conn, body)
         if action == "child/reward/buy":
             return handle_buy_reward(conn, body)
+        if action == "child/task/request_extension":
+            return handle_request_extension(conn, body)
 
         # ── Parent routes ──
         if action == "parent/auth":
@@ -790,6 +908,8 @@ def handler(event: dict, context) -> dict:
             return handle_add_task(conn, body)
         if action == "parent/task/confirm":
             return handle_confirm_task(conn, body)
+        if action == "parent/task/extension":
+            return handle_task_extension(conn, body)
         if action == "parent/grade/approve":
             return handle_approve_grade(conn, body)
         if action == "parent/streak/claim":

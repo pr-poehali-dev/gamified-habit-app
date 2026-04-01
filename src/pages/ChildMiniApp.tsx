@@ -29,6 +29,9 @@ type ChildData = {
 type Task = {
   id: number; title: string; stars: number; emoji: string;
   status: string; requirePhoto: boolean; requireConfirm: boolean; photoStatus: string;
+  deadline?: string | null;
+  extensionRequested?: boolean;
+  extensionGranted?: boolean;
 };
 
 type GradeReq = {
@@ -113,6 +116,18 @@ export default function ChildMiniApp() {
     if (res.ok) {
       tg()?.HapticFeedback?.notificationOccurred("success");
       showToast("📝 Запрос отправлен родителю!");
+      load(false);
+    } else {
+      showToast("❌ " + String(res.error || "Ошибка"));
+    }
+  }, []);
+
+  const requestExtension = useCallback(async (taskId: number) => {
+    tg()?.HapticFeedback?.impactOccurred("light");
+    const res = await apiCall("child/task/request_extension", { task_id: taskId });
+    if (res.ok) {
+      tg()?.HapticFeedback?.notificationOccurred("success");
+      showToast("⏰ Запрос на доп. время отправлен родителю!");
       load(false);
     } else {
       showToast("❌ " + String(res.error || "Ошибка"));
@@ -214,6 +229,7 @@ export default function ChildMiniApp() {
             doneTasks={doneTasks}
             approvedTasks={approvedTasks}
             onCompleteTask={completeTask}
+            onRequestExtension={requestExtension}
           />
         )}
         {tab === "shop" && (
