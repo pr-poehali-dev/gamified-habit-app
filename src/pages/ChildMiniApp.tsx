@@ -98,7 +98,18 @@ export default function ChildMiniApp() {
   const completeTask = useCallback(async (taskId: number, photoBase64?: string) => {
     tg()?.HapticFeedback?.impactOccurred("light");
     const body: Record<string, unknown> = { task_id: taskId };
-    if (photoBase64) body.photo_base64 = photoBase64;
+
+    // Если есть фото — сначала загружаем его отдельно в S3, затем передаём URL
+    if (photoBase64) {
+      showToast("📤 Загружаю фото...");
+      const uploadRes = await apiCall("child/upload_photo", { task_id: taskId, photo_base64: photoBase64 });
+      if (!uploadRes.ok) {
+        showToast("❌ Ошибка загрузки фото: " + String(uploadRes.error || "Попробуй снова"));
+        return;
+      }
+      body.photo_url = uploadRes.photo_url;
+    }
+
     const res = await apiCall("child/complete", body);
     if (res.ok) {
       tg()?.HapticFeedback?.notificationOccurred("success");

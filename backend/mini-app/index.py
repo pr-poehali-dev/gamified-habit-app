@@ -385,6 +385,74 @@ def handle_auth_parent(conn, body):
     return json_response({**parent, "telegram_id": tid, "children": children, "tasks": tasks, "gradeRequests": grades, "rewards": rewards})
 
 
+def upload_photo_to_s3(photo_base64: str, task_id: int) -> str:
+    """Загружает фото (base64) в S3 и возвращает публичный URL."""
+    import boto3
+    import base64
+    import uuid
+
+    # Убираем data URL prefix если есть (data:image/jpeg;base64,...)
+    if "," in photo_base64:
+        header, data = photo_base64.split(",", 1)
+        # Определяем расширение из MIME-типа
+        if "png" in header:
+            ext = "png"
+        elif "gif" in header:
+            ext = "gif"
+        elif "webp" in header:
+            ext = "webp"
+        else:
+            ext = "jpg"
+    else:
+        data = photo_base64
+        ext = "jpg"
+
+    image_bytes = base64.b64decode(data)
+    file_key = f"files/task_photos/{task_id}_{uuid.uuid4().hex[:8]}.{ext}"
+
+    s3 = boto3.client(
+        "s3",
+        endpoint_url="https://s3.poehali.dev",
+        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID", ""),
+        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY", ""),
+        region_name="us-east-1",
+    )
+    bucket = os.environ.get("S3_BUCKET", "p84704826")
+    s3.put_object(
+        Bucket=bucket,
+        Key=file_key,
+        Body=image_bytes,
+        ContentType=f"image/{ext}",
+        ACL="public-read",
+    )
+    return f"https://s3.poehali.dev/{bucket}/{file_key}"
+
+
+def handle_upload_photo(conn, body):
+    """Загружает фото задачи в S3 и возвращает URL. Вызывается отдельно перед child/complete."""
+    tid = resolve_telegram_id(body, CHILD_TOKEN)
+    if not tid:
+        return error_response("Unauthorized", 401)
+    child = get_child_by_tg(conn, tid)
+    if not child:
+        return error_response("Child not found", 404)
+    task_id = body.get("task_id")
+    photo_base64 = body.get("photo_base64")
+    if not task_id or not photo_base64:
+        return error_response("task_id and photo_base64 required")
+    # Проверяем что задача принадлежит ребёнку
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT id FROM {SCHEMA}.tasks WHERE id = %s AND child_id = %s", (task_id, child["id"]))
+        if not cur.fetchone():
+            return error_response("Task not found", 404)
+    try:
+        photo_url = upload_photo_to_s3(photo_base64, task_id)
+    except Exception as e:
+        print(f"[upload_photo] S3 error: {e}")
+        return error_response(f"Upload failed: {e}", 500)
+    return json_response({"ok": True, "photo_url": photo_url})
+
+
 def handle_complete_task(conn, body):
     tid = resolve_telegram_id(body, CHILD_TOKEN)
     if not tid:
@@ -402,9 +470,19 @@ def handle_complete_task(conn, body):
         return error_response("Task not found", 404)
     t_id, stars, title, require_confirm, require_photo, parent_id = task
 
-    # Проверяем фото, если оно требуется
+    # Принимаем либо уже загруженный URL (photo_url), либо base64 для обратной совместимости
+    photo_url = body.get("photo_url")
     photo_base64 = body.get("photo_base64")
-    if require_photo and not photo_base64:
+
+    # Если передан base64 (старый путь) — загружаем в S3
+    if not photo_url and photo_base64:
+        try:
+            photo_url = upload_photo_to_s3(photo_base64, t_id)
+        except Exception as e:
+            print(f"[complete_task] S3 upload error: {e}")
+            return error_response(f"Photo upload failed: {e}", 500)
+
+    if require_photo and not photo_url:
         return error_response("photo_required")
 
     # Если задача требует фото — require_confirm тоже должен быть True (автоматически)
@@ -412,11 +490,11 @@ def handle_complete_task(conn, body):
 
     new_status = "pending_confirm" if effective_require_confirm else "approved"
 
-    if photo_base64:
+    if photo_url:
         with conn.cursor() as cur:
             cur.execute(
                 f"UPDATE {SCHEMA}.tasks SET status = %s, completed_at = NOW(), photo_url = %s, photo_status = 'uploaded' WHERE id = %s",
-                (new_status, photo_base64, t_id)
+                (new_status, photo_url, t_id)
             )
     else:
         with conn.cursor() as cur:
@@ -445,7 +523,7 @@ def handle_complete_task(conn, body):
                 cur.execute(f"SELECT telegram_id FROM {SCHEMA}.parents WHERE id = %s", (parent_id,))
                 p_row = cur.fetchone()
             if p_row:
-                photo_note = "\n📸 Ребёнок прикрепил фото — проверь в приложении!" if photo_base64 else ""
+                photo_note = "\n📸 Ребёнок прикрепил фото — проверь в приложении!" if photo_url else ""
                 send_tg_message(PARENT_TOKEN, p_row[0], f"✅ <b>{child['name']}</b> выполнил «<b>{title}</b>» — ждёт твоего подтверждения!\n\n💫 Награда: {stars}⭐{photo_note}\n\nОткрой @parenttask_bot → Задачи.")
         return json_response({"ok": True, "pending_confirm": True})
 
@@ -912,6 +990,8 @@ def handler(event: dict, context) -> dict:
             return handle_connect_child(conn, body)
         if action == "child/complete":
             return handle_complete_task(conn, body)
+        if action == "child/upload_photo":
+            return handle_upload_photo(conn, body)
         if action == "child/grade/submit":
             return handle_submit_grade(conn, body)
         if action == "child/reward/buy":
