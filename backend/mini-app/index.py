@@ -432,11 +432,11 @@ def upload_photo_to_s3(photo_base64: str, task_id: int) -> str:
     access_key = os.environ.get("AWS_ACCESS_KEY_ID", "")
     secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
 
-    # Имя бакета берём из переменной окружения S3_BUCKET
-    bucket = os.environ.get("S3_BUCKET", "")
+    # Имя бакета берём из переменной окружения S3_BUCKET, фолбэк на имя проекта
+    bucket = os.environ.get("S3_BUCKET", "") or "p84704826-gamified-habit-app"
 
     print(f"[S3] bucket={bucket!r}, access_key_len={len(access_key)}, secret_key_len={len(secret_key)}, file_key={file_key}")
-    print(f"[S3] S3_BUCKET env={bucket!r}, AWS_ACCESS_KEY_ID env={'SET' if access_key else 'NOT_SET'}")
+    print(f"[S3] S3_BUCKET env={os.environ.get('S3_BUCKET', 'NOT_SET')!r}, AWS_ACCESS_KEY_ID env={'SET' if access_key else 'NOT_SET'}")
 
     s3 = boto3.client(
         "s3",
