@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 type Child = { id: number; name: string; stars: number; avatar: string; age: number; inviteCode?: string | null; connected?: boolean };
 type Task = {
@@ -115,10 +116,10 @@ export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, o
 
   return (
     <div className="space-y-4">
-      {/* Модалка просмотра фото */}
-      {photoViewUrl && (
+      {/* Модалка просмотра фото — рендерится в body через портал, чтобы fixed работал корректно в Telegram WebApp */}
+      {photoViewUrl && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
           onClick={closePhoto}
           style={{ animation: "fadeIn 0.2s ease" }}>
           <div className="relative w-full max-w-sm" onClick={e => e.stopPropagation()}>
@@ -134,7 +135,8 @@ export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, o
             </button>
             <p className="text-center text-white/70 text-xs mt-3 font-semibold">Нажми вне фото для закрытия</p>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <div className="flex items-center justify-between">
@@ -322,8 +324,8 @@ export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, o
                 </div>
               </div>
 
-              {/* Фото выполнения */}
-              {task.photoUrl && task.photoStatus === "uploaded" && (
+              {/* Фото выполнения — показываем если photoUrl есть (независимо от photoStatus) */}
+              {task.photoUrl && (
                 <div className="px-4 pb-3">
                   <div
                     className="relative rounded-2xl overflow-hidden cursor-pointer active:scale-95 transition-transform"
