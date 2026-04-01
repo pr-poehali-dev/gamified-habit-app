@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { StreakCard } from "@/components/demo/StreakCard";
-import { getParentLevelInfo, getParentLevelTier, PARTNER_PRIZES, type StreakState } from "@/components/demo/types";
+import { StreakCard } from "@/components/ui/StreakCard";
+import { getParentLevelInfo, getParentLevelTier, PARTNER_PRIZES, type StreakState } from "@/lib/gameTypes";
 
 type Child = { id: number; name: string; stars: number; avatar: string; age: number; inviteCode: string | null; connected: boolean };
 type GradeRequest = {

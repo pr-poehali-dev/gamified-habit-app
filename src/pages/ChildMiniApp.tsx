@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { tg } from "@/components/miniapp/types";
 import { apiCall } from "@/components/miniapp/useApi";
-import { getLevelInfo, getLevelEmoji, getSubjectsByAge, type GradeValue, type AchievementId } from "@/components/demo/types";
-import { XpBar, LevelUpModal } from "@/components/demo/XpBar";
+import { getLevelInfo, getLevelEmoji, getSubjectsByAge, type GradeValue, type AchievementId } from "@/lib/gameTypes";
+import { XpBar, LevelUpModal } from "@/components/ui/XpBar";
 import { Loading, ErrorScreen } from "@/components/child/ChildScreens";
 import { ChildTabTasks } from "@/components/child/ChildTabTasks";
 import { ChildTabStars, ChildTabGrades, ChildTabAchievements, ChildTabProfile } from "@/components/child/ChildTabContent";

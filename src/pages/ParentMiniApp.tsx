@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { tg } from "@/components/miniapp/types";
 import { apiCall } from "@/components/miniapp/useApi";
-import { StreakCard } from "@/components/demo/StreakCard";
-import { ParentXpBar } from "@/components/demo/XpBar";
-import { getParentLevelInfo, getParentLevelTier, getParentTip, type StreakState } from "@/components/demo/types";
+import { StreakCard } from "@/components/ui/StreakCard";
+import { ParentXpBar } from "@/components/ui/XpBar";
+import { getParentLevelInfo, getParentLevelTier, getParentTip, type StreakState } from "@/lib/gameTypes";
 import { Loading, ErrorScreen } from "@/components/parent/ParentScreens";
 import { ParentTabTasks } from "@/components/parent/ParentTabTasks";
 import { ParentTabGrades, ParentTabChildren, ParentTabBonuses, ParentTabProfile } from "@/components/parent/ParentTabContent";

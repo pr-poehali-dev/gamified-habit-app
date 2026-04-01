@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { XpBar } from "@/components/demo/XpBar";
-import { AchievementGrid } from "@/components/demo/AchievementBadge";
-import { getLevelInfo, getLevelTier, getLevelEmoji, LEVEL_TIERS, STARS_PER_LEVEL, getSubjectsByAge, GRADE_STARS, type GradeValue, type AchievementId } from "@/components/demo/types";
+import { XpBar } from "@/components/ui/XpBar";
+import { AchievementGrid } from "@/components/ui/AchievementBadge";
+import { getLevelInfo, getLevelTier, getLevelEmoji, LEVEL_TIERS, STARS_PER_LEVEL, getSubjectsByAge, GRADE_STARS, type GradeValue, type AchievementId } from "@/lib/gameTypes";
 
 type GradeReq = {
   id: number; subject: string; grade: number; date: string;
