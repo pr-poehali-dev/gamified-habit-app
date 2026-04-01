@@ -258,11 +258,25 @@ def add_parent_xp(conn, parent_id: int, xp: int):
 def handle_connect_child(conn, body):
     """Привязать ребёнка по коду приглашения из Mini App."""
     tid = resolve_telegram_id(body, CHILD_TOKEN)
+    print(f"[connect_child] tid={tid}, code={body.get('invite_code')}")
     if not tid:
         return error_response("Unauthorized", 401)
     code = (body.get("invite_code") or "").strip().upper()
     if not code:
         return error_response("Введи код приглашения", 400)
+
+    # Сначала проверяем: возможно этот ребёнок УЖЕ подключён с этим telegram_id и этим кодом (ре-логин)
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT id, name, parent_id FROM {SCHEMA}.children WHERE invite_code = %s AND telegram_id = %s",
+            (code, tid)
+        )
+        already_row = cur.fetchone()
+    if already_row:
+        print(f"[connect_child] re-login: child already connected with this telegram_id")
+        return json_response({"ok": True, "child_name": already_row[1]})
+
+    # Проверяем свободный код
     with conn.cursor() as cur:
         cur.execute(
             f"SELECT id, name, parent_id FROM {SCHEMA}.children WHERE invite_code = %s AND telegram_id IS NULL",
@@ -270,11 +284,21 @@ def handle_connect_child(conn, body):
         )
         row = cur.fetchone()
     if not row:
-        return error_response("Код не найден или уже использован", 404)
+        # Дополнительная диагностика: код вообще существует?
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT id, telegram_id FROM {SCHEMA}.children WHERE invite_code = %s", (code,))
+            diag = cur.fetchone()
+        if diag:
+            print(f"[connect_child] code exists but taken by telegram_id={diag[1]}, child_id={diag[0]}")
+            return error_response("Этот код уже использован другим ребёнком. Попроси родителя создать новый код.", 404)
+        else:
+            print(f"[connect_child] code not found in DB")
+            return error_response("Код не найден. Проверь правильность кода.", 404)
     child_id, child_name, parent_id = row
     with conn.cursor() as cur:
         cur.execute(f"UPDATE {SCHEMA}.children SET telegram_id = %s WHERE id = %s", (tid, child_id))
     conn.commit()
+    print(f"[connect_child] success: child_id={child_id}, child_name={child_name}")
     # Уведомить родителя
     if PARENT_TOKEN and parent_id:
         with conn.cursor() as cur:
