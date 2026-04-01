@@ -259,6 +259,14 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
 
 const REWARD_EMOJIS = ["🎁", "🍕", "🍦", "🎮", "🎬", "📚", "🎨", "🧸", "🎠", "🏆", "🚀", "⚽", "🎯", "🎪", "🛍️", "🍫"];
 
+const REWARD_TEMPLATES = [
+  { emoji: "📱", title: "Дополнительное время на планшете/телефоне", cost: 10 },
+  { emoji: "🍕", title: "Пицца на ужин", cost: 15 },
+  { emoji: "🎮", title: "Лишний час видеоигр", cost: 10 },
+  { emoji: "🎬", title: "Поход в кино", cost: 25 },
+  { emoji: "🍦", title: "Мороженое на выбор", cost: 5 },
+];
+
 export function ParentTabBonuses({ streak, parent_points, parent_xp, onClaimStreak, rewards, onAddReward, onRemoveReward }: BonusesProps) {
   const { level } = getParentLevelInfo(parent_xp);
   const tier = getParentLevelTier(level);
@@ -298,6 +306,22 @@ export function ParentTabBonuses({ streak, parent_points, parent_xp, onClaimStre
             </div>
             <div className="p-5 space-y-4">
               <div>
+                <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-2">Быстрый выбор</label>
+                <div className="flex flex-col gap-2">
+                  {REWARD_TEMPLATES.map(t => (
+                    <button
+                      key={t.title}
+                      onClick={() => { setEmoji(t.emoji); setTitle(t.title); setCost(t.cost); }}
+                      className="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-xl bg-gray-50 hover:bg-[#6B7BFF]/10 border border-gray-100 hover:border-[#6B7BFF]/30 transition-all active:scale-95"
+                    >
+                      <span className="text-xl">{t.emoji}</span>
+                      <span className="flex-1 text-sm font-semibold text-gray-700 leading-tight">{t.title}</span>
+                      <span className="text-xs font-black text-amber-500 shrink-0">{t.cost} ⭐</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="border-t border-gray-100 pt-4">
                 <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-2">Эмодзи</label>
                 <div className="flex gap-2 flex-wrap">
                   {REWARD_EMOJIS.map(e => (
