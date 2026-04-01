@@ -33,6 +33,21 @@ type Props = {
 
 const TASK_EMOJIS = ["📋", "🧹", "📚", "🦷", "🗑️", "📖", "🌸", "🐕", "🍽️", "🛁", "🧺", "🏃", "🎨", "🎵"];
 
+const TASK_TEMPLATES = [
+  { title: "Убраться в комнате", emoji: "🧹", stars: 3 },
+  { title: "Почистить зубы", emoji: "🦷", stars: 1 },
+  { title: "Полить цветы", emoji: "🌸", stars: 2 },
+  { title: "Сделать домашнее задание", emoji: "📚", stars: 4 },
+  { title: "Помыть посуду", emoji: "🍽️", stars: 3 },
+  { title: "Пропылесосить", emoji: "🧺", stars: 3 },
+  { title: "Вынести мусор", emoji: "🗑️", stars: 2 },
+  { title: "Почитать книгу", emoji: "📖", stars: 2 },
+  { title: "Заправить кровать", emoji: "🛁", stars: 1 },
+  { title: "Погулять с собакой", emoji: "🐕", stars: 3 },
+  { title: "Сделать зарядку", emoji: "🏃", stars: 2 },
+  { title: "Нарисовать рисунок", emoji: "🎨", stars: 2 },
+];
+
 const DEADLINE_OPTIONS = [
   { label: "Без срока", value: null },
   { label: "1 час", hours: 1 },
@@ -181,6 +196,23 @@ export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, o
                 ))}
               </div>
             </div>
+            {/* Шаблоны задач */}
+            <div>
+              <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-2">⚡ Быстрые шаблоны</label>
+              <div className="flex gap-2 flex-wrap">
+                {TASK_TEMPLATES.map(tpl => (
+                  <button
+                    key={tpl.title}
+                    type="button"
+                    onClick={() => setNewTask(t => ({ ...t, title: tpl.title, emoji: tpl.emoji, stars: tpl.stars }))}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${newTask.title === tpl.title ? "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white shadow-sm scale-105" : "bg-gray-50 text-gray-600 hover:bg-gray-100"}`}>
+                    <span>{tpl.emoji}</span>
+                    <span>{tpl.title}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div>
               <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-1.5">Название *</label>
               <input type="text" value={newTask.title} onChange={e => setNewTask(t => ({ ...t, title: e.target.value }))} placeholder="Убрать комнату"
