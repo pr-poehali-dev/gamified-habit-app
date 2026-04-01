@@ -129,14 +129,15 @@ def send_tg_message(token: str, chat_id: int, text: str, parse_mode="HTML"):
 def get_child_by_tg(conn, telegram_id):
     with conn.cursor() as cur:
         cur.execute(
-            f"SELECT id, name, stars, parent_id, avatar, age FROM {SCHEMA}.children WHERE telegram_id = %s",
+            f"SELECT id, name, stars, parent_id, avatar, age, total_stars_earned FROM {SCHEMA}.children WHERE telegram_id = %s",
             (telegram_id,)
         )
         row = cur.fetchone()
     if not row:
         return None
     return {"id": row[0], "name": row[1], "stars": row[2], "parent_id": row[3],
-            "avatar": row[4] or "👧", "age": row[5] or 9, "role": "child"}
+            "avatar": row[4] or "👧", "age": row[5] or 9, "role": "child",
+            "total_stars_earned": row[6] or 0}
 
 
 def compute_level(stars: int):
@@ -167,18 +168,20 @@ def check_achievements(conn, child_id: int, stats: dict):
 
 def get_child_stats(conn, child_id: int) -> dict:
     with conn.cursor() as cur:
-        cur.execute(f"SELECT stars FROM {SCHEMA}.children WHERE id = %s", (child_id,))
+        cur.execute(f"SELECT stars, total_stars_earned FROM {SCHEMA}.children WHERE id = %s", (child_id,))
         row = cur.fetchone()
         stars = row[0] if row else 0
+        total_stars_earned = row[1] if row else 0
         cur.execute(f"SELECT COUNT(*) FROM {SCHEMA}.tasks WHERE child_id = %s AND status = 'approved'", (child_id,))
         tasks_completed = cur.fetchone()[0]
         cur.execute(f"SELECT COALESCE(SUM(cost), 0) FROM {SCHEMA}.reward_purchases rp JOIN {SCHEMA}.rewards r ON rp.reward_id = r.id WHERE rp.child_id = %s", (child_id,))
         stars_spent = cur.fetchone()[0]
         cur.execute(f"SELECT COUNT(*) FROM {SCHEMA}.reward_purchases WHERE child_id = %s", (child_id,))
         rewards_bought = cur.fetchone()[0]
-        level, _ = compute_level(stars)
+        # Уровень считается от всех заработанных звёзд, а не от текущего баланса
+        level, _ = compute_level(total_stars_earned)
     return {
-        "total_stars": stars, "tasks_completed": tasks_completed,
+        "total_stars": total_stars_earned, "tasks_completed": tasks_completed,
         "stars_spent": stars_spent, "rewards_bought": rewards_bought,
         "level": level, "streak": 0,
     }
@@ -317,7 +320,8 @@ def handle_auth_child(conn, body):
     child = get_child_by_tg(conn, tid)
     if not child:
         return json_response({"role": "unknown", "telegram_id": tid})
-    level, xp_in = compute_level(child["stars"])
+    # Уровень и XP считаются от всех заработанных звёзд (не от баланса)
+    level, xp_in = compute_level(child["total_stars_earned"])
     with conn.cursor() as cur:
         cur.execute(f"SELECT achievement_id FROM {SCHEMA}.achievements WHERE child_id = %s", (child["id"],))
         achievements = [r[0] for r in cur.fetchall()]
@@ -540,7 +544,10 @@ def handle_complete_task(conn, body):
 
     if not effective_require_confirm:
         with conn.cursor() as cur:
-            cur.execute(f"UPDATE {SCHEMA}.children SET stars = stars + %s WHERE id = %s RETURNING stars", (stars, child["id"]))
+            cur.execute(
+                f"UPDATE {SCHEMA}.children SET stars = stars + %s, total_stars_earned = total_stars_earned + %s WHERE id = %s RETURNING stars",
+                (stars, stars, child["id"])
+            )
             new_stars = cur.fetchone()[0]
         conn.commit()
         stats = get_child_stats(conn, child["id"])
@@ -592,7 +599,10 @@ def handle_confirm_task(conn, body):
     if action == "approve":
         with conn.cursor() as cur:
             cur.execute(f"UPDATE {SCHEMA}.tasks SET status = 'approved' WHERE id = %s", (t_id,))
-            cur.execute(f"UPDATE {SCHEMA}.children SET stars = stars + %s WHERE id = %s RETURNING stars", (stars, child_id))
+            cur.execute(
+                f"UPDATE {SCHEMA}.children SET stars = stars + %s, total_stars_earned = total_stars_earned + %s WHERE id = %s RETURNING stars",
+                (stars, stars, child_id)
+            )
             new_stars = cur.fetchone()[0]
         conn.commit()
         add_parent_xp(conn, parent["id"], 30)
@@ -705,7 +715,10 @@ def handle_approve_grade(conn, body):
         stars = GRADE_STARS.get(grade, grade)
         with conn.cursor() as cur:
             cur.execute(f"UPDATE {SCHEMA}.grade_requests SET status = 'approved', stars_awarded = %s WHERE id = %s", (stars, r_id))
-            cur.execute(f"UPDATE {SCHEMA}.children SET stars = stars + %s WHERE id = %s RETURNING stars", (stars, child_id))
+            cur.execute(
+                f"UPDATE {SCHEMA}.children SET stars = stars + %s, total_stars_earned = total_stars_earned + %s WHERE id = %s RETURNING stars",
+                (stars, stars, child_id)
+            )
             new_stars = cur.fetchone()[0]
         conn.commit()
         with conn.cursor() as cur:

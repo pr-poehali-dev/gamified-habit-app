@@ -19,6 +19,7 @@ type ChildData = {
   id: number; name: string; stars: number; age: number;
   avatar: string; telegram_id: number; parent_id: number;
   level: number; xpInLevel: number;
+  total_stars_earned: number;
   achievements: AchievementId[];
   stickers: { stickerId: string; count: number }[];
   gradeRequests: GradeReq[];
@@ -77,7 +78,9 @@ export default function ChildMiniApp() {
     const res = await apiCall("child/auth", tgId ? { telegram_id: tgId } : {});
     if (res.role === "child") {
       const d = res as unknown as ChildData;
-      const lvl = getLevelInfo(d.stars).level;
+      // Если total_stars_earned не пришёл с сервера — используем stars как fallback
+      if (!d.total_stars_earned) d.total_stars_earned = d.stars;
+      const lvl = getLevelInfo(d.total_stars_earned).level;
       if (!silent) prevLevelRef.current = lvl;
       // Запоминаем, что ребёнок был успешно подключён
       localStorage.setItem("child_was_connected", "1");
@@ -161,13 +164,14 @@ export default function ChildMiniApp() {
 
   useEffect(() => {
     if (!data) return;
-    const newLevel = getLevelInfo(data.stars).level;
+    // Уровень считается от total_stars_earned, а не от текущего баланса
+    const newLevel = getLevelInfo(data.total_stars_earned ?? data.stars).level;
     if (newLevel > prevLevelRef.current) {
       setLevelUpLevel(newLevel);
       tg()?.HapticFeedback?.notificationOccurred("success");
     }
     prevLevelRef.current = newLevel;
-  }, [data?.stars]);
+  }, [data?.total_stars_earned]);
 
   if (loading) return <Loading />;
   if (error === "not_connected") {
@@ -195,7 +199,8 @@ export default function ChildMiniApp() {
     );
   }
 
-  const { level } = getLevelInfo(data.stars);
+  // Уровень и XP считаются от всех заработанных звёзд (не списываются при покупках)
+  const { level } = getLevelInfo(data.total_stars_earned ?? data.stars);
   const levelEmoji = getLevelEmoji(level);
   const pendingGrades = data.gradeRequests.filter(g => g.status === "pending");
   const pendingTasks = data.tasks.filter(t => t.status === "pending");
@@ -230,7 +235,7 @@ export default function ChildMiniApp() {
           </div>
         </div>
         <div className="bg-white/80 backdrop-blur rounded-2xl px-4 py-3 shadow-sm">
-          <XpBar stars={data.stars} />
+          <XpBar stars={data.total_stars_earned ?? data.stars} />
         </div>
       </div>
 
@@ -270,6 +275,7 @@ export default function ChildMiniApp() {
             avatar={data.avatar}
             age={data.age}
             stars={data.stars}
+            totalStarsEarned={data.total_stars_earned ?? data.stars}
             level={level}
             levelEmoji={levelEmoji}
             approvedTasksCount={approvedTasks.length}

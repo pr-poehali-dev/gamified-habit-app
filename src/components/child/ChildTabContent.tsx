@@ -10,26 +10,28 @@ type GradeReq = {
 
 // ─── Stars tab ────────────────────────────────────────────────────────────────
 
-type StarsProps = { stars: number; level: number; levelEmoji: string };
+type StarsProps = { stars: number; totalStarsEarned: number; level: number; levelEmoji: string };
 
-export function ChildTabStars({ stars, level, levelEmoji }: StarsProps) {
+export function ChildTabStars({ stars, totalStarsEarned, level, levelEmoji }: StarsProps) {
+  // XP и уровень считаются от всех заработанных звёзд (не списываются при покупках)
+  const earned = totalStarsEarned ?? stars;
   return (
     <>
       <h2 className="text-lg font-black text-[#2D1B69]">Мои звёзды</h2>
       <div className="bg-gradient-to-br from-[#FFD700] to-[#FF9500] rounded-3xl p-6 text-center shadow-lg">
         <div className="text-7xl mb-2">⭐</div>
         <div className="text-5xl font-black text-white">{stars}</div>
-        <div className="text-white/80 font-bold mt-1">звёзд собрано</div>
+        <div className="text-white/80 font-bold mt-1">звёзд для обмена</div>
       </div>
       <div className="bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-3xl p-5 text-center shadow-lg">
         <div className="text-5xl mb-1">{levelEmoji}</div>
         <div className="text-white/80 text-xs font-semibold uppercase tracking-widest mb-1">{getLevelTier(level).title} · Уровень {level}</div>
         <div className="mt-3">
           <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-yellow-300 to-orange-400 rounded-full transition-all duration-700" style={{ width: `${getLevelInfo(stars).xpPct}%` }} />
+            <div className="h-full bg-gradient-to-r from-yellow-300 to-orange-400 rounded-full transition-all duration-700" style={{ width: `${getLevelInfo(earned).xpPct}%` }} />
           </div>
           <p className="text-white/70 text-xs mt-1.5">
-            {getLevelInfo(stars).xpInLevel}/10 XP · до ур. {level + 1} ещё {STARS_PER_LEVEL - getLevelInfo(stars).xpInLevel}⭐
+            {getLevelInfo(earned).xpInLevel}/10 XP · до ур. {level + 1} ещё {STARS_PER_LEVEL - getLevelInfo(earned).xpInLevel}⭐
           </p>
         </div>
       </div>
@@ -258,11 +260,12 @@ export function ChildTabShop({ stars, rewards, onBuy }: ShopProps) {
 
 type ProfileProps = {
   name: string; avatar: string; age: number;
-  stars: number; level: number; levelEmoji: string;
+  stars: number; totalStarsEarned: number; level: number; levelEmoji: string;
   approvedTasksCount: number; achievementsCount: number;
 };
 
-export function ChildTabProfile({ name, avatar, age, stars, level, levelEmoji, approvedTasksCount, achievementsCount }: ProfileProps) {
+export function ChildTabProfile({ name, avatar, age, stars, totalStarsEarned, level, levelEmoji, approvedTasksCount, achievementsCount }: ProfileProps) {
+  const earned = totalStarsEarned ?? stars;
   return (
     <>
       <div className="bg-gradient-to-br from-[#FF6B9D] to-[#FF9B6B] rounded-3xl p-6 text-center text-white shadow-lg">
@@ -275,7 +278,8 @@ export function ChildTabProfile({ name, avatar, age, stars, level, levelEmoji, a
         </div>
       </div>
       <div className="bg-white/80 rounded-2xl px-4 py-3 shadow-sm">
-        <XpBar stars={stars} showTierHint />
+        {/* XP считается от всех заработанных звёзд, не от баланса */}
+        <XpBar stars={earned} showTierHint />
       </div>
       <div className="grid grid-cols-2 gap-3">
         {[
