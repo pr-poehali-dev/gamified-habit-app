@@ -86,24 +86,27 @@ def validate_tg_init_data(init_data: str, bot_token: str) -> dict | None:
 
 
 def resolve_telegram_id(body: dict, bot_token: str):
-    """Возвращает telegram_id из initData или напрямую (dev-режим).
-    Если валидация подписи не прошла — всё равно берём user.id из initData
-    (домен мог не быть зарегистрирован через BotFather /setdomain).
-    """
+    """Возвращает telegram_id из initData или напрямую."""
     init_data = body.get("initData", "")
+    print(f"[DEBUG] initData present: {bool(init_data)}, length: {len(init_data)}")
+    print(f"[DEBUG] telegram_id in body: {body.get('telegram_id')}")
+
     if init_data:
-        # Сначала пробуем строгую валидацию
+        # Строгая валидация
         user = validate_tg_init_data(init_data, bot_token)
+        print(f"[DEBUG] strict validation result: {user}")
         if user:
             return user["id"]
-        # Fallback: берём user.id без проверки подписи
+        # Fallback: user.id без проверки подписи
         try:
             parsed = parse_qs(init_data)
+            print(f"[DEBUG] parsed keys: {list(parsed.keys())}")
             if "user" in parsed:
                 user_data = json.loads(unquote(parsed["user"][0]))
+                print(f"[DEBUG] user_data: {user_data}")
                 return user_data.get("id")
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[DEBUG] fallback error: {e}")
         return None
     tid = body.get("telegram_id")
     return int(tid) if tid else None
