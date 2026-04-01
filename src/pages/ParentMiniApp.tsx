@@ -43,12 +43,17 @@ type ParentTab = "tasks" | "grades" | "children" | "bonuses" | "profile";
 
 // ─── Loading / Error screens ──────────────────────────────────────────────────
 
-function Loading() {
+function Loading({ debug }: { debug?: string }) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#F0F4FF] to-[#F4F0FF]">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#F0F4FF] to-[#F4F0FF] px-6">
       <div className="text-5xl mb-4">👨</div>
       <p className="text-[#1E1B4B] font-black text-lg">Загружаем профиль...</p>
       <div className="mt-4 w-8 h-8 border-2 border-[#6B7BFF] border-t-transparent rounded-full animate-spin" />
+      {debug && (
+        <div className="mt-6 bg-black/10 rounded-xl px-4 py-3 text-xs text-gray-500 break-all max-w-xs text-center">
+          {debug}
+        </div>
+      )}
     </div>
   );
 }
@@ -70,6 +75,7 @@ export default function ParentMiniApp() {
   const [data, setData] = useState<ParentData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string>("");
   const [tab, setTab] = useState<ParentTab>("tasks");
   const [toast, setToast] = useState<string | null>(null);
   const [showAddTask, setShowAddTask] = useState(false);
@@ -86,15 +92,22 @@ export default function ParentMiniApp() {
     const webapp = tg();
     const tgId = webapp?.initDataUnsafe?.user?.id;
     const firstName = webapp?.initDataUnsafe?.user?.first_name || "";
+    const initDataLen = webapp?.initData?.length ?? 0;
+
+    setDebugInfo(`tg: ${webapp ? "✓" : "✗"} | id: ${tgId ?? "—"} | initData: ${initDataLen}б`);
+
     const res = await apiCall("parent/auth", {
       ...(tgId ? { telegram_id: tgId, first_name: firstName } : {}),
     });
     if (res.role === "parent") {
       setData(res as unknown as ParentData);
-    } else if (res.role === "unknown" || res.error) {
-      setError("Аккаунт не найден.\n\nОткрой @parenttask_bot в Telegram и нажми /start, затем снова открой приложение.");
+    } else if (res.role === "unknown") {
+      // Новый пользователь — авторегистрация на бэкенде уже происходит
+      // Попробуем ещё раз через секунду
+      setTimeout(() => load(), 1000);
+      return;
     } else {
-      setError(String(res.error || "Ошибка авторизации"));
+      setError("Не удалось подключиться. Попробуй открыть через @parenttask_bot");
     }
     setLoading(false);
   };
@@ -140,7 +153,7 @@ export default function ParentMiniApp() {
     else showToast(String(res.error || "Уже получено сегодня"));
   }, []);
 
-  if (loading) return <Loading />;
+  if (loading) return <Loading debug={debugInfo} />;
   if (error || !data) return <ErrorScreen msg={error || "Нет данных"} />;
 
   const streak: StreakState = {
