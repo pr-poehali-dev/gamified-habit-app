@@ -115,6 +115,7 @@ export default function ParentMiniApp() {
   const rejectTask = useCallback(async (taskId: number) => {
     const res = await apiCall("parent/task/confirm", { task_id: taskId, action: "reject" });
     if (res.ok) { showToast("↩️ Задача возвращена"); load(false); }
+    else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const approveGrade = useCallback(async (reqId: number) => {
