@@ -415,12 +415,16 @@ def upload_photo_to_s3(photo_base64: str, task_id: int) -> str:
     secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
     bucket = os.environ.get("S3_BUCKET", "")
 
-    # Если S3_BUCKET не задан — пробуем вывести из access_key (на poehali.dev ACCESS_KEY_ID обычно равен имени бакета)
-    if not bucket and access_key:
-        # На poehali.dev AWS_ACCESS_KEY_ID совпадает с именем бакета (например p84704826)
-        bucket = access_key.split(":")[0] if ":" in access_key else access_key
+    # Если S3_BUCKET не задан — выводим имя бакета из схемы БД (на poehali.dev схема = t_{project_id}_...)
+    if not bucket:
+        # Схема вида t_p84704826_gamified_habit_app -> бакет p84704826
+        schema_parts = SCHEMA.split("_")
+        if len(schema_parts) >= 2:
+            bucket = schema_parts[1]  # p84704826
+        elif access_key:
+            bucket = access_key.split(":")[0] if ":" in access_key else access_key
 
-    print(f"[S3] bucket={bucket!r}, access_key_len={len(access_key)}, secret_key_len={len(secret_key)}, file_key={file_key}")
+    print(f"[S3] bucket={bucket!r}, access_key_len={len(access_key)}, secret_key_len={len(secret_key)}, schema={SCHEMA!r}, file_key={file_key}")
 
     s3 = boto3.client(
         "s3",
