@@ -2,7 +2,7 @@
 API для Telegram Mini App СтарКидс.
 Два бота: parenttask_bot (родитель) и task4kids_bot (ребёнок).
 Полный функционал: задачи, звёзды, ачивки, оценки, стикеры, стрики, подтверждения.
-v2
+v2.1
 """
 import json
 import os
