@@ -1125,6 +1125,169 @@ def handle_child_delete_task(conn, body):
     return json_response({"ok": True})
 
 
+def handle_child_analytics(conn, body):
+    """Детальная аналитика по всем детям родителя."""
+    tid = resolve_telegram_id(body, PARENT_TOKEN)
+    if not tid:
+        return error_response("Unauthorized", 401)
+    parent = get_parent_by_tg(conn, tid)
+    if not parent:
+        return error_response("Parent not found", 404)
+
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT id, name, avatar, age, stars, total_stars_earned FROM {SCHEMA}.children WHERE parent_id = %s ORDER BY created_at",
+            (parent["id"],)
+        )
+        children_rows = cur.fetchall()
+
+    result = []
+    for child_id, name, avatar, age, stars, total_stars_earned in children_rows:
+        total_stars_earned = total_stars_earned or 0
+        stars = stars or 0
+        level, _ = compute_level(total_stars_earned)
+
+        with conn.cursor() as cur:
+            # Задачи: всего, выполненных, отменённых, на рассмотрении, в процессе
+            cur.execute(f"""
+                SELECT
+                    COUNT(*) AS total,
+                    COUNT(*) FILTER (WHERE status = 'approved') AS completed,
+                    COUNT(*) FILTER (WHERE status = 'pending') AS pending,
+                    COUNT(*) FILTER (WHERE status = 'pending_confirm') AS pending_confirm,
+                    COALESCE(SUM(stars) FILTER (WHERE status = 'approved'), 0) AS earned_from_tasks,
+                    COUNT(*) FILTER (WHERE deadline IS NOT NULL AND status = 'pending' AND deadline < NOW()) AS overdue,
+                    COUNT(*) FILTER (WHERE require_photo = true) AS with_photo,
+                    COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days') AS tasks_last_7d,
+                    COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days') AS tasks_last_30d,
+                    COUNT(*) FILTER (WHERE status = 'approved' AND completed_at >= NOW() - INTERVAL '7 days') AS completed_last_7d,
+                    COUNT(*) FILTER (WHERE status = 'approved' AND completed_at >= NOW() - INTERVAL '30 days') AS completed_last_30d
+                FROM {SCHEMA}.tasks WHERE child_id = %s
+            """, (child_id,))
+            t = cur.fetchone()
+            tasks_total, tasks_completed, tasks_pending, tasks_pending_confirm, earned_from_tasks, tasks_overdue, tasks_with_photo, tasks_last_7d, tasks_last_30d, completed_last_7d, completed_last_30d = t
+
+            # Награды: потрачено звёзд, куплено наград, топ наград
+            cur.execute(f"""
+                SELECT
+                    COALESCE(SUM(r.cost), 0) AS stars_spent,
+                    COUNT(*) AS rewards_bought
+                FROM {SCHEMA}.reward_purchases rp
+                JOIN {SCHEMA}.rewards r ON rp.reward_id = r.id
+                WHERE rp.child_id = %s
+            """, (child_id,))
+            rw = cur.fetchone()
+            stars_spent, rewards_bought = rw
+
+            # Топ-3 наиболее покупаемых награды
+            cur.execute(f"""
+                SELECT r.title, r.emoji, COUNT(*) AS cnt
+                FROM {SCHEMA}.reward_purchases rp
+                JOIN {SCHEMA}.rewards r ON rp.reward_id = r.id
+                WHERE rp.child_id = %s
+                GROUP BY r.id, r.title, r.emoji
+                ORDER BY cnt DESC
+                LIMIT 3
+            """, (child_id,))
+            top_rewards = [{"title": row[0], "emoji": row[1], "count": row[2]} for row in cur.fetchall()]
+
+            # Ачивки
+            cur.execute(f"SELECT achievement_id, unlocked_at FROM {SCHEMA}.achievements WHERE child_id = %s ORDER BY unlocked_at", (child_id,))
+            achievements = [{"id": row[0], "unlockedAt": str(row[1])} for row in cur.fetchall()]
+
+            # Оценки: всего, среднее, по предметам
+            cur.execute(f"""
+                SELECT
+                    COUNT(*) AS total,
+                    COUNT(*) FILTER (WHERE status = 'approved') AS approved,
+                    COALESCE(AVG(grade) FILTER (WHERE status = 'approved'), 0) AS avg_grade,
+                    COALESCE(SUM(stars_awarded) FILTER (WHERE status = 'approved'), 0) AS stars_from_grades
+                FROM {SCHEMA}.grade_requests WHERE child_id = %s
+            """, (child_id,))
+            gr = cur.fetchone()
+            grades_total, grades_approved, avg_grade, stars_from_grades = gr
+
+            # Топ-3 предметов по оценкам
+            cur.execute(f"""
+                SELECT subject, ROUND(AVG(grade)::numeric, 1) AS avg_g, COUNT(*) AS cnt
+                FROM {SCHEMA}.grade_requests
+                WHERE child_id = %s AND status = 'approved'
+                GROUP BY subject
+                ORDER BY avg_g DESC
+                LIMIT 3
+            """, (child_id,))
+            top_subjects = [{"subject": row[0], "avgGrade": float(row[1]), "count": row[2]} for row in cur.fetchall()]
+
+            # Динамика по неделям (последние 4 недели): задач выполнено и звёзд заработано
+            cur.execute(f"""
+                SELECT
+                    DATE_TRUNC('week', completed_at) AS week,
+                    COUNT(*) AS tasks_done,
+                    COALESCE(SUM(stars), 0) AS stars_earned
+                FROM {SCHEMA}.tasks
+                WHERE child_id = %s AND status = 'approved' AND completed_at IS NOT NULL
+                  AND completed_at >= NOW() - INTERVAL '28 days'
+                GROUP BY week
+                ORDER BY week
+            """, (child_id,))
+            weekly_activity = [{"week": str(row[0])[:10], "tasksDone": row[1], "starsEarned": row[2]} for row in cur.fetchall()]
+
+            # Соотношение оценок (5,4,3,2)
+            cur.execute(f"""
+                SELECT grade, COUNT(*) FROM {SCHEMA}.grade_requests
+                WHERE child_id = %s AND status = 'approved'
+                GROUP BY grade ORDER BY grade DESC
+            """, (child_id,))
+            grade_distribution = {str(row[0]): row[1] for row in cur.fetchall()}
+
+        # Коэффициент выполнения задач
+        completion_rate = round((tasks_completed / tasks_total * 100) if tasks_total > 0 else 0, 1)
+        stars_balance = total_stars_earned - stars_spent
+
+        result.append({
+            "childId": child_id,
+            "name": name,
+            "avatar": avatar or "👧",
+            "age": age or 0,
+            "level": level,
+            "starsBalance": stars,
+            "totalStarsEarned": total_stars_earned,
+            "starsSpent": int(stars_spent),
+            "starsFromTasks": int(earned_from_tasks),
+            "starsFromGrades": int(stars_from_grades),
+            "tasks": {
+                "total": int(tasks_total),
+                "completed": int(tasks_completed),
+                "pending": int(tasks_pending),
+                "pendingConfirm": int(tasks_pending_confirm),
+                "overdue": int(tasks_overdue),
+                "withPhoto": int(tasks_with_photo),
+                "last7d": int(tasks_last_7d),
+                "last30d": int(tasks_last_30d),
+                "completedLast7d": int(completed_last_7d),
+                "completedLast30d": int(completed_last_30d),
+                "completionRate": float(completion_rate),
+            },
+            "rewards": {
+                "bought": int(rewards_bought),
+                "starsSpent": int(stars_spent),
+                "topRewards": top_rewards,
+            },
+            "grades": {
+                "total": int(grades_total),
+                "approved": int(grades_approved),
+                "avgGrade": round(float(avg_grade), 1),
+                "starsFromGrades": int(stars_from_grades),
+                "topSubjects": top_subjects,
+                "distribution": grade_distribution,
+            },
+            "achievements": achievements,
+            "weeklyActivity": weekly_activity,
+        })
+
+    return json_response({"ok": True, "analytics": result})
+
+
 def handler(event: dict, context) -> dict:
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": cors_headers(), "body": ""}
@@ -1186,6 +1349,8 @@ def handler(event: dict, context) -> dict:
             return handle_delete_task(conn, body)
         if action == "parent/task/cancel":
             return handle_cancel_task(conn, body)
+        if action == "parent/analytics":
+            return handle_child_analytics(conn, body)
 
         return error_response("Not found", 404)
     finally:

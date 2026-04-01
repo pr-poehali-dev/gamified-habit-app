@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { getParentLevelInfo, getParentLevelTier } from "@/lib/gameTypes";
+import { ChildAnalyticsCard, type ChildAnalytics } from "./ChildAnalyticsCard";
+import { apiCall } from "@/components/miniapp/useApi";
 
 type Child = { id: number; name: string; stars: number; avatar: string; age: number; inviteCode: string | null; connected: boolean };
 
@@ -27,6 +29,51 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
   const [avatar, setAvatar] = useState("👧");
   const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+
+  // Аналитика
+  const [analyticsData, setAnalyticsData] = useState<ChildAnalytics[] | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+
+  const loadAnalytics = async () => {
+    if (analyticsData) {
+      setShowAnalytics(v => !v);
+      return;
+    }
+    setAnalyticsLoading(true);
+    setAnalyticsError(null);
+    try {
+      const res = await apiCall("parent/analytics", {});
+      if (res.ok && res.analytics) {
+        setAnalyticsData(res.analytics as ChildAnalytics[]);
+        setShowAnalytics(true);
+      } else {
+        setAnalyticsError("Не удалось загрузить аналитику");
+      }
+    } catch {
+      setAnalyticsError("Ошибка загрузки");
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  const refreshAnalytics = async () => {
+    setAnalyticsLoading(true);
+    setAnalyticsError(null);
+    try {
+      const res = await apiCall("parent/analytics", {});
+      if (res.ok && res.analytics) {
+        setAnalyticsData(res.analytics as ChildAnalytics[]);
+      } else {
+        setAnalyticsError("Не удалось обновить");
+      }
+    } catch {
+      setAnalyticsError("Ошибка обновления");
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
 
   const shareCode = async (id: number, code: string, cName: string) => {
     const text = `Привет! Я жду тебя в приложении СтарКидс 🌟\n\n1️⃣ Открой Telegram → найди @task4kids_bot\n2️⃣ Нажми кнопку «Открыть СтарКидс»\n3️⃣ Введи код: ${code}\n\nИли перейди по ссылке: https://t.me/task4kids_bot?start=${code}`;
@@ -81,6 +128,69 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
           </div>
         ))}
       </div>
+
+      {/* ── ANALYTICS SECTION ── */}
+      {children.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-[#1E1B4B]">📊 Аналитика</h2>
+            <div className="flex items-center gap-2">
+              {showAnalytics && analyticsData && (
+                <button
+                  onClick={refreshAnalytics}
+                  disabled={analyticsLoading}
+                  className="text-xs font-bold text-[#6B7BFF] bg-[#6B7BFF]/10 rounded-xl px-3 py-1.5 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {analyticsLoading ? "⏳" : "🔄 Обновить"}
+                </button>
+              )}
+              <button
+                onClick={loadAnalytics}
+                disabled={analyticsLoading}
+                className={`text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-transform disabled:opacity-50 ${
+                  showAnalytics
+                    ? "bg-gray-100 text-gray-500"
+                    : "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white"
+                }`}
+              >
+                {analyticsLoading ? "⏳ Загрузка..." : showAnalytics ? "✕ Скрыть" : "📈 Показать"}
+              </button>
+            </div>
+          </div>
+
+          {analyticsError && (
+            <div className="bg-red-50 border border-red-100 rounded-2xl p-3 text-center">
+              <p className="text-sm font-bold text-red-500">{analyticsError}</p>
+              <button onClick={refreshAnalytics} className="text-xs font-bold text-red-400 underline mt-1">Попробовать снова</button>
+            </div>
+          )}
+
+          {showAnalytics && analyticsData && (
+            <div className="space-y-4">
+              {analyticsData.length === 0 ? (
+                <div className="bg-white rounded-3xl p-6 text-center shadow-sm">
+                  <p className="text-3xl mb-2">📊</p>
+                  <p className="text-sm font-bold text-gray-400">Данных пока нет</p>
+                </div>
+              ) : (
+                analyticsData.map(childData => (
+                  <ChildAnalyticsCard key={childData.childId} data={childData} />
+                ))
+              )}
+            </div>
+          )}
+
+          {!showAnalytics && !analyticsLoading && (
+            <div className="bg-gradient-to-r from-[#6B7BFF]/8 to-[#9B6BFF]/8 border border-[#6B7BFF]/20 rounded-2xl p-4 flex items-center gap-3">
+              <span className="text-2xl">📈</span>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-[#1E1B4B]">Детальная статистика</p>
+                <p className="text-xs text-gray-500 mt-0.5">Задачи, награды, оценки, ачивки по каждому ребёнку</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Children section */}
       <div className="flex items-center justify-between">
