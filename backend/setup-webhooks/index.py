@@ -47,14 +47,18 @@ def handler(event: dict, context) -> dict:
     child_token = os.environ.get("CHILD_BOT_TOKEN", "")
     parent_token = os.environ.get("PARENT_BOT_TOKEN", "")
 
-    mini_app_url = os.environ.get("MINI_APP_URL", "")
+    mini_app_url = os.environ.get("MINI_APP_URL", "").rstrip("/")
     results = {}
+
+    # URL для каждого бота — отдельный маршрут /child и /parent
+    child_mini_app_url = f"{mini_app_url}/child" if mini_app_url else ""
+    parent_mini_app_url = f"{mini_app_url}/parent" if mini_app_url else ""
 
     if child_token:
         results["child_bot_webhook"] = set_webhook(child_token, CHILD_BOT_URL)
         results["child_bot_info"] = get_webhook_info(child_token)
-        if mini_app_url:
-            results["child_bot_menu"] = set_menu_button(child_token, mini_app_url)
+        if child_mini_app_url:
+            results["child_bot_menu"] = set_menu_button(child_token, child_mini_app_url, "⭐ Открыть СтарКидс")
         else:
             results["child_bot_menu"] = {"skipped": "MINI_APP_URL not set"}
     else:
@@ -63,12 +67,17 @@ def handler(event: dict, context) -> dict:
     if parent_token:
         results["parent_bot_webhook"] = set_webhook(parent_token, PARENT_BOT_URL)
         results["parent_bot_info"] = get_webhook_info(parent_token)
-        if mini_app_url:
-            results["parent_bot_menu"] = set_menu_button(parent_token, mini_app_url)
+        if parent_mini_app_url:
+            results["parent_bot_menu"] = set_menu_button(parent_token, parent_mini_app_url, "👨 Открыть СтарКидс")
         else:
             results["parent_bot_menu"] = {"skipped": "MINI_APP_URL not set"}
     else:
         results["parent_bot"] = {"error": "PARENT_BOT_TOKEN not set"}
+
+    results["urls"] = {
+        "child_mini_app": child_mini_app_url or "не задан MINI_APP_URL",
+        "parent_mini_app": parent_mini_app_url or "не задан MINI_APP_URL",
+    }
 
     return {
         "statusCode": 200,
