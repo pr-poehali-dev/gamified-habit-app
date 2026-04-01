@@ -2,7 +2,7 @@
 Регистрирует webhooks для обоих Telegram-ботов.
 Вызывается один раз после добавления токенов.
 GET / — регистрирует оба webhook и кнопки меню, возвращает результат.
-Боты: @parenttask_bot → /parent, @task4kids_bot → /child
+Боты: @parenttask_bot → /parent, @task4kids_bot → /child. v2
 """
 import json
 import os
@@ -48,12 +48,12 @@ def handler(event: dict, context) -> dict:
     child_token = os.environ.get("CHILD_BOT_TOKEN", "")
     parent_token = os.environ.get("PARENT_BOT_TOKEN", "")
 
-    mini_app_url = os.environ.get("MINI_APP_URL", "").rstrip("/")
+    mini_app_url = os.environ.get("MINI_APP_URL", "https://tasks4kids.ru").rstrip("/")
     results = {}
 
     # URL для каждого бота — отдельный маршрут /child и /parent
-    child_mini_app_url = f"{mini_app_url}/child" if mini_app_url else ""
-    parent_mini_app_url = f"{mini_app_url}/parent" if mini_app_url else ""
+    child_mini_app_url = f"{mini_app_url}/child"
+    parent_mini_app_url = f"{mini_app_url}/parent"
 
     if child_token:
         results["child_bot_webhook"] = set_webhook(child_token, CHILD_BOT_URL)
