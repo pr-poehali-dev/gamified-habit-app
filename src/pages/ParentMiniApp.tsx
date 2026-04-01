@@ -112,79 +112,79 @@ export default function ParentMiniApp() {
 
   const confirmTask = useCallback(async (taskId: number) => {
     const res = await apiCall("parent/task/confirm", { task_id: taskId, confirm_action: "approve" });
-    if (res.ok) { showToast("✅ Задача подтверждена!"); load(false); }
+    if (res.ok) { showToast("✅ Задача подтверждена!"); load(true); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const rejectTask = useCallback(async (taskId: number) => {
     const res = await apiCall("parent/task/confirm", { task_id: taskId, confirm_action: "reject" });
-    if (res.ok) { showToast("↩️ Задача возвращена"); load(false); }
+    if (res.ok) { showToast("↩️ Задача возвращена"); load(true); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const approveGrade = useCallback(async (reqId: number) => {
     const res = await apiCall("parent/grade/approve", { request_id: reqId, grade_action: "approve" });
-    if (res.ok) { showToast(`🌟 Оценка подтверждена! +${res.stars_awarded}⭐`); load(false); }
+    if (res.ok) { showToast(`🌟 Оценка подтверждена! +${res.stars_awarded}⭐`); load(true); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const rejectGrade = useCallback(async (reqId: number) => {
     const res = await apiCall("parent/grade/approve", { request_id: reqId, grade_action: "reject" });
-    if (res.ok) { showToast("↩️ Оценка отклонена"); load(false); }
+    if (res.ok) { showToast("↩️ Оценка отклонена"); load(true); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const addTask = useCallback(async (newTask: { title: string; stars: number; emoji: string; childId: number; requirePhoto: boolean; requireConfirm: boolean; deadline: string | null }) => {
     const res = await apiCall("parent/task/add", { ...newTask, child_id: newTask.childId, require_photo: newTask.requirePhoto, require_confirm: newTask.requireConfirm, deadline: newTask.deadline });
-    if (res.ok) { showToast("📋 Задача создана!"); load(false); }
+    if (res.ok) { showToast("📋 Задача создана!"); load(true); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, [data]);
 
   const grantExtension = useCallback(async (taskId: number, hours: number) => {
     const res = await apiCall("parent/task/extension", { task_id: taskId, extension_action: "grant", hours });
-    if (res.ok) { showToast(`⏰ Продлено на ${hours}ч!`); load(false); }
+    if (res.ok) { showToast(`⏰ Продлено на ${hours}ч!`); load(true); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const denyExtension = useCallback(async (taskId: number) => {
     const res = await apiCall("parent/task/extension", { task_id: taskId, extension_action: "deny" });
-    if (res.ok) { showToast("✗ Запрос на продление отклонён"); load(false); }
+    if (res.ok) { showToast("✗ Запрос на продление отклонён"); load(true); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const claimStreak = useCallback(async () => {
     const res = await apiCall("parent/streak/claim");
-    if (res.ok) { showToast(`🔥 +${res.xp} XP и +${res.points} баллов!`); load(false); }
+    if (res.ok) { showToast(`🔥 +${res.xp} XP и +${res.points} баллов!`); load(true); }
     else showToast(String(res.error || "Уже получено сегодня"));
   }, []);
 
   const addChild = useCallback(async (name: string, age: number, avatar: string) => {
     const res = await apiCall("parent/child/add", { name, age, avatar });
-    if (res.ok) { showToast("👶 Ребёнок добавлен!"); load(false); }
+    if (res.ok) { showToast("👶 Ребёнок добавлен!"); load(true); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const refreshInvite = useCallback(async (childId: number) => {
     const res = await apiCall("parent/child/invite", { child_id: childId });
-    if (res.ok) { showToast("🔑 Новый код создан!"); load(false); }
+    if (res.ok) { showToast("🔑 Новый код создан!"); load(true); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const removeChild = useCallback(async (childId: number) => {
     const res = await apiCall("parent/child/remove", { child_id: childId });
-    if (res.ok) { showToast("🗑 Профиль удалён"); load(false); }
+    if (res.ok) { showToast("🗑 Профиль удалён"); load(true); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const addReward = useCallback(async (title: string, cost: number, emoji: string, childId: number, quantity: number) => {
     const res = await apiCall("parent/reward/add", { title, cost, emoji, child_id: childId, quantity });
-    if (res.ok) { showToast("🎁 Награда добавлена!"); load(false); }
+    if (res.ok) { showToast("🎁 Награда добавлена!"); load(true); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const removeReward = useCallback(async (rewardId: number) => {
     const res = await apiCall("parent/reward/remove", { reward_id: rewardId });
-    if (res.ok) { showToast("🗑 Награда удалена"); load(false); }
+    if (res.ok) { showToast("🗑 Награда удалена"); load(true); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
