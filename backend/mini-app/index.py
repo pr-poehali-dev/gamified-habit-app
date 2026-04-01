@@ -413,20 +413,21 @@ def upload_photo_to_s3(photo_base64: str, task_id: int) -> str:
 
     access_key = os.environ.get("AWS_ACCESS_KEY_ID", "")
     secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
-    bucket = os.environ.get("S3_BUCKET", "")
 
-    # Если S3_BUCKET не задан — выводим имя бакета из схемы БД (на poehali.dev схема = t_{project_id}_...)
+    # На poehali.dev имя бакета = AWS_ACCESS_KEY_ID (это стандарт платформы)
+    # S3_BUCKET используем как fallback если access_key не задан
+    if access_key:
+        bucket = access_key
+    else:
+        bucket = os.environ.get("S3_BUCKET", "")
+
+    # Последний fallback — из схемы БД (схема вида t_p84704826_...)
     if not bucket:
-        # Схема вида t_p84704826_gamified_habit_app -> бакет p84704826
-        # Но реальный бакет на poehali.dev = access_key (это и есть bucket name)
         schema_parts = SCHEMA.split("_")
-        if access_key:
-            # На poehali.dev access_key_id совпадает с именем бакета
-            bucket = access_key
-        elif len(schema_parts) >= 2:
-            bucket = schema_parts[1]  # fallback: p84704826
+        if len(schema_parts) >= 2:
+            bucket = schema_parts[1]
 
-    print(f"[S3] bucket={bucket!r}, access_key={access_key!r}, secret_key_len={len(secret_key)}, schema={SCHEMA!r}, file_key={file_key}")
+    print(f"[S3] bucket={bucket!r}, access_key_len={len(access_key)}, secret_key_len={len(secret_key)}, schema={SCHEMA!r}, file_key={file_key}")
     print(f"[S3] S3_BUCKET env={os.environ.get('S3_BUCKET', 'NOT_SET')!r}, AWS_ACCESS_KEY_ID env={'SET' if access_key else 'NOT_SET'}")
 
     s3 = boto3.client(
