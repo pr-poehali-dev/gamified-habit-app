@@ -6,7 +6,7 @@ import { ParentXpBar } from "@/components/ui/XpBar";
 import { getParentLevelInfo, getParentLevelTier, getParentTip, type StreakState } from "@/lib/gameTypes";
 import { Loading, ErrorScreen } from "@/components/parent/ParentScreens";
 import { ParentTabTasks } from "@/components/parent/ParentTabTasks";
-import { ParentTabGrades, ParentTabChildren, ParentTabBonuses, ParentTabProfile } from "@/components/parent/ParentTabContent";
+import { ParentTabGrades, ParentTabChildren, ParentTabBonuses, ParentTabProfile, ParentTabPartners } from "@/components/parent/ParentTabContent";
 import { ParentBottomNav, type ParentTab } from "@/components/parent/ParentBottomNav";
 import { ParentOnboarding } from "@/components/parent/ParentOnboarding";
 
@@ -281,6 +281,12 @@ export default function ParentMiniApp() {
             children={data.children}
             onAddReward={addReward}
             onRemoveReward={removeReward}
+          />
+        )}
+        {tab === "partners" && (
+          <ParentTabPartners
+            parent_points={data.parent_points}
+            parent_xp={data.parent_xp}
           />
         )}
         {tab === "profile" && (
