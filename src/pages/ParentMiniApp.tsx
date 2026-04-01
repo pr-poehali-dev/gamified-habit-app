@@ -87,8 +87,8 @@ export default function ParentMiniApp() {
     const res = await apiCall("parent/auth", tgId ? { telegram_id: tgId } : {});
     if (res.role === "parent") {
       setData(res as unknown as ParentData);
-    } else if (res.role === "unknown") {
-      setError("Аккаунт не найден. Зарегистрируйся через @parenttask_bot");
+    } else if (res.error === "Unauthorized") {
+      setError("Не удалось авторизоваться. Попробуй закрыть и открыть приложение снова.");
     } else {
       setError(String(res.error || "Ошибка авторизации"));
     }

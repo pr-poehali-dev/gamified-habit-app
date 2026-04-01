@@ -16,12 +16,12 @@
       "bodyMatcher": "partial"
     },
     {
-      "name": "Parent auth unknown",
+      "name": "Parent auth auto-register",
       "method": "POST",
       "path": "/",
       "body": {"action": "parent/auth", "telegram_id": 999999999},
       "expectedStatus": 200,
-      "expectedBody": {"role": "unknown"},
+      "expectedBody": {"role": "parent"},
       "bodyMatcher": "partial"
     }
   ]
