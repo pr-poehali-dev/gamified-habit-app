@@ -704,7 +704,7 @@ def handle_approve_grade(conn, body):
     if not parent:
         return error_response("Parent not found", 404)
     req_id = body.get("request_id")
-    action = body.get("action", "approve")
+    action = body.get("grade_action", body.get("action", "approve"))
     with conn.cursor() as cur:
         cur.execute(f"SELECT id, child_id, grade, subject FROM {SCHEMA}.grade_requests WHERE id = %s AND parent_id = %s AND status = 'pending'", (req_id, parent["id"]))
         req = cur.fetchone()

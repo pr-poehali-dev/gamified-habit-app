@@ -123,14 +123,15 @@ export default function ParentMiniApp() {
   }, []);
 
   const approveGrade = useCallback(async (reqId: number) => {
-    const res = await apiCall("parent/grade/approve", { request_id: reqId, action: "approve" });
+    const res = await apiCall("parent/grade/approve", { request_id: reqId, grade_action: "approve" });
     if (res.ok) { showToast(`🌟 Оценка подтверждена! +${res.stars_awarded}⭐`); load(false); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const rejectGrade = useCallback(async (reqId: number) => {
-    const res = await apiCall("parent/grade/approve", { request_id: reqId, action: "reject" });
+    const res = await apiCall("parent/grade/approve", { request_id: reqId, grade_action: "reject" });
     if (res.ok) { showToast("↩️ Оценка отклонена"); load(false); }
+    else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const addTask = useCallback(async (newTask: { title: string; stars: number; emoji: string; childId: number; requirePhoto: boolean; requireConfirm: boolean; deadline: string | null }) => {
