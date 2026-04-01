@@ -1,42 +1,17 @@
 """
-Регистрирует webhooks для обоих Telegram-ботов.
-Вызывается один раз после добавления токенов.
-GET / — регистрирует оба webhook и кнопки меню, возвращает результат.
-Боты: @parenttask_bot → /parent, @task4kids_bot → /child. v2
+Настраивает Telegram ботов для работы только как Mini App.
+Удаляет вебхуки (боты больше не обрабатывают сообщения),
+устанавливает кнопку меню ведущую в Mini App.
 """
 import json
 import os
 import urllib.request
 
 
-CHILD_BOT_URL = "https://functions.poehali.dev/55bea415-4dac-4798-884c-60644941fca0"
-PARENT_BOT_URL = "https://functions.poehali.dev/77555918-0477-48e9-8c06-e042967efe69"
-
-
-def set_webhook(token, webhook_url):
-    url = f"https://api.telegram.org/bot{token}/setWebhook"
-    payload = json.dumps({"url": webhook_url}).encode()
-    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req) as resp:
-        return json.loads(resp.read())
-
-
-def get_webhook_info(token):
-    url = f"https://api.telegram.org/bot{token}/getWebhookInfo"
-    with urllib.request.urlopen(url) as resp:
-        return json.loads(resp.read())
-
-
-def set_menu_button(token, mini_app_url, title="🚀 Открыть приложение"):
-    url = f"https://api.telegram.org/bot{token}/setChatMenuButton"
-    payload = json.dumps({
-        "menu_button": {
-            "type": "web_app",
-            "text": title,
-            "web_app": {"url": mini_app_url}
-        }
-    }).encode()
-    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+def tg(token, method, payload=None):
+    url = f"https://api.telegram.org/bot{token}/{method}"
+    data = json.dumps(payload or {}).encode()
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req) as resp:
         return json.loads(resp.read())
 
@@ -47,37 +22,31 @@ def handler(event: dict, context) -> dict:
 
     child_token = os.environ.get("CHILD_BOT_TOKEN", "")
     parent_token = os.environ.get("PARENT_BOT_TOKEN", "")
-
     mini_app_url = os.environ.get("MINI_APP_URL", "https://tasks4kids.ru").rstrip("/")
+
     results = {}
 
-    # URL для каждого бота — отдельный маршрут /child и /parent
-    child_mini_app_url = f"{mini_app_url}/child"
-    parent_mini_app_url = f"{mini_app_url}/parent"
+    if parent_token:
+        # Удаляем вебхук — бот больше не обрабатывает сообщения
+        results["parent_delete_webhook"] = tg(parent_token, "deleteWebhook", {"drop_pending_updates": True})
+        # Устанавливаем кнопку меню ведущую в Mini App
+        results["parent_menu"] = tg(parent_token, "setChatMenuButton", {
+            "menu_button": {"type": "web_app", "text": "👨 Открыть СтарКидс", "web_app": {"url": f"{mini_app_url}/parent"}}
+        })
+    else:
+        results["parent"] = {"error": "PARENT_BOT_TOKEN not set"}
 
     if child_token:
-        results["child_bot_webhook"] = set_webhook(child_token, CHILD_BOT_URL)
-        results["child_bot_info"] = get_webhook_info(child_token)
-        if child_mini_app_url:
-            results["child_bot_menu"] = set_menu_button(child_token, child_mini_app_url, "⭐ Открыть СтарКидс")
-        else:
-            results["child_bot_menu"] = {"skipped": "MINI_APP_URL not set"}
+        results["child_delete_webhook"] = tg(child_token, "deleteWebhook", {"drop_pending_updates": True})
+        results["child_menu"] = tg(child_token, "setChatMenuButton", {
+            "menu_button": {"type": "web_app", "text": "⭐ Открыть СтарКидс", "web_app": {"url": f"{mini_app_url}/child"}}
+        })
     else:
-        results["child_bot"] = {"error": "CHILD_BOT_TOKEN not set"}
+        results["child"] = {"error": "CHILD_BOT_TOKEN not set"}
 
-    if parent_token:
-        results["parent_bot_webhook"] = set_webhook(parent_token, PARENT_BOT_URL)
-        results["parent_bot_info"] = get_webhook_info(parent_token)
-        if parent_mini_app_url:
-            results["parent_bot_menu"] = set_menu_button(parent_token, parent_mini_app_url, "👨 Открыть СтарКидс")
-        else:
-            results["parent_bot_menu"] = {"skipped": "MINI_APP_URL not set"}
-    else:
-        results["parent_bot"] = {"error": "PARENT_BOT_TOKEN not set"}
-
-    results["urls"] = {
-        "child_mini_app": child_mini_app_url or "не задан MINI_APP_URL",
-        "parent_mini_app": parent_mini_app_url or "не задан MINI_APP_URL",
+    results["mini_app_urls"] = {
+        "parent": f"{mini_app_url}/parent",
+        "child": f"{mini_app_url}/child",
     }
 
     return {

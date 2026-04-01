@@ -1,6 +1,4 @@
 {
   "mini-app": "https://functions.poehali.dev/3a2e1162-786c-43ae-a6b7-78b24771e462",
-  "setup-webhooks": "https://functions.poehali.dev/1226cc19-e5d5-4b58-b1fa-b51935656f75",
-  "parent-bot": "https://functions.poehali.dev/77555918-0477-48e9-8c06-e042967efe69",
-  "child-bot": "https://functions.poehali.dev/55bea415-4dac-4798-884c-60644941fca0"
+  "setup-webhooks": "https://functions.poehali.dev/1226cc19-e5d5-4b58-b1fa-b51935656f75"
 }
