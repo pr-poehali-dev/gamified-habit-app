@@ -48,21 +48,29 @@ function PhotoPicker({
   onConfirm: (photoBase64: string) => void;
   onCancel: () => void;
 }) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  console.log("[PhotoPicker] render, taskId=", taskId, "preview=", !!preview);
 
   const handleFile = (file: File) => {
+    console.log("[PhotoPicker] handleFile start, size=", file.size, "type=", file.type);
     setLoading(true);
+    setErrorMsg(null);
     const reader = new FileReader();
     reader.onload = (e) => {
       const originalBase64 = e.target?.result as string;
+      console.log("[PhotoPicker] FileReader loaded, base64 len=", originalBase64?.length);
       // Сжимаем фото через canvas, чтобы избежать ошибки 413 (слишком большой запрос)
       const img = new Image();
       img.onload = () => {
         const MAX_SIZE = 1024; // макс. сторона в пикселях
         const QUALITY = 0.7;   // качество JPEG 70%
         let { width, height } = img;
+        console.log("[PhotoPicker] image loaded, original size=", width, "x", height);
         if (width > MAX_SIZE || height > MAX_SIZE) {
           if (width > height) {
             height = Math.round((height * MAX_SIZE) / width);
@@ -79,44 +87,53 @@ function PhotoPicker({
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
           const compressed = canvas.toDataURL("image/jpeg", QUALITY);
+          console.log("[PhotoPicker] compressed OK, len=", compressed.length);
           setPreview(compressed);
         } else {
           // fallback — используем оригинал
+          console.log("[PhotoPicker] no canvas ctx, using original");
           setPreview(originalBase64);
         }
         setLoading(false);
       };
-      img.onerror = () => {
+      img.onerror = (err) => {
         // fallback — используем оригинал
+        console.error("[PhotoPicker] img.onerror, using original. err=", err);
         setPreview(originalBase64);
         setLoading(false);
       };
       img.src = originalBase64;
     };
+    reader.onerror = (err) => {
+      console.error("[PhotoPicker] FileReader error:", err);
+      setErrorMsg("Не удалось прочитать файл. Попробуй другое фото.");
+      setLoading(false);
+    };
     reader.readAsDataURL(file);
   };
 
+  const handleCameraChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("[PhotoPicker] camera input changed, files=", e.target.files?.length);
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+    e.target.value = "";
+  };
+
+  const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("[PhotoPicker] gallery input changed, files=", e.target.files?.length);
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+    e.target.value = "";
+  };
+
   const openCamera = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.accept = "image/*";
-      fileInputRef.current.capture = "environment";
-      fileInputRef.current.click();
-    }
+    console.log("[PhotoPicker] openCamera clicked");
+    cameraInputRef.current?.click();
   };
 
   const openGallery = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.accept = "image/*";
-      fileInputRef.current.removeAttribute("capture");
-      fileInputRef.current.click();
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleFile(file);
-    // сброс значения, чтобы можно было выбрать то же фото повторно
-    e.target.value = "";
+    console.log("[PhotoPicker] openGallery clicked");
+    galleryInputRef.current?.click();
   };
 
   return (
@@ -132,13 +149,28 @@ function PhotoPicker({
           </div>
         </div>
 
-        {/* Скрытый input */}
+        {/* Два отдельных скрытых input-а: один с capture, другой без */}
         <input
-          ref={fileInputRef}
+          ref={cameraInputRef}
           type="file"
+          accept="image/*"
+          capture="environment"
           className="hidden"
-          onChange={handleInputChange}
+          onChange={handleCameraChange}
         />
+        <input
+          ref={galleryInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleGalleryChange}
+        />
+
+        {errorMsg && (
+          <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-500 text-sm font-bold text-center">
+            ❌ {errorMsg}
+          </div>
+        )}
 
         {loading && (
           <div className="flex justify-center py-8">
