@@ -415,13 +415,12 @@ def upload_photo_to_s3(photo_base64: str, task_id: int) -> str:
     secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
     bucket = os.environ.get("S3_BUCKET", "")
 
-    # Если S3_BUCKET не задан — пробуем вывести из access_key (обычно совпадает с именем бакета на poehali.dev)
+    # Если S3_BUCKET не задан — пробуем вывести из access_key (на poehali.dev ACCESS_KEY_ID обычно равен имени бакета)
     if not bucket and access_key:
-        # На poehali.dev бакет обычно называется как проект: pXXXXXXXX
-        # Берём первую часть access_key до разделителя, либо используем часть ключа
-        bucket = access_key.split(":")[0] if ":" in access_key else "p84704826"
+        # На poehali.dev AWS_ACCESS_KEY_ID совпадает с именем бакета (например p84704826)
+        bucket = access_key.split(":")[0] if ":" in access_key else access_key
 
-    print(f"[S3] bucket={bucket!r}, key_prefix={access_key[:8] if access_key else 'EMPTY'}..., file_key={file_key}")
+    print(f"[S3] bucket={bucket!r}, access_key_len={len(access_key)}, secret_key_len={len(secret_key)}, file_key={file_key}")
 
     s3 = boto3.client(
         "s3",
@@ -430,6 +429,8 @@ def upload_photo_to_s3(photo_base64: str, task_id: int) -> str:
         aws_secret_access_key=secret_key,
         region_name="us-east-1",
     )
+
+    # Сначала пробуем с ACL, если не поддерживается — без него
     try:
         s3.put_object(
             Bucket=bucket,
@@ -438,9 +439,21 @@ def upload_photo_to_s3(photo_base64: str, task_id: int) -> str:
             ContentType=f"image/{ext}",
             ACL="public-read",
         )
+        print(f"[S3] put_object success (with ACL) | bucket={bucket!r} | key={file_key}")
     except Exception as e:
-        print(f"[S3] put_object error: {e} | bucket={bucket!r} | key={file_key}")
-        raise
+        print(f"[S3] put_object error with ACL: {e} | bucket={bucket!r} | key={file_key}")
+        # Пробуем без ACL
+        try:
+            s3.put_object(
+                Bucket=bucket,
+                Key=file_key,
+                Body=image_bytes,
+                ContentType=f"image/{ext}",
+            )
+            print(f"[S3] put_object success (without ACL) | bucket={bucket!r} | key={file_key}")
+        except Exception as e2:
+            print(f"[S3] put_object error without ACL: {e2} | bucket={bucket!r} | key={file_key}")
+            raise e2
     return f"https://s3.poehali.dev/{bucket}/{file_key}"
 
 
