@@ -429,17 +429,26 @@ def handle_complete_task(conn, body):
 
 
 def handle_confirm_task(conn, body):
+    print(f"[confirm_task] body keys: {list(body.keys())}, task_id={body.get('task_id')}, confirm_action={body.get('confirm_action')}")
     tid = resolve_telegram_id(body, PARENT_TOKEN)
+    print(f"[confirm_task] tid={tid}")
     if not tid:
         return error_response("Unauthorized", 401)
     parent = get_parent_by_tg(conn, tid)
+    print(f"[confirm_task] parent={parent}")
     if not parent:
         return error_response("Parent not found", 404)
     task_id = body.get("task_id")
-    action = body.get("confirm_action", body.get("action", "approve"))  # approve | reject
+    action = body.get("confirm_action", "approve")  # approve | reject
+    print(f"[confirm_task] task_id={task_id}, action={action}, parent_id={parent['id']}")
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT id, child_id, stars, title, status FROM {SCHEMA}.tasks WHERE id = %s AND parent_id = %s", (task_id, parent["id"]))
+        task_raw = cur.fetchone()
+    print(f"[confirm_task] task_raw (any status)={task_raw}")
     with conn.cursor() as cur:
         cur.execute(f"SELECT id, child_id, stars, title FROM {SCHEMA}.tasks WHERE id = %s AND parent_id = %s AND status IN ('pending_confirm', 'done')", (task_id, parent["id"]))
         task = cur.fetchone()
+    print(f"[confirm_task] task (filtered)={task}")
     if not task:
         return error_response("Task not found", 404)
     t_id, child_id, stars, title = task

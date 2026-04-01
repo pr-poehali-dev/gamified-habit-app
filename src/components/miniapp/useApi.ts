@@ -6,10 +6,19 @@ export async function apiCall(action: string, body: Record<string, unknown> = {}
   const webapp = tg();
   const initData = webapp?.initData || "";
   const payload = { action, initData, ...body };
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  return res.json();
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      console.error(`[apiCall] ${action} → HTTP ${res.status}`, data);
+    }
+    return data;
+  } catch (e) {
+    console.error(`[apiCall] ${action} → fetch error`, e);
+    return { error: String(e) };
+  }
 }

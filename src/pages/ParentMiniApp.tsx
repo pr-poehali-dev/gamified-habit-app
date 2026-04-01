@@ -169,7 +169,7 @@ export default function ParentMiniApp() {
     longestStreak: data.streak_longest,
   };
 
-  const pendingTasks = data.tasks.filter(t => t.status === "pending_confirm" || t.status === "done");
+  const pendingTasks = data.tasks.filter(t => t.status === "pending_confirm" || (t.status === "done" && t.requireConfirm));
   const pendingGrades = data.gradeRequests.filter(g => g.status === "pending");
   const { level } = getParentLevelInfo(data.parent_xp);
   const tip = getParentTip(level);
