@@ -7,6 +7,7 @@ import { Loading, ErrorScreen } from "@/components/child/ChildScreens";
 import { ChildTabTasks } from "@/components/child/ChildTabTasks";
 import { ChildTabStars, ChildTabGrades, ChildTabAchievements, ChildTabProfile } from "@/components/child/ChildTabContent";
 import { ChildBottomNav, type ChildTab } from "@/components/child/ChildBottomNav";
+import { ChildOnboarding } from "@/components/child/ChildOnboarding";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -39,6 +40,7 @@ export default function ChildMiniApp() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<ChildTab>("tasks");
   const [toast, setToast] = useState<string | null>(null);
+  const [onboardingDone, setOnboardingDone] = useState(() => !!localStorage.getItem("child_onboarding_done"));
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
   const prevLevelRef = useRef<number>(1);
 
@@ -109,6 +111,17 @@ export default function ChildMiniApp() {
 
   if (loading) return <Loading />;
   if (error || !data) return <ErrorScreen msg={error || "Нет данных"} />;
+
+  const isNewChild = data.stars === 0 && data.tasks.length === 0;
+
+  if (isNewChild && !onboardingDone) {
+    return (
+      <ChildOnboarding
+        name={data.name}
+        onDone={() => { localStorage.setItem("child_onboarding_done", "1"); setOnboardingDone(true); }}
+      />
+    );
+  }
 
   const { level } = getLevelInfo(data.stars);
   const levelEmoji = getLevelEmoji(level);
