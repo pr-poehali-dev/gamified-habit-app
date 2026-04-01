@@ -83,12 +83,16 @@ export default function ParentMiniApp() {
 
   const load = async () => {
     setLoading(true);
-    const tgId = tg()?.initDataUnsafe?.user?.id;
-    const res = await apiCall("parent/auth", tgId ? { telegram_id: tgId } : {});
+    const webapp = tg();
+    const tgId = webapp?.initDataUnsafe?.user?.id;
+    const firstName = webapp?.initDataUnsafe?.user?.first_name || "";
+    const res = await apiCall("parent/auth", {
+      ...(tgId ? { telegram_id: tgId, first_name: firstName } : {}),
+    });
     if (res.role === "parent") {
       setData(res as unknown as ParentData);
-    } else if (res.error === "Unauthorized") {
-      setError("Не удалось авторизоваться. Попробуй закрыть и открыть приложение снова.");
+    } else if (res.role === "unknown" || res.error) {
+      setError("Аккаунт не найден.\n\nОткрой @parenttask_bot в Telegram и нажми /start, затем снова открой приложение.");
     } else {
       setError(String(res.error || "Ошибка авторизации"));
     }
