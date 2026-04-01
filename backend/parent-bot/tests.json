@@ -1,0 +1,17 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "No token graceful",
+      "method": "POST",
+      "path": "/",
+      "body": {"message": {"chat": {"id": 123}, "text": "/start", "from": {"first_name": "Test"}}},
+      "expectedStatus": 200
+    }
+  ]
+}

@@ -1,11 +1,14 @@
 """
-Настраивает Telegram ботов для работы только как Mini App.
-Удаляет вебхуки (боты больше не обрабатывают сообщения),
-устанавливает кнопку меню ведущую в Mini App.
+Настраивает Telegram ботов: регистрирует вебхуки и кнопки меню Mini App.
+GET / — выполняет настройку и возвращает результат.
 """
 import json
 import os
 import urllib.request
+
+
+PARENT_BOT_URL = "https://functions.poehali.dev/2d26e70c-45dd-453b-bc66-584a06fe98b7"
+CHILD_BOT_URL = "https://functions.poehali.dev/dea96d86-e228-4421-83c8-b683289eaa09"
 
 
 def tg(token, method, payload=None):
@@ -27,9 +30,8 @@ def handler(event: dict, context) -> dict:
     results = {}
 
     if parent_token:
-        # Удаляем вебхук — бот больше не обрабатывает сообщения
-        results["parent_delete_webhook"] = tg(parent_token, "deleteWebhook", {"drop_pending_updates": True})
-        # Устанавливаем кнопку меню ведущую в Mini App
+        results["parent_webhook"] = tg(parent_token, "setWebhook", {"url": PARENT_BOT_URL})
+        results["parent_webhook_info"] = tg(parent_token, "getWebhookInfo")
         results["parent_menu"] = tg(parent_token, "setChatMenuButton", {
             "menu_button": {"type": "web_app", "text": "👨 Открыть СтарКидс", "web_app": {"url": f"{mini_app_url}/parent"}}
         })
@@ -37,16 +39,17 @@ def handler(event: dict, context) -> dict:
         results["parent"] = {"error": "PARENT_BOT_TOKEN not set"}
 
     if child_token:
-        results["child_delete_webhook"] = tg(child_token, "deleteWebhook", {"drop_pending_updates": True})
+        results["child_webhook"] = tg(child_token, "setWebhook", {"url": CHILD_BOT_URL})
+        results["child_webhook_info"] = tg(child_token, "getWebhookInfo")
         results["child_menu"] = tg(child_token, "setChatMenuButton", {
             "menu_button": {"type": "web_app", "text": "⭐ Открыть СтарКидс", "web_app": {"url": f"{mini_app_url}/child"}}
         })
     else:
         results["child"] = {"error": "CHILD_BOT_TOKEN not set"}
 
-    results["mini_app_urls"] = {
-        "parent": f"{mini_app_url}/parent",
-        "child": f"{mini_app_url}/child",
+    results["urls"] = {
+        "parent_mini_app": f"{mini_app_url}/parent",
+        "child_mini_app": f"{mini_app_url}/child",
     }
 
     return {
