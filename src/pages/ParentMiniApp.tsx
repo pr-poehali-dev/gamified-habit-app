@@ -163,7 +163,7 @@ export default function ParentMiniApp() {
     return (
       <ParentOnboarding
         name={data.name}
-        onDone={() => { localStorage.setItem("parent_onboarding_done", "1"); setOnboardingDone(true); }}
+        onDone={() => { localStorage.setItem("parent_onboarding_done", "1"); setOnboardingDone(true); setTab("children"); }}
       />
     );
   }
