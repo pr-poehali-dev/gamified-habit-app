@@ -27,6 +27,8 @@ type Props = {
   onAddTask: (task: NewTask) => void;
   onGrantExtension?: (taskId: number, hours: number) => void;
   onDenyExtension?: (taskId: number) => void;
+  onDeleteTask?: (taskId: number) => void;
+  onCancelTask?: (taskId: number) => void;
 };
 
 const TASK_EMOJIS = ["📋", "🧹", "📚", "🦷", "🗑️", "📖", "🌸", "🐕", "🍽️", "🛁", "🧺", "🏃", "🎨", "🎵"];
@@ -85,7 +87,7 @@ const EXTENSION_HOURS_OPTIONS = [
   { label: "+2 дня", hours: 48 },
 ];
 
-export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, onRejectTask, onAddTask, onGrantExtension, onDenyExtension }: Props) {
+export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, onRejectTask, onAddTask, onGrantExtension, onDenyExtension, onDeleteTask, onCancelTask }: Props) {
   const [showAddTask, setShowAddTask] = useState(false);
   const [selectedDeadlineIdx, setSelectedDeadlineIdx] = useState(0);
   const [newTask, setNewTask] = useState<NewTask>({
@@ -100,6 +102,9 @@ export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, o
   const [photoViewUrl, setPhotoViewUrl] = useState<string | null>(null);
   const openPhoto = useCallback((url: string) => setPhotoViewUrl(url), []);
   const closePhoto = useCallback(() => setPhotoViewUrl(null), []);
+  // Подтверждение удаления/отмены
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [confirmCancelId, setConfirmCancelId] = useState<number | null>(null);
 
   const handleAdd = () => {
     if (!newTask.title.trim() || !newTask.childId) return;
@@ -365,29 +370,94 @@ export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, o
         </div>
       )}
 
+      {/* Активные (pending) задания */}
       <div className="space-y-2">
-        {tasks.filter(t => !["pending_confirm", "done"].includes(t.status) && !t.extensionRequested).map(task => (
-          <div key={task.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
-            <span className="text-2xl">{task.emoji}</span>
-            <div className="flex-1">
-              <p className="font-semibold text-[#1E1B4B] text-sm">{task.title}</p>
-              <p className="text-xs text-gray-400 mt-0.5">
-                {children.find(c => c.id === task.childId)?.name}
-                {task.requirePhoto && " · 📸"}
-                {task.requireConfirm && " · ✅"}
-              </p>
-              {task.deadline && task.status === "pending" && (
-                <p className={`text-xs font-bold mt-0.5 ${isOverdue(task.deadline) ? "text-red-500" : "text-orange-500"}`}>
-                  {formatDeadline(task.deadline)}
+        {tasks.filter(t => t.status === "pending" && !t.extensionRequested).map(task => (
+          <div key={task.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-4 flex items-center gap-3">
+              <span className="text-2xl">{task.emoji}</span>
+              <div className="flex-1">
+                <p className="font-semibold text-[#1E1B4B] text-sm">{task.title}</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {children.find(c => c.id === task.childId)?.name}
+                  {task.requirePhoto && " · 📸"}
+                  {task.requireConfirm && " · ✅"}
                 </p>
-              )}
+                {task.deadline && (
+                  <p className={`text-xs font-bold mt-0.5 ${isOverdue(task.deadline) ? "text-red-500" : "text-orange-500"}`}>
+                    {formatDeadline(task.deadline)}
+                  </p>
+                )}
+              </div>
+              <span className="text-sm font-bold text-amber-500">{task.stars}⭐</span>
             </div>
-            <span className={`text-sm font-bold ${task.status === "approved" ? "text-green-500" : "text-amber-500"}`}>
-              {task.status === "approved" ? "✓" : ""}{task.stars}⭐
-            </span>
+
+            {/* Кнопка отмены задания */}
+            {onCancelTask && (
+              confirmCancelId === task.id ? (
+                <div className="px-4 pb-4 space-y-2">
+                  <p className="text-xs font-bold text-red-500 text-center">Отменить задание?</p>
+                  <div className="flex gap-2">
+                    <button onClick={() => setConfirmCancelId(null)} className="flex-1 py-2 rounded-xl bg-gray-100 text-gray-500 font-bold text-xs active:scale-95 transition-transform">Не отменять</button>
+                    <button onClick={() => { onCancelTask(task.id); setConfirmCancelId(null); }} className="flex-1 py-2 rounded-xl bg-red-500 text-white font-bold text-xs active:scale-95 transition-transform">Да, отменить</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="px-4 pb-4">
+                  <button onClick={() => setConfirmCancelId(task.id)} className="w-full py-2 rounded-xl bg-red-50 border border-red-200 text-red-500 font-bold text-xs active:scale-95 transition-transform">
+                    ✕ Отменить задание
+                  </button>
+                </div>
+              )
+            )}
           </div>
         ))}
       </div>
+
+      {/* Выполненные задания */}
+      {tasks.filter(t => t.status === "approved" || t.status === "done").length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-2 mt-1">
+            <span>✅</span>
+            <p className="text-sm font-black text-[#1E1B4B]">Выполненные</p>
+          </div>
+          <div className="space-y-2">
+            {tasks.filter(t => t.status === "approved" || t.status === "done").map(task => (
+              <div key={task.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-4 flex items-center gap-3">
+                  <span className="text-2xl">{task.emoji}</span>
+                  <div className="flex-1">
+                    <p className="font-semibold text-[#1E1B4B] text-sm line-through opacity-60">{task.title}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {children.find(c => c.id === task.childId)?.name}
+                    </p>
+                  </div>
+                  <span className="text-sm font-bold text-green-500">+{task.stars}⭐</span>
+                </div>
+
+                {/* Кнопка удаления выполненного задания */}
+                {onDeleteTask && (
+                  confirmDeleteId === task.id ? (
+                    <div className="px-4 pb-4 space-y-2">
+                      <p className="text-xs font-bold text-gray-500 text-center">Удалить из истории?</p>
+                      <div className="flex gap-2">
+                        <button onClick={() => setConfirmDeleteId(null)} className="flex-1 py-2 rounded-xl bg-gray-100 text-gray-500 font-bold text-xs active:scale-95 transition-transform">Оставить</button>
+                        <button onClick={() => { onDeleteTask(task.id); setConfirmDeleteId(null); }} className="flex-1 py-2 rounded-xl bg-gray-500 text-white font-bold text-xs active:scale-95 transition-transform">🗑 Удалить</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="px-4 pb-4">
+                      <button onClick={() => setConfirmDeleteId(task.id)} className="w-full py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-400 font-bold text-xs active:scale-95 transition-transform">
+                        🗑 Удалить из истории
+                      </button>
+                    </div>
+                  )
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

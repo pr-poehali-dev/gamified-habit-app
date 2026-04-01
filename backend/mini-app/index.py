@@ -1045,6 +1045,86 @@ def handle_remove_reward(conn, body):
     return json_response({"ok": True})
 
 
+def handle_delete_task(conn, body):
+    """Родитель удаляет выполненное задание (статус approved/done) из истории."""
+    tid = resolve_telegram_id(body, PARENT_TOKEN)
+    if not tid:
+        return error_response("Unauthorized", 401)
+    parent = get_parent_by_tg(conn, tid)
+    if not parent:
+        return error_response("Parent not found", 404)
+    task_id = body.get("task_id")
+    if not task_id:
+        return error_response("task_id required", 400)
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT id FROM {SCHEMA}.tasks WHERE id = %s AND parent_id = %s AND status IN ('approved', 'done')",
+            (task_id, parent["id"])
+        )
+        if not cur.fetchone():
+            return error_response("Task not found or not completed", 404)
+        cur.execute(f"DELETE FROM {SCHEMA}.tasks WHERE id = %s", (task_id,))
+    conn.commit()
+    return json_response({"ok": True})
+
+
+def handle_cancel_task(conn, body):
+    """Родитель отменяет незавершённое задание (статус pending)."""
+    tid = resolve_telegram_id(body, PARENT_TOKEN)
+    if not tid:
+        return error_response("Unauthorized", 401)
+    parent = get_parent_by_tg(conn, tid)
+    if not parent:
+        return error_response("Parent not found", 404)
+    task_id = body.get("task_id")
+    if not task_id:
+        return error_response("task_id required", 400)
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT id, child_id, title FROM {SCHEMA}.tasks WHERE id = %s AND parent_id = %s AND status = 'pending'",
+            (task_id, parent["id"])
+        )
+        task = cur.fetchone()
+        if not task:
+            return error_response("Task not found or not pending", 404)
+        t_id, child_id, title = task
+        cur.execute(f"DELETE FROM {SCHEMA}.tasks WHERE id = %s", (t_id,))
+    conn.commit()
+    # Уведомляем ребёнка об отмене задания
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT telegram_id FROM {SCHEMA}.children WHERE id = %s", (child_id,))
+        c_row = cur.fetchone()
+    if c_row and CHILD_TOKEN:
+        send_tg_message(CHILD_TOKEN, c_row[0], f"❌ Родитель отменил задание «<b>{title}</b>»")
+    return json_response({"ok": True})
+
+
+def handle_child_delete_task(conn, body):
+    """Ребёнок удаляет выполненное задание (статус approved/done) из своей истории."""
+    tid = resolve_telegram_id(body, CHILD_TOKEN)
+    if not tid:
+        return error_response("Unauthorized", 401)
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT id FROM {SCHEMA}.children WHERE telegram_id = %s", (tid,))
+        child = cur.fetchone()
+    if not child:
+        return error_response("Child not found", 404)
+    child_id = child[0]
+    task_id = body.get("task_id")
+    if not task_id:
+        return error_response("task_id required", 400)
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT id FROM {SCHEMA}.tasks WHERE id = %s AND child_id = %s AND status IN ('approved', 'done')",
+            (task_id, child_id)
+        )
+        if not cur.fetchone():
+            return error_response("Task not found or not completed", 404)
+        cur.execute(f"DELETE FROM {SCHEMA}.tasks WHERE id = %s", (task_id,))
+    conn.commit()
+    return json_response({"ok": True})
+
+
 def handler(event: dict, context) -> dict:
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": cors_headers(), "body": ""}
@@ -1076,6 +1156,8 @@ def handler(event: dict, context) -> dict:
             return handle_buy_reward(conn, body)
         if action == "child/task/request_extension":
             return handle_request_extension(conn, body)
+        if action == "child/task/delete":
+            return handle_child_delete_task(conn, body)
 
         # ── Parent routes ──
         if action == "parent/auth":
@@ -1100,6 +1182,10 @@ def handler(event: dict, context) -> dict:
             return handle_add_reward(conn, body)
         if action == "parent/reward/remove":
             return handle_remove_reward(conn, body)
+        if action == "parent/task/delete":
+            return handle_delete_task(conn, body)
+        if action == "parent/task/cancel":
+            return handle_cancel_task(conn, body)
 
         return error_response("Not found", 404)
     finally:

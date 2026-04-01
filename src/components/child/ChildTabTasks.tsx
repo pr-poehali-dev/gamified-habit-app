@@ -15,6 +15,7 @@ type Props = {
   approvedTasks: Task[];
   onCompleteTask: (id: number, photoBase64?: string) => void;
   onRequestExtension: (id: number) => void;
+  onDeleteTask?: (id: number) => void;
 };
 
 function formatDeadlineChild(deadline: string): { text: string; urgent: boolean; overdue: boolean } {
@@ -195,9 +196,11 @@ function PhotoPicker({
   );
 }
 
-export function ChildTabTasks({ tasks, pendingTasks, doneTasks, approvedTasks, onCompleteTask, onRequestExtension }: Props) {
+export function ChildTabTasks({ tasks, pendingTasks, doneTasks, approvedTasks, onCompleteTask, onRequestExtension, onDeleteTask }: Props) {
   // Задача, для которой открыт пикер фото
   const [photoPickerTask, setPhotoPickerTask] = useState<Task | null>(null);
+  // Подтверждение удаления
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   const handleTaskClick = (task: Task) => {
     if (task.requirePhoto) {
@@ -314,15 +317,34 @@ export function ChildTabTasks({ tasks, pendingTasks, doneTasks, approvedTasks, o
       })}
 
       {approvedTasks.map(task => (
-        <div key={task.id} className="rounded-3xl p-4 flex items-center gap-4 bg-gradient-to-r from-green-400 to-emerald-500 scale-[0.98] shadow-sm">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl bg-white/20">{task.emoji}</div>
-          <div className="flex-1">
-            <p className="font-black text-base text-white line-through opacity-80">{task.title}</p>
-            <p className="text-white/70 text-sm font-bold">+{task.stars}⭐ начислено</p>
+        <div key={task.id} className="rounded-3xl overflow-hidden bg-gradient-to-r from-green-400 to-emerald-500 scale-[0.98] shadow-sm">
+          <div className="p-4 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl bg-white/20">{task.emoji}</div>
+            <div className="flex-1">
+              <p className="font-black text-base text-white line-through opacity-80">{task.title}</p>
+              <p className="text-white/70 text-sm font-bold">+{task.stars}⭐ начислено</p>
+            </div>
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-white/30">
+              <span className="text-white text-base">✓</span>
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-white/30">
-            <span className="text-white text-base">✓</span>
-          </div>
+          {onDeleteTask && (
+            confirmDeleteId === task.id ? (
+              <div className="px-4 pb-4 space-y-2">
+                <p className="text-xs font-bold text-white/90 text-center">Удалить из истории?</p>
+                <div className="flex gap-2">
+                  <button onClick={() => setConfirmDeleteId(null)} className="flex-1 py-2 rounded-2xl bg-white/20 text-white font-bold text-xs active:scale-95 transition-transform">Оставить</button>
+                  <button onClick={() => { onDeleteTask(task.id); setConfirmDeleteId(null); }} className="flex-1 py-2 rounded-2xl bg-white/40 text-white font-bold text-xs active:scale-95 transition-transform">🗑 Удалить</button>
+                </div>
+              </div>
+            ) : (
+              <div className="px-4 pb-4">
+                <button onClick={() => setConfirmDeleteId(task.id)} className="w-full py-2 rounded-2xl bg-white/20 text-white/80 font-bold text-xs active:scale-95 transition-transform">
+                  🗑 Убрать из списка
+                </button>
+              </div>
+            )
+          )}
         </div>
       ))}
 

@@ -152,6 +152,18 @@ export default function ParentMiniApp() {
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
+  const deleteTask = useCallback(async (taskId: number) => {
+    const res = await apiCall("parent/task/delete", { task_id: taskId });
+    if (res.ok) { showToast("🗑 Задание удалено"); load(true); }
+    else showToast("❌ " + String(res.error || "Ошибка"));
+  }, []);
+
+  const cancelTask = useCallback(async (taskId: number) => {
+    const res = await apiCall("parent/task/cancel", { task_id: taskId });
+    if (res.ok) { showToast("✕ Задание отменено"); load(true); }
+    else showToast("❌ " + String(res.error || "Ошибка"));
+  }, []);
+
   const claimStreak = useCallback(async () => {
     const res = await apiCall("parent/streak/claim");
     if (res.ok) { showToast(`🔥 +${res.xp} XP и +${res.points} баллов!`); load(true); }
@@ -254,6 +266,8 @@ export default function ParentMiniApp() {
             onAddTask={addTask}
             onGrantExtension={grantExtension}
             onDenyExtension={denyExtension}
+            onDeleteTask={deleteTask}
+            onCancelTask={cancelTask}
           />
         )}
         {tab === "grades" && (

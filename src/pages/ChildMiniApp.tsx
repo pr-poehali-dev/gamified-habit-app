@@ -150,6 +150,16 @@ export default function ChildMiniApp() {
     }
   }, []);
 
+  const deleteTask = useCallback(async (taskId: number) => {
+    const res = await apiCall("child/task/delete", { task_id: taskId });
+    if (res.ok) {
+      showToast("🗑 Задание убрано из списка");
+      load(false);
+    } else {
+      showToast("❌ " + String(res.error || "Ошибка"));
+    }
+  }, []);
+
   const buyReward = useCallback(async (rewardId: number) => {
     tg()?.HapticFeedback?.impactOccurred("medium");
     const res = await apiCall("child/reward/buy", { reward_id: rewardId });
@@ -248,6 +258,7 @@ export default function ChildMiniApp() {
             approvedTasks={approvedTasks}
             onCompleteTask={completeTask}
             onRequestExtension={requestExtension}
+            onDeleteTask={deleteTask}
           />
         )}
         {tab === "shop" && (
