@@ -96,10 +96,21 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
   const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
-  const copyCode = (id: number, code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+  const shareCode = async (id: number, code: string, childName: string) => {
+    const text = `Привет! Я жду тебя в приложении СтарКидс 🌟\n\n1️⃣ Открой Telegram → найди @task4kids_bot\n2️⃣ Нажми кнопку «Открыть СтарКидс»\n3️⃣ Введи код: ${code}\n\nИли перейди по ссылке: https://t.me/task4kids_bot?start=${code}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ text });
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
+      } catch {
+        // пользователь отменил — ничего не делаем
+      }
+    } else {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
   };
 
   const handleAdd = () => {
@@ -198,10 +209,10 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
                     <div className="flex items-center gap-2">
                       <p className="text-xs text-gray-500 flex-1">Код для ребёнка:</p>
                       <button
-                        onClick={() => copyCode(c.id, c.inviteCode!)}
+                        onClick={() => shareCode(c.id, c.inviteCode!, c.name)}
                         className="font-black text-base tracking-widest text-[#1E1B4B] bg-white border border-amber-200 rounded-lg px-2 py-0.5 active:scale-95 transition-all"
                       >
-                        {copiedId === c.id ? <span className="text-green-500 text-xs">✅ Скопировано!</span> : <>{c.inviteCode} 📋</>}
+                        {copiedId === c.id ? <span className="text-green-500 text-xs">✅ Отправлено!</span> : <>{c.inviteCode} 📤</>}
                       </button>
                     </div>
                     <div className="bg-white/70 rounded-xl px-3 py-2 space-y-1">
