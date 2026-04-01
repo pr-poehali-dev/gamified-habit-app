@@ -336,7 +336,7 @@ def handle_auth_child(conn, body):
 def handle_auth_parent(conn, body):
     tid = resolve_telegram_id(body, PARENT_TOKEN)
     if not tid:
-        return error_response("Unauthorized", 401)
+        return json_response({"role": "unknown", "telegram_id": 0, "error": "no_tg_id"})
     parent = get_parent_by_tg(conn, tid)
     if not parent:
         # Авторегистрация — создаём родителя при первом входе
