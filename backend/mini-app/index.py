@@ -418,17 +418,11 @@ def upload_photo_to_s3(photo_base64: str, task_id: int) -> str:
     access_key = os.environ.get("AWS_ACCESS_KEY_ID", "")
     secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
 
-    # Имя бакета — всегда выводим из схемы БД (схема вида t_p84704826_gamified_habit_app → бакет p84704826-gamified-habit-app)
-    schema_parts = SCHEMA.split("_")
-    # Схема: t_{user_id}_{project_slug_with_underscores}
-    # Берём всё начиная со второго элемента (p84704826, gamified, habit, app) и заменяем _ на -
-    if len(schema_parts) >= 3:
-        bucket = "-".join(schema_parts[1:])
-    else:
-        bucket = os.environ.get("S3_BUCKET", "")
+    # Имя бакета берём из переменной окружения S3_BUCKET
+    bucket = os.environ.get("S3_BUCKET", "")
 
-    print(f"[S3] bucket={bucket!r}, access_key_len={len(access_key)}, secret_key_len={len(secret_key)}, schema={SCHEMA!r}, file_key={file_key}")
-    print(f"[S3] S3_BUCKET env={os.environ.get('S3_BUCKET', 'NOT_SET')!r}, AWS_ACCESS_KEY_ID env={'SET' if access_key else 'NOT_SET'}")
+    print(f"[S3] bucket={bucket!r}, access_key_len={len(access_key)}, secret_key_len={len(secret_key)}, file_key={file_key}")
+    print(f"[S3] S3_BUCKET env={bucket!r}, AWS_ACCESS_KEY_ID env={'SET' if access_key else 'NOT_SET'}")
 
     s3 = boto3.client(
         "s3",
