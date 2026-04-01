@@ -5,6 +5,24 @@
       "method": "OPTIONS",
       "path": "/",
       "expectedStatus": 200
+    },
+    {
+      "name": "Child auth unknown",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "child/auth", "telegram_id": 999999999},
+      "expectedStatus": 200,
+      "expectedBody": {"role": "unknown"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Parent auth unknown",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "parent/auth", "telegram_id": 999999999},
+      "expectedStatus": 200,
+      "expectedBody": {"role": "unknown"},
+      "bodyMatcher": "partial"
     }
   ]
 }
