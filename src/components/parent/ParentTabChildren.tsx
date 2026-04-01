@@ -1,0 +1,176 @@
+import { useState } from "react";
+
+type Child = { id: number; name: string; stars: number; avatar: string; age: number; inviteCode: string | null; connected: boolean };
+
+type ChildrenProps = {
+  children: Child[];
+  onAddChild: (name: string, age: number, avatar: string) => void;
+  onRemoveChild: (id: number) => void;
+  onRefreshInvite: (id: number) => void;
+};
+
+const CHILD_AVATARS = ["👦", "👧", "🧒", "👶", "🐱", "🦊", "🐼", "🦁", "🐸", "🐧", "🦋", "🌟"];
+
+export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefreshInvite }: ChildrenProps) {
+  const [showForm, setShowForm] = useState(false);
+  const [name, setName] = useState("");
+  const [age, setAge] = useState(9);
+  const [avatar, setAvatar] = useState("👧");
+  const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+
+  const shareCode = async (id: number, code: string, childName: string) => {
+    const text = `Привет! Я жду тебя в приложении СтарКидс 🌟\n\n1️⃣ Открой Telegram → найди @task4kids_bot\n2️⃣ Нажми кнопку «Открыть СтарКидс»\n3️⃣ Введи код: ${code}\n\nИли перейди по ссылке: https://t.me/task4kids_bot?start=${code}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ text });
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
+      } catch {
+        // пользователь отменил — ничего не делаем
+      }
+    } else {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
+  };
+
+  const handleAdd = () => {
+    if (!name.trim()) return;
+    onAddChild(name.trim(), age, avatar);
+    setName("");
+    setAge(9);
+    setAvatar("👧");
+    setShowForm(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-[#1E1B4B]">Мои дети</h2>
+        <button onClick={() => setShowForm(v => !v)} className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-transform">
+          {showForm ? "✕ Закрыть" : "+ Добавить"}
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] px-5 py-4">
+            <p className="text-white font-black text-base">👶 Новый ребёнок</p>
+          </div>
+          <div className="p-5 space-y-4">
+            <div>
+              <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-2">Аватар</label>
+              <div className="flex gap-2 flex-wrap">
+                {CHILD_AVATARS.map(e => (
+                  <button key={e} onClick={() => setAvatar(e)}
+                    className={`w-10 h-10 rounded-xl text-2xl flex items-center justify-center transition-all ${avatar === e ? "ring-2 ring-[#6B7BFF] bg-[#6B7BFF]/10 scale-110" : "bg-gray-50"}`}>
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-1.5">Имя *</label>
+              <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Имя ребёнка"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-gray-50 font-semibold focus:outline-none focus:ring-2 focus:ring-[#6B7BFF]/40" />
+            </div>
+            <div>
+              <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-2">Возраст</label>
+              <div className="flex gap-2 flex-wrap">
+                {[5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map(a => (
+                  <button key={a} onClick={() => setAge(a)}
+                    className={`w-10 h-10 rounded-xl text-sm font-black transition-all ${age === a ? "bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] text-white scale-105" : "bg-gray-50 text-gray-600"}`}>
+                    {a}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button onClick={handleAdd} disabled={!name.trim()} className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-black text-sm shadow-sm active:scale-95 transition-transform disabled:opacity-50">
+              Добавить ребёнка
+            </button>
+          </div>
+        </div>
+      )}
+
+      {children.map(c => {
+        const level = Math.floor(c.stars / 10) + 1;
+        const pct = (c.stars % 10) / 10 * 100;
+        return (
+          <div key={c.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-[#6B7BFF]/20 to-[#9B6BFF]/20 rounded-2xl flex items-center justify-center text-3xl">{c.avatar}</div>
+              <div className="flex-1">
+                <p className="font-bold text-[#1E1B4B] text-lg">{c.name}</p>
+                <p className="text-sm text-gray-400">{c.age} лет</p>
+              </div>
+              <div className="text-right">
+                <p className="text-yellow-500 font-black text-xl">{c.stars}⭐</p>
+                <p className="text-sm font-bold text-[#6B7BFF]">ур. {level}</p>
+              </div>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden mb-3">
+              <div className="h-full bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
+            </div>
+
+            {c.connected ? (
+              <div className="flex items-center gap-2 mb-3 bg-green-50 border border-green-100 rounded-xl px-3 py-2">
+                <span className="text-green-500 text-sm">✅</span>
+                <p className="text-xs font-bold text-green-600 flex-1">Telegram подключён</p>
+                <button onClick={() => onRefreshInvite(c.id)} className="text-[10px] font-bold text-gray-400 underline">сбросить</button>
+              </div>
+            ) : (
+              <div className="mb-3 bg-amber-50 border border-amber-100 rounded-xl px-3 py-3 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold text-amber-600">⏳ Ожидает подключения</p>
+                  <button onClick={() => onRefreshInvite(c.id)} className="text-[10px] font-bold text-gray-400 underline">новый код</button>
+                </div>
+
+                {c.inviteCode ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-gray-500 flex-1">Код для ребёнка:</p>
+                      <button
+                        onClick={() => shareCode(c.id, c.inviteCode!, c.name)}
+                        className="font-black text-base tracking-widest text-[#1E1B4B] bg-white border border-amber-200 rounded-lg px-2 py-0.5 active:scale-95 transition-all"
+                      >
+                        {copiedId === c.id ? <span className="text-green-500 text-xs">✅ Отправлено!</span> : <>{c.inviteCode} 📤</>}
+                      </button>
+                    </div>
+                    <div className="bg-white/70 rounded-xl px-3 py-2 space-y-1">
+                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-wide">Инструкция для {c.name}:</p>
+                      <p className="text-xs text-gray-600">1️⃣ Открыть Telegram → найти <b>@task4kids_bot</b></p>
+                      <p className="text-xs text-gray-600">2️⃣ Нажать кнопку <b>«Открыть СтарКидс»</b></p>
+                      <p className="text-xs text-gray-600">3️⃣ Ввести код <b>{c.inviteCode}</b></p>
+                    </div>
+                  </>
+                ) : (
+                  <button onClick={() => onRefreshInvite(c.id)} className="text-xs font-bold text-[#6B7BFF]">Создать код →</button>
+                )}
+              </div>
+            )}
+
+            {confirmRemove === c.id ? (
+              <div className="flex gap-2">
+                <button onClick={() => setConfirmRemove(null)} className="flex-1 py-2 rounded-xl bg-gray-100 text-gray-500 font-bold text-sm">Отмена</button>
+                <button onClick={() => { onRemoveChild(c.id); setConfirmRemove(null); }} className="flex-1 py-2 rounded-xl bg-red-500 text-white font-bold text-sm active:scale-95 transition-transform">Удалить</button>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmRemove(c.id)} className="w-full py-2 rounded-xl bg-gray-50 text-gray-400 font-bold text-xs active:scale-95 transition-transform">
+                🗑 Удалить профиль
+              </button>
+            )}
+          </div>
+        );
+      })}
+
+      {children.length === 0 && !showForm && (
+        <div className="text-center py-10">
+          <div className="text-5xl mb-3">👨‍👧</div>
+          <p className="font-bold text-gray-400">Добавь первого ребёнка</p>
+        </div>
+      )}
+    </div>
+  );
+}
