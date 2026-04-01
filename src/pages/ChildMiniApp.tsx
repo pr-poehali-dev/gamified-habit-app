@@ -8,6 +8,7 @@ import { ChildTabTasks } from "@/components/child/ChildTabTasks";
 import { ChildTabStars, ChildTabGrades, ChildTabAchievements, ChildTabProfile } from "@/components/child/ChildTabContent";
 import { ChildBottomNav, type ChildTab } from "@/components/child/ChildBottomNav";
 import { ChildOnboarding } from "@/components/child/ChildOnboarding";
+import { ChildConnectScreen } from "@/components/child/ChildConnectScreen";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,7 +61,7 @@ export default function ChildMiniApp() {
       prevLevelRef.current = lvl;
       setData(d);
     } else if (res.role === "unknown") {
-      setError("Аккаунт не найден. Зарегистрируйся через @task4kids_bot");
+      setError("not_connected");
     } else {
       setError(String(res.error || "Ошибка авторизации"));
     }
@@ -110,6 +111,7 @@ export default function ChildMiniApp() {
   }, [data?.stars]);
 
   if (loading) return <Loading />;
+  if (error === "not_connected") return <ChildConnectScreen onConnected={load} />;
   if (error || !data) return <ErrorScreen msg={error || "Нет данных"} />;
 
   const isNewChild = data.stars === 0 && data.tasks.length === 0;

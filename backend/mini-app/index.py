@@ -255,6 +255,36 @@ def add_parent_xp(conn, parent_id: int, xp: int):
 
 # ─── Route handlers ───────────────────────────────────────────────────────────
 
+def handle_connect_child(conn, body):
+    """Привязать ребёнка по коду приглашения из Mini App."""
+    tid = resolve_telegram_id(body, CHILD_TOKEN)
+    if not tid:
+        return error_response("Unauthorized", 401)
+    code = (body.get("invite_code") or "").strip().upper()
+    if not code:
+        return error_response("Введи код приглашения", 400)
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT id, name, parent_id FROM {SCHEMA}.children WHERE invite_code = %s AND telegram_id IS NULL",
+            (code,)
+        )
+        row = cur.fetchone()
+    if not row:
+        return error_response("Код не найден или уже использован", 404)
+    child_id, child_name, parent_id = row
+    with conn.cursor() as cur:
+        cur.execute(f"UPDATE {SCHEMA}.children SET telegram_id = %s WHERE id = %s", (tid, child_id))
+    conn.commit()
+    # Уведомить родителя
+    if PARENT_TOKEN and parent_id:
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT telegram_id FROM {SCHEMA}.parents WHERE id = %s", (parent_id,))
+            p_row = cur.fetchone()
+        if p_row:
+            send_tg_message(PARENT_TOKEN, p_row[0], f"🎉 <b>{child_name}</b> подключился к СтарКидс!\n\nТеперь ты можешь создавать задания для него в приложении.")
+    return json_response({"ok": True, "child_name": child_name})
+
+
 def handle_auth_child(conn, body):
     tid = resolve_telegram_id(body, CHILD_TOKEN)
     if not tid:
@@ -658,6 +688,8 @@ def handler(event: dict, context) -> dict:
         # ── Child routes ──
         if action == "child/auth":
             return handle_auth_child(conn, body)
+        if action == "child/connect":
+            return handle_connect_child(conn, body)
         if action == "child/complete":
             return handle_complete_task(conn, body)
         if action == "child/grade/submit":
