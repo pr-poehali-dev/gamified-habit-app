@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { apiCall } from "@/components/miniapp/useApi";
 import { tg } from "@/components/miniapp/types";
 
-type Props = { onConnected: () => void };
+type Props = { onConnected: () => void; wasDeleted?: boolean };
 
-export function ChildConnectScreen({ onConnected }: Props) {
+export function ChildConnectScreen({ onConnected, wasDeleted = false }: Props) {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [autoConnecting, setAutoConnecting] = useState(false);
   const [error, setError] = useState("");
+  const [showConnectForm, setShowConnectForm] = useState(!wasDeleted);
 
   // Read invite code from Telegram start_param (passed via ?startapp=CODE or initDataUnsafe.start_param)
   useEffect(() => {
@@ -36,6 +37,7 @@ export function ChildConnectScreen({ onConnected }: Props) {
     const res = await apiCall("child/connect", { invite_code: inviteCode });
     if (res.ok) {
       tg()?.HapticFeedback?.notificationOccurred("success");
+      localStorage.removeItem("child_was_connected");
       onConnected();
     } else {
       setAutoConnecting(false);
@@ -51,12 +53,43 @@ export function ChildConnectScreen({ onConnected }: Props) {
     const res = await apiCall("child/connect", { invite_code: code.trim().toUpperCase() });
     if (res.ok) {
       tg()?.HapticFeedback?.notificationOccurred("success");
+      localStorage.removeItem("child_was_connected");
       onConnected();
     } else {
       setError(String(res.error || "Неверный код, попробуй ещё раз"));
       setLoading(false);
     }
   };
+
+  // Экран "профиль удалён родителем"
+  if (wasDeleted && !showConnectForm && !(autoConnecting && !error)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#FFF0F5] via-[#F0EEFF] to-[#E8F8FF] px-6" style={{ fontFamily: "Nunito, sans-serif" }}>
+        <div className="text-7xl mb-6">😔</div>
+        <h1 className="text-2xl font-black text-[#2D1B69] mb-3 text-center">Профиль удалён</h1>
+        <p className="text-gray-500 text-sm text-center mb-8 leading-relaxed max-w-xs">
+          Родитель удалил твой профиль.<br />
+          Чтобы продолжить пользоваться приложением, попроси родителя создать новый профиль и поделиться кодом.
+        </p>
+
+        <div className="w-full max-w-xs space-y-3">
+          <button
+            onClick={() => setShowConnectForm(true)}
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#FF6B9D] to-[#C96BD9] text-white font-black text-base shadow-lg active:scale-95 transition-transform"
+          >
+            🔑 У меня есть новый код
+          </button>
+        </div>
+
+        <div className="mt-8 bg-white/60 rounded-2xl px-5 py-4 max-w-xs text-center">
+          <p className="text-xs text-gray-500 font-semibold">
+            📱 Родитель создаёт новый профиль<br />
+            в разделе <b>«Дети»</b> → <b>«Добавить ребёнка»</b>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Auto-connecting screen — shown while we silently connect via start_param
   if (autoConnecting && !error) {

@@ -59,6 +59,8 @@ export default function ChildMiniApp() {
       const d = res as unknown as ChildData;
       const lvl = getLevelInfo(d.stars).level;
       prevLevelRef.current = lvl;
+      // Запоминаем, что ребёнок был успешно подключён
+      localStorage.setItem("child_was_connected", "1");
       setData(d);
     } else if (res.role === "unknown") {
       setError("not_connected");
@@ -111,7 +113,18 @@ export default function ChildMiniApp() {
   }, [data?.stars]);
 
   if (loading) return <Loading />;
-  if (error === "not_connected") return <ChildConnectScreen onConnected={load} />;
+  if (error === "not_connected") {
+    const wasConnected = !!localStorage.getItem("child_was_connected");
+    return (
+      <ChildConnectScreen
+        onConnected={() => {
+          setError(null);
+          load();
+        }}
+        wasDeleted={wasConnected}
+      />
+    );
+  }
   if (error || !data) return <ErrorScreen msg={error || "Нет данных"} />;
 
   const isNewChild = data.stars === 0 && data.tasks.length === 0;
