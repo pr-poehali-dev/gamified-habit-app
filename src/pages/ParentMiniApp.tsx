@@ -48,7 +48,7 @@ type GradeRequest = {
   status: string; starsAwarded: number | null;
 };
 
-type Reward = { id: number; title: string; cost: number; emoji: string };
+type Reward = { id: number; title: string; cost: number; emoji: string; childId: number | null; quantity: number };
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
@@ -175,9 +175,9 @@ export default function ParentMiniApp() {
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
-  const addReward = useCallback(async (title: string, cost: number, emoji: string) => {
-    const res = await apiCall("parent/reward/add", { title, cost, emoji });
-    if (res.ok) { showToast("🎁 Награда добавлена в магазин!"); load(false); }
+  const addReward = useCallback(async (title: string, cost: number, emoji: string, childId: number, quantity: number) => {
+    const res = await apiCall("parent/reward/add", { title, cost, emoji, child_id: childId, quantity });
+    if (res.ok) { showToast("🎁 Награда добавлена!"); load(false); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
@@ -278,6 +278,7 @@ export default function ParentMiniApp() {
             parent_xp={data.parent_xp}
             onClaimStreak={claimStreak}
             rewards={data.rewards}
+            children={data.children}
             onAddReward={addReward}
             onRemoveReward={removeReward}
           />

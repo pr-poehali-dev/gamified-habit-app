@@ -329,8 +329,8 @@ def handle_auth_child(conn, body):
         tasks = [{"id": r[0], "title": r[1], "stars": r[2], "emoji": r[3], "status": r[4], "requirePhoto": r[5], "requireConfirm": r[6], "photoStatus": r[7], "deadline": r[8].isoformat() if r[8] else None, "extensionRequested": bool(r[9]), "extensionGranted": bool(r[10])} for r in cur.fetchall()]
         rewards = []
         if child.get("parent_id"):
-            cur.execute(f"SELECT id, title, cost, emoji FROM {SCHEMA}.rewards WHERE parent_id = %s ORDER BY created_at", (child["parent_id"],))
-            rewards = [{"id": r[0], "title": r[1], "cost": r[2], "emoji": r[3]} for r in cur.fetchall()]
+            cur.execute(f"SELECT id, title, cost, emoji, child_id, quantity FROM {SCHEMA}.rewards WHERE parent_id = %s AND child_id = %s AND quantity > 0 ORDER BY created_at", (child["parent_id"], child["id"]))
+            rewards = [{"id": r[0], "title": r[1], "cost": r[2], "emoji": r[3], "childId": r[4], "quantity": r[5]} for r in cur.fetchall()]
     return json_response({
         **child, "telegram_id": tid, "level": level, "xpInLevel": xp_in,
         "achievements": achievements, "stickers": stickers,
@@ -381,8 +381,8 @@ def handle_auth_parent(conn, body):
             grades = [{"id": r[0], "childId": r[1], "childName": r[2], "subject": r[3], "grade": r[4], "date": str(r[5]), "status": r[6], "starsAwarded": r[7]} for r in cur.fetchall()]
         else:
             grades = []
-        cur.execute(f"SELECT id, title, cost, emoji FROM {SCHEMA}.rewards WHERE parent_id = %s ORDER BY created_at", (parent["id"],))
-        rewards = [{"id": r[0], "title": r[1], "cost": r[2], "emoji": r[3]} for r in cur.fetchall()]
+        cur.execute(f"SELECT id, title, cost, emoji, child_id, quantity FROM {SCHEMA}.rewards WHERE parent_id = %s ORDER BY created_at", (parent["id"],))
+        rewards = [{"id": r[0], "title": r[1], "cost": r[2], "emoji": r[3], "childId": r[4], "quantity": r[5]} for r in cur.fetchall()]
     return json_response({**parent, "telegram_id": tid, "children": children, "tasks": tasks, "gradeRequests": grades, "rewards": rewards})
 
 
@@ -835,25 +835,38 @@ def handle_buy_reward(conn, body):
         return error_response("Child not found", 404)
     reward_id = body.get("reward_id")
     with conn.cursor() as cur:
-        cur.execute(f"SELECT id, title, cost, parent_id FROM {SCHEMA}.rewards WHERE id = %s AND parent_id = %s", (reward_id, child["parent_id"]))
+        cur.execute(f"SELECT id, title, cost, parent_id, child_id, quantity FROM {SCHEMA}.rewards WHERE id = %s AND parent_id = %s", (reward_id, child["parent_id"]))
         reward = cur.fetchone()
     if not reward:
         return error_response("Reward not found", 404)
-    r_id, title, cost, parent_id = reward
+    r_id, title, cost, parent_id, reward_child_id, quantity = reward
+    # Проверяем, что награда предназначена именно этому ребёнку
+    if reward_child_id != child["id"]:
+        return error_response("Reward not found", 404)
+    # Проверяем наличие доступных наград
+    if quantity <= 0:
+        return error_response("Награда недоступна (закончилась)")
     if child["stars"] < cost:
         return error_response("Not enough stars")
     with conn.cursor() as cur:
         cur.execute(f"UPDATE {SCHEMA}.children SET stars = stars - %s WHERE id = %s RETURNING stars", (cost, child["id"]))
         new_stars = cur.fetchone()[0]
-        cur.execute(f"INSERT INTO {SCHEMA}.reward_purchases (child_id, reward_id, status) VALUES (%s, %s, 'pending') ON CONFLICT DO NOTHING", (child["id"], r_id))
+        # Уменьшаем счётчик доступных наград
+        cur.execute(f"UPDATE {SCHEMA}.rewards SET quantity = quantity - 1 WHERE id = %s RETURNING quantity", (r_id,))
+        new_quantity = cur.fetchone()[0]
+        cur.execute(f"INSERT INTO {SCHEMA}.reward_purchases (child_id, reward_id, status) VALUES (%s, %s, 'pending')", (child["id"], r_id))
     conn.commit()
+    # Обновляем статистику ачивок
+    stats = get_child_stats(conn, child["id"])
+    check_achievements(conn, child["id"], stats)
     if PARENT_TOKEN and parent_id:
         with conn.cursor() as cur:
             cur.execute(f"SELECT telegram_id FROM {SCHEMA}.parents WHERE id = %s", (parent_id,))
             p_row = cur.fetchone()
         if p_row:
-            send_tg_message(PARENT_TOKEN, p_row[0], f"🛍️ <b>{child['name']}</b> потратил {cost}⭐ на «<b>{title}</b>»!\n\nОткрой @parenttask_bot для подтверждения покупки.")
-    return json_response({"ok": True, "new_stars": new_stars})
+            qty_info = f" (осталось: {new_quantity} шт.)" if new_quantity > 0 else " (последняя!)"
+            send_tg_message(PARENT_TOKEN, p_row[0], f"🛍️ <b>{child['name']}</b> потратил {cost}⭐ на «<b>{title}</b>»!{qty_info}\n\nОткрой @parenttask_bot для подтверждения покупки.")
+    return json_response({"ok": True, "new_stars": new_stars, "new_quantity": new_quantity})
 
 
 def handle_streak_claim(conn, body):
@@ -956,7 +969,7 @@ def handle_remove_child(conn, body):
 
 
 def handle_add_reward(conn, body):
-    """Родитель добавляет награду для ребёнка."""
+    """Родитель добавляет награду для конкретного ребёнка с указанием количества."""
     tid = resolve_telegram_id(body, PARENT_TOKEN)
     if not tid:
         return error_response("Unauthorized", 401)
@@ -966,6 +979,8 @@ def handle_add_reward(conn, body):
     title = (body.get("title") or "").strip()
     cost = body.get("cost", 10)
     emoji = body.get("emoji", "🎁")
+    child_id = body.get("child_id")
+    quantity = body.get("quantity", 1)
     if not title:
         return error_response("Название обязательно", 400)
     try:
@@ -974,10 +989,23 @@ def handle_add_reward(conn, body):
             raise ValueError
     except (ValueError, TypeError):
         return error_response("Стоимость должна быть числом >= 1", 400)
+    try:
+        quantity = int(quantity)
+        if quantity < 1:
+            raise ValueError
+    except (ValueError, TypeError):
+        return error_response("Количество должно быть числом >= 1", 400)
+    if not child_id:
+        return error_response("Необходимо выбрать ребёнка", 400)
+    # Проверяем, что ребёнок принадлежит этому родителю
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT id FROM {SCHEMA}.children WHERE id = %s AND parent_id = %s", (child_id, parent["id"]))
+        if not cur.fetchone():
+            return error_response("Ребёнок не найден", 404)
     with conn.cursor() as cur:
         cur.execute(
-            f"INSERT INTO {SCHEMA}.rewards (parent_id, title, cost, emoji) VALUES (%s, %s, %s, %s) RETURNING id",
-            (parent["id"], title, cost, emoji)
+            f"INSERT INTO {SCHEMA}.rewards (parent_id, child_id, title, cost, emoji, quantity) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+            (parent["id"], child_id, title, cost, emoji, quantity)
         )
         reward_id = cur.fetchone()[0]
     conn.commit()

@@ -12,7 +12,7 @@ import { ChildConnectScreen } from "@/components/child/ChildConnectScreen";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Reward = { id: number; title: string; cost: number; emoji: string };
+type Reward = { id: number; title: string; cost: number; emoji: string; childId: number | null; quantity: number };
 
 type ChildData = {
   role: "child";

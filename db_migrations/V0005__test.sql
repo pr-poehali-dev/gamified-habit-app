@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_rewards_test ON t_p84704826_gamified_habit_app.rewards(id);

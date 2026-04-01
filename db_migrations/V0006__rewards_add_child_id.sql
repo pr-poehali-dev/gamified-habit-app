@@ -1,0 +1,1 @@
+ALTER TABLE t_p84704826_gamified_habit_app.rewards ADD COLUMN IF NOT EXISTS child_id BIGINT;

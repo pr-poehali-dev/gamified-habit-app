@@ -193,7 +193,7 @@ export function ChildTabAchievements({ achievements }: AchievementsProps) {
 
 // ─── Shop tab ─────────────────────────────────────────────────────────────────
 
-type Reward = { id: number; title: string; cost: number; emoji: string };
+type Reward = { id: number; title: string; cost: number; emoji: string; childId: number | null; quantity: number };
 
 type ShopProps = {
   stars: number;
@@ -221,24 +221,31 @@ export function ChildTabShop({ stars, rewards, onBuy }: ShopProps) {
       ) : (
         <div className="space-y-3">
           {rewards.map(reward => {
-            const canBuy = stars >= reward.cost;
+            const canBuy = stars >= reward.cost && reward.quantity > 0;
             return (
               <div key={reward.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
                 <span className="text-4xl">{reward.emoji}</span>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <p className="font-bold text-[#2D1B69] text-sm">{reward.title}</p>
-                  <p className="text-xs text-amber-500 font-black mt-0.5">{reward.cost} ⭐</p>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <p className="text-xs text-amber-500 font-black">{reward.cost} ⭐</p>
+                    {reward.quantity > 0 ? (
+                      <span className="text-xs bg-green-50 text-green-600 font-bold px-1.5 py-0.5 rounded-lg">доступно: {reward.quantity} шт.</span>
+                    ) : (
+                      <span className="text-xs bg-red-50 text-red-400 font-bold px-1.5 py-0.5 rounded-lg">закончилась</span>
+                    )}
+                  </div>
                 </div>
                 <button
                   onClick={() => onBuy(reward.id)}
                   disabled={!canBuy}
-                  className={`text-xs font-bold px-4 py-2 rounded-xl transition-all active:scale-95 ${
+                  className={`text-xs font-bold px-4 py-2 rounded-xl transition-all active:scale-95 shrink-0 ${
                     canBuy
                       ? "bg-gradient-to-r from-[#FF6B9D] to-[#FF9B6B] text-white shadow-sm"
                       : "bg-gray-100 text-gray-400 cursor-not-allowed"
                   }`}
                 >
-                  {canBuy ? "Купить" : "Мало ⭐"}
+                  {reward.quantity <= 0 ? "Нет" : canBuy ? "Купить" : "Мало ⭐"}
                 </button>
               </div>
             );

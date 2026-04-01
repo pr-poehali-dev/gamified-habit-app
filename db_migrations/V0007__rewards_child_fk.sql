@@ -1,0 +1,1 @@
+ALTER TABLE t_p84704826_gamified_habit_app.rewards ADD CONSTRAINT rewards_child_fk FOREIGN KEY (child_id) REFERENCES t_p84704826_gamified_habit_app.children(id);

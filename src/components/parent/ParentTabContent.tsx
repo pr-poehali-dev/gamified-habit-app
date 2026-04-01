@@ -25,7 +25,7 @@ type ChildrenProps = {
 
 const CHILD_AVATARS = ["👦", "👧", "🧒", "👶", "🐱", "🦊", "🐼", "🦁", "🐸", "🐧", "🦋", "🌟"];
 
-type Reward = { id: number; title: string; cost: number; emoji: string };
+type Reward = { id: number; title: string; cost: number; emoji: string; childId: number | null; quantity: number };
 
 type BonusesProps = {
   streak: StreakState;
@@ -33,7 +33,8 @@ type BonusesProps = {
   parent_xp: number;
   onClaimStreak: () => void;
   rewards: Reward[];
-  onAddReward: (title: string, cost: number, emoji: string) => void;
+  children: Child[];
+  onAddReward: (title: string, cost: number, emoji: string, childId: number, quantity: number) => void;
   onRemoveReward: (id: number) => void;
 };
 
@@ -267,21 +268,25 @@ const REWARD_TEMPLATES = [
   { emoji: "🍦", title: "Мороженое на выбор", cost: 5 },
 ];
 
-export function ParentTabBonuses({ streak, parent_points, parent_xp, onClaimStreak, rewards, onAddReward, onRemoveReward }: BonusesProps) {
+export function ParentTabBonuses({ streak, parent_points, parent_xp, onClaimStreak, rewards, children, onAddReward, onRemoveReward }: BonusesProps) {
   const { level } = getParentLevelInfo(parent_xp);
   const tier = getParentLevelTier(level);
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [cost, setCost] = useState(10);
   const [emoji, setEmoji] = useState("🎁");
+  const [selectedChildId, setSelectedChildId] = useState<number | null>(children.length === 1 ? children[0].id : null);
+  const [quantity, setQuantity] = useState(1);
   const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
 
   const handleAdd = () => {
-    if (!title.trim() || cost < 1) return;
-    onAddReward(title.trim(), cost, emoji);
+    if (!title.trim() || cost < 1 || !selectedChildId || quantity < 1) return;
+    onAddReward(title.trim(), cost, emoji, selectedChildId, quantity);
     setTitle("");
     setCost(10);
     setEmoji("🎁");
+    setQuantity(1);
+    setSelectedChildId(children.length === 1 ? children[0].id : null);
     setShowForm(false);
   };
 
@@ -342,7 +347,35 @@ export function ParentTabBonuses({ streak, parent_points, parent_xp, onClaimStre
                 <input type="number" min={1} value={cost} onChange={e => setCost(Number(e.target.value))}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-gray-50 font-semibold focus:outline-none focus:ring-2 focus:ring-[#6B7BFF]/40" />
               </div>
-              <button onClick={handleAdd} disabled={!title.trim() || cost < 1}
+              <div>
+                <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-1.5">Для кого *</label>
+                {children.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic">Сначала добавь ребёнка во вкладке «Дети»</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {children.map(c => (
+                      <button
+                        key={c.id}
+                        onClick={() => setSelectedChildId(c.id)}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all ${selectedChildId === c.id ? "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white shadow-sm scale-105" : "bg-gray-50 text-gray-600 border border-gray-200"}`}
+                      >
+                        <span>{c.avatar}</span>
+                        <span>{c.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-1.5">Количество (шт.) *</label>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-10 h-10 rounded-xl bg-gray-100 text-gray-600 font-black text-lg active:scale-95 transition-all flex items-center justify-center">−</button>
+                  <span className="text-2xl font-black text-[#1E1B4B] w-8 text-center">{quantity}</span>
+                  <button onClick={() => setQuantity(q => q + 1)} className="w-10 h-10 rounded-xl bg-gray-100 text-gray-600 font-black text-lg active:scale-95 transition-all flex items-center justify-center">+</button>
+                  <span className="text-xs text-gray-400 font-semibold">шт. доступно ребёнку</span>
+                </div>
+              </div>
+              <button onClick={handleAdd} disabled={!title.trim() || cost < 1 || !selectedChildId || quantity < 1}
                 className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-black text-sm shadow-sm active:scale-95 transition-transform disabled:opacity-50">
                 Добавить награду
               </button>
@@ -358,23 +391,36 @@ export function ParentTabBonuses({ streak, parent_points, parent_xp, onClaimStre
           </div>
         )}
 
-        {rewards.map(reward => (
-          <div key={reward.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-2 flex items-center gap-3">
-            <span className="text-3xl">{reward.emoji}</span>
-            <div className="flex-1">
-              <p className="font-bold text-[#1E1B4B] text-sm">{reward.title}</p>
-              <p className="text-xs font-black text-amber-500 mt-0.5">{reward.cost} ⭐</p>
-            </div>
-            {confirmRemove === reward.id ? (
-              <div className="flex gap-1">
-                <button onClick={() => setConfirmRemove(null)} className="text-xs px-2 py-1.5 rounded-lg bg-gray-100 text-gray-500 font-bold">Нет</button>
-                <button onClick={() => { onRemoveReward(reward.id); setConfirmRemove(null); }} className="text-xs px-2 py-1.5 rounded-lg bg-red-500 text-white font-bold">Да</button>
+        {rewards.map(reward => {
+          const rewardChild = children.find(c => c.id === reward.childId);
+          return (
+            <div key={reward.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-2 flex items-center gap-3">
+              <span className="text-3xl">{reward.emoji}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-[#1E1B4B] text-sm truncate">{reward.title}</p>
+                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                  <p className="text-xs font-black text-amber-500">{reward.cost} ⭐</p>
+                  {rewardChild && (
+                    <span className="text-xs bg-purple-50 text-purple-600 font-bold px-1.5 py-0.5 rounded-lg">{rewardChild.avatar} {rewardChild.name}</span>
+                  )}
+                  {reward.quantity > 0 ? (
+                    <span className="text-xs bg-green-50 text-green-600 font-bold px-1.5 py-0.5 rounded-lg">осталось: {reward.quantity} шт.</span>
+                  ) : (
+                    <span className="text-xs bg-red-50 text-red-400 font-bold px-1.5 py-0.5 rounded-lg">закончилась</span>
+                  )}
+                </div>
               </div>
-            ) : (
-              <button onClick={() => setConfirmRemove(reward.id)} className="text-xs px-2 py-1.5 rounded-lg bg-gray-100 text-gray-400 font-bold hover:bg-red-50 hover:text-red-400 transition-colors">🗑</button>
-            )}
-          </div>
-        ))}
+              {confirmRemove === reward.id ? (
+                <div className="flex gap-1">
+                  <button onClick={() => setConfirmRemove(null)} className="text-xs px-2 py-1.5 rounded-lg bg-gray-100 text-gray-500 font-bold">Нет</button>
+                  <button onClick={() => { onRemoveReward(reward.id); setConfirmRemove(null); }} className="text-xs px-2 py-1.5 rounded-lg bg-red-500 text-white font-bold">Да</button>
+                </div>
+              ) : (
+                <button onClick={() => setConfirmRemove(reward.id)} className="text-xs px-2 py-1.5 rounded-lg bg-gray-100 text-gray-400 font-bold hover:bg-red-50 hover:text-red-400 transition-colors">🗑</button>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Баллы родителя */}
