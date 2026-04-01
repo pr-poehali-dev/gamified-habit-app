@@ -423,7 +423,6 @@ def upload_photo_to_s3(photo_base64: str, task_id: int) -> str:
         Key=file_key,
         Body=image_bytes,
         ContentType=f"image/{ext}",
-        ACL="public-read",
     )
     return f"https://s3.poehali.dev/{bucket}/{file_key}"
 
