@@ -8,6 +8,7 @@ import { Loading, ErrorScreen } from "@/components/parent/ParentScreens";
 import { ParentTabTasks } from "@/components/parent/ParentTabTasks";
 import { ParentTabGrades, ParentTabChildren, ParentTabBonuses, ParentTabProfile } from "@/components/parent/ParentTabContent";
 import { ParentBottomNav, type ParentTab } from "@/components/parent/ParentBottomNav";
+import { ParentOnboarding } from "@/components/parent/ParentOnboarding";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -52,6 +53,7 @@ export default function ParentMiniApp() {
   const [debugInfo, setDebugInfo] = useState<string>("");
   const [tab, setTab] = useState<ParentTab>("tasks");
   const [toast, setToast] = useState<string | null>(null);
+  const [onboardingDone, setOnboardingDone] = useState(() => !!localStorage.getItem("parent_onboarding_done"));
 
   useEffect(() => {
     const webapp = tg();
@@ -154,6 +156,17 @@ export default function ParentMiniApp() {
   const pendingGrades = data.gradeRequests.filter(g => g.status === "pending");
   const { level } = getParentLevelInfo(data.parent_xp);
   const tip = getParentTip(level);
+
+  const isNewUser = data.children.length === 0 && data.parent_xp === 0;
+
+  if (isNewUser && !onboardingDone) {
+    return (
+      <ParentOnboarding
+        name={data.name}
+        onDone={() => { localStorage.setItem("parent_onboarding_done", "1"); setOnboardingDone(true); }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F0F4FF] via-[#F8F9FF] to-[#F4F0FF]" style={{ fontFamily: "Golos Text, sans-serif" }}>

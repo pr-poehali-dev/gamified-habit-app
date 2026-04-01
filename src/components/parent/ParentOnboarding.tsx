@@ -1,0 +1,71 @@
+import { useState } from "react";
+
+type Props = { name: string; onDone: () => void };
+
+const STEPS = [
+  {
+    emoji: "👋",
+    title: (name: string) => `Привет, ${name}!`,
+    desc: "СтарКидс помогает мотивировать детей через задания и награды. Дети выполняют задания — получают звёзды ⭐, звёзды тратят на призы 🎁",
+    btn: "Как это работает →",
+  },
+  {
+    emoji: "👨‍👧",
+    title: () => "Добавь ребёнка",
+    desc: "Перейди во вкладку «Дети» и нажми «+ Добавить». Ты получишь код приглашения — передай его ребёнку, он введёт его в @task4kids_bot.",
+    btn: "Понятно →",
+  },
+  {
+    emoji: "📋",
+    title: () => "Создавай задания",
+    desc: "После подключения ребёнка создавай задания во вкладке «Задачи». Можно требовать фото-отчёт или подтверждение от тебя перед начислением звёзд.",
+    btn: "Начать!",
+  },
+];
+
+export function ParentOnboarding({ name, onDone }: Props) {
+  const [step, setStep] = useState(0);
+  const current = STEPS[step];
+  const isLast = step === STEPS.length - 1;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-gradient-to-br from-[#F0F4FF] via-[#F8F9FF] to-[#F4F0FF] flex flex-col items-center justify-center px-6" style={{ fontFamily: "Golos Text, sans-serif" }}>
+      {/* Steps indicator */}
+      <div className="flex gap-2 mb-10">
+        {STEPS.map((_, i) => (
+          <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === step ? "w-8 bg-[#6B7BFF]" : i < step ? "w-4 bg-[#6B7BFF]/40" : "w-4 bg-gray-200"}`} />
+        ))}
+      </div>
+
+      {/* Card */}
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <div className="text-7xl mb-6" style={{ animation: "bounceIn 0.4s ease" }}>{current.emoji}</div>
+          <h2 className="text-2xl font-black text-[#1E1B4B] mb-3">{current.title(name)}</h2>
+          <p className="text-gray-500 text-sm leading-relaxed">{current.desc}</p>
+        </div>
+
+        <button
+          onClick={() => isLast ? onDone() : setStep(s => s + 1)}
+          className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-black text-base shadow-lg active:scale-95 transition-transform"
+        >
+          {current.btn}
+        </button>
+
+        {!isLast && (
+          <button onClick={onDone} className="w-full mt-3 py-2 text-gray-400 text-sm font-semibold">
+            Пропустить
+          </button>
+        )}
+      </div>
+
+      <style>{`
+        @keyframes bounceIn {
+          0% { transform: scale(0.5); opacity: 0; }
+          70% { transform: scale(1.1); }
+          100% { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
+}
