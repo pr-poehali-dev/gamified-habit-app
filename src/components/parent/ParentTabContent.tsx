@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { StreakCard } from "@/components/demo/StreakCard";
 import { getParentLevelInfo, getParentLevelTier, PARTNER_PRIZES, type StreakState } from "@/components/demo/types";
 
@@ -17,7 +18,11 @@ type GradesProps = {
 
 type ChildrenProps = {
   children: Child[];
+  onAddChild: (name: string, age: number, avatar: string) => void;
+  onRemoveChild: (id: number) => void;
 };
+
+const CHILD_AVATARS = ["👦", "👧", "🧒", "👶", "🐱", "🦊", "🐼", "🦁", "🐸", "🐧", "🦋", "🌟"];
 
 type BonusesProps = {
   streak: StreakState;
@@ -82,10 +87,71 @@ export function ParentTabGrades({ gradeRequests, pendingGrades, onApproveGrade, 
   );
 }
 
-export function ParentTabChildren({ children }: ChildrenProps) {
+export function ParentTabChildren({ children, onAddChild, onRemoveChild }: ChildrenProps) {
+  const [showForm, setShowForm] = useState(false);
+  const [name, setName] = useState("");
+  const [age, setAge] = useState(9);
+  const [avatar, setAvatar] = useState("👧");
+  const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
+
+  const handleAdd = () => {
+    if (!name.trim()) return;
+    onAddChild(name.trim(), age, avatar);
+    setName("");
+    setAge(9);
+    setAvatar("👧");
+    setShowForm(false);
+  };
+
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-bold text-[#1E1B4B]">Мои дети</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-[#1E1B4B]">Мои дети</h2>
+        <button onClick={() => setShowForm(v => !v)} className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-transform">
+          {showForm ? "✕ Закрыть" : "+ Добавить"}
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] px-5 py-4">
+            <p className="text-white font-black text-base">👶 Новый ребёнок</p>
+          </div>
+          <div className="p-5 space-y-4">
+            <div>
+              <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-2">Аватар</label>
+              <div className="flex gap-2 flex-wrap">
+                {CHILD_AVATARS.map(e => (
+                  <button key={e} onClick={() => setAvatar(e)}
+                    className={`w-10 h-10 rounded-xl text-2xl flex items-center justify-center transition-all ${avatar === e ? "ring-2 ring-[#6B7BFF] bg-[#6B7BFF]/10 scale-110" : "bg-gray-50"}`}>
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-1.5">Имя *</label>
+              <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Имя ребёнка"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-gray-50 font-semibold focus:outline-none focus:ring-2 focus:ring-[#6B7BFF]/40" />
+            </div>
+            <div>
+              <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-2">Возраст</label>
+              <div className="flex gap-2 flex-wrap">
+                {[5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map(a => (
+                  <button key={a} onClick={() => setAge(a)}
+                    className={`w-10 h-10 rounded-xl text-sm font-black transition-all ${age === a ? "bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] text-white scale-105" : "bg-gray-50 text-gray-600"}`}>
+                    {a}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button onClick={handleAdd} disabled={!name.trim()} className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-black text-sm shadow-sm active:scale-95 transition-transform disabled:opacity-50">
+              Добавить ребёнка
+            </button>
+          </div>
+        </div>
+      )}
+
       {children.map(c => {
         const level = Math.floor(c.stars / 10) + 1;
         const pct = (c.stars % 10) / 10 * 100;
@@ -102,12 +168,29 @@ export function ParentTabChildren({ children }: ChildrenProps) {
                 <p className="text-sm font-bold text-[#6B7BFF]">ур. {level}</p>
               </div>
             </div>
-            <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+            <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden mb-3">
               <div className="h-full bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
             </div>
+            {confirmRemove === c.id ? (
+              <div className="flex gap-2">
+                <button onClick={() => setConfirmRemove(null)} className="flex-1 py-2 rounded-xl bg-gray-100 text-gray-500 font-bold text-sm">Отмена</button>
+                <button onClick={() => { onRemoveChild(c.id); setConfirmRemove(null); }} className="flex-1 py-2 rounded-xl bg-red-500 text-white font-bold text-sm active:scale-95 transition-transform">Удалить</button>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmRemove(c.id)} className="w-full py-2 rounded-xl bg-gray-50 text-gray-400 font-bold text-xs active:scale-95 transition-transform">
+                🗑 Удалить профиль
+              </button>
+            )}
           </div>
         );
       })}
+
+      {children.length === 0 && !showForm && (
+        <div className="text-center py-10">
+          <div className="text-5xl mb-3">👨‍👧</div>
+          <p className="font-bold text-gray-400">Добавь первого ребёнка</p>
+        </div>
+      )}
     </div>
   );
 }

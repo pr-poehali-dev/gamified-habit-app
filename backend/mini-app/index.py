@@ -561,6 +561,55 @@ def handle_streak_claim(conn, body):
     return json_response({"ok": True, "xp": xp_bonus, "points": points_bonus, "streak": streak})
 
 
+CHILD_AVATARS = ["👦", "👧", "🧒", "👶", "🐱", "🦊", "🐼", "🦁", "🐸", "🐧", "🦋", "🌟"]
+
+
+def handle_add_child(conn, body):
+    """Добавить ребёнка родителю (без Telegram — оффлайн профиль)."""
+    tid = resolve_telegram_id(body, PARENT_TOKEN)
+    if not tid:
+        return error_response("Unauthorized", 401)
+    parent = get_parent_by_tg(conn, tid)
+    if not parent:
+        return error_response("Parent not found", 404)
+    name = (body.get("name") or "").strip()
+    age = body.get("age", 9)
+    avatar = body.get("avatar", "👧")
+    if not name:
+        return error_response("Имя обязательно", 400)
+    with conn.cursor() as cur:
+        cur.execute(
+            f"INSERT INTO {SCHEMA}.children (parent_id, name, age, avatar, stars) VALUES (%s, %s, %s, %s, 0) RETURNING id",
+            (parent["id"], name, age, avatar)
+        )
+        child_id = cur.fetchone()[0]
+    conn.commit()
+    return json_response({"ok": True, "child_id": child_id})
+
+
+def handle_remove_child(conn, body):
+    """Удалить ребёнка родителя (только если нет звёзд или родитель подтвердил)."""
+    tid = resolve_telegram_id(body, PARENT_TOKEN)
+    if not tid:
+        return error_response("Unauthorized", 401)
+    parent = get_parent_by_tg(conn, tid)
+    if not parent:
+        return error_response("Parent not found", 404)
+    child_id = body.get("child_id")
+    if not child_id:
+        return error_response("child_id required", 400)
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT id FROM {SCHEMA}.children WHERE id = %s AND parent_id = %s", (child_id, parent["id"]))
+        if not cur.fetchone():
+            return error_response("Child not found", 404)
+        cur.execute(f"DELETE FROM {SCHEMA}.tasks WHERE child_id = %s", (child_id,))
+        cur.execute(f"DELETE FROM {SCHEMA}.grade_requests WHERE child_id = %s", (child_id,))
+        cur.execute(f"DELETE FROM {SCHEMA}.achievements WHERE child_id = %s", (child_id,))
+        cur.execute(f"DELETE FROM {SCHEMA}.children WHERE id = %s", (child_id,))
+    conn.commit()
+    return json_response({"ok": True})
+
+
 def handler(event: dict, context) -> dict:
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": cors_headers(), "body": ""}
@@ -598,6 +647,10 @@ def handler(event: dict, context) -> dict:
             return handle_approve_grade(conn, body)
         if action == "parent/streak/claim":
             return handle_streak_claim(conn, body)
+        if action == "parent/child/add":
+            return handle_add_child(conn, body)
+        if action == "parent/child/remove":
+            return handle_remove_child(conn, body)
 
         return error_response("Not found", 404)
     finally:

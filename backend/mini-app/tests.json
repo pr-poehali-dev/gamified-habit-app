@@ -23,6 +23,15 @@
       "expectedStatus": 200,
       "expectedBody": {"role": "parent"},
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Parent add child no name",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "parent/child/add", "telegram_id": 999999999},
+      "expectedStatus": 400,
+      "expectedBody": {"error": "Имя обязательно"},
+      "bodyMatcher": "partial"
     }
   ]
 }

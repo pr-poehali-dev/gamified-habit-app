@@ -122,6 +122,18 @@ export default function ParentMiniApp() {
     else showToast(String(res.error || "Уже получено сегодня"));
   }, []);
 
+  const addChild = useCallback(async (name: string, age: number, avatar: string) => {
+    const res = await apiCall("parent/child/add", { name, age, avatar });
+    if (res.ok) { showToast("👶 Ребёнок добавлен!"); load(); }
+    else showToast("❌ " + String(res.error || "Ошибка"));
+  }, []);
+
+  const removeChild = useCallback(async (childId: number) => {
+    const res = await apiCall("parent/child/remove", { child_id: childId });
+    if (res.ok) { showToast("🗑 Профиль удалён"); load(); }
+    else showToast("❌ " + String(res.error || "Ошибка"));
+  }, []);
+
   if (loading) return <Loading debug={debugInfo} />;
   if (error || !data) return <ErrorScreen msg={error || "Нет данных"} />;
 
@@ -186,7 +198,11 @@ export default function ParentMiniApp() {
           />
         )}
         {tab === "children" && (
-          <ParentTabChildren children={data.children} />
+          <ParentTabChildren
+            children={data.children}
+            onAddChild={addChild}
+            onRemoveChild={removeChild}
+          />
         )}
         {tab === "bonuses" && (
           <ParentTabBonuses
