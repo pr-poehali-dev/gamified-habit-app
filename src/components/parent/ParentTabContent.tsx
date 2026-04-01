@@ -94,6 +94,13 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
   const [age, setAge] = useState(9);
   const [avatar, setAvatar] = useState("👧");
   const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+
+  const copyCode = (id: number, code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const handleAdd = () => {
     if (!name.trim()) return;
@@ -189,11 +196,10 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
                   <div className="flex items-center gap-2">
                     <p className="text-xs text-gray-500 flex-1">Код для @task4kids_bot:</p>
                     <button
-                      onClick={() => { navigator.clipboard.writeText(c.inviteCode!); }}
-                      className="font-black text-base tracking-widest text-[#1E1B4B] bg-white border border-amber-200 rounded-lg px-2 py-0.5 active:scale-95 transition-transform active:bg-amber-100"
-                      title="Нажми чтобы скопировать"
+                      onClick={() => copyCode(c.id, c.inviteCode!)}
+                      className="font-black text-base tracking-widest text-[#1E1B4B] bg-white border border-amber-200 rounded-lg px-2 py-0.5 active:scale-95 transition-all"
                     >
-                      {c.inviteCode} 📋
+                      {copiedId === c.id ? <span className="text-green-500 text-xs">✅ Скопировано!</span> : <>{c.inviteCode} 📋</>}
                     </button>
                   </div>
                 ) : (
