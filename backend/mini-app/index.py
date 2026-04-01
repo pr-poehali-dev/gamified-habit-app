@@ -397,7 +397,7 @@ def handle_complete_task(conn, body):
     if not task:
         return error_response("Task not found", 404)
     t_id, stars, title, require_confirm, parent_id = task
-    new_status = "pending_confirm" if require_confirm else "done"
+    new_status = "pending_confirm" if require_confirm else "approved"
     with conn.cursor() as cur:
         cur.execute(f"UPDATE {SCHEMA}.tasks SET status = %s, completed_at = NOW() WHERE id = %s", (new_status, t_id))
     conn.commit()

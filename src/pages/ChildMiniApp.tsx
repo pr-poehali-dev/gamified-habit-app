@@ -156,8 +156,8 @@ export default function ChildMiniApp() {
   const levelEmoji = getLevelEmoji(level);
   const pendingGrades = data.gradeRequests.filter(g => g.status === "pending");
   const pendingTasks = data.tasks.filter(t => t.status === "pending");
-  const doneTasks = data.tasks.filter(t => t.status === "pending_confirm" || t.status === "done");
-  const approvedTasks = data.tasks.filter(t => t.status === "approved");
+  const doneTasks = data.tasks.filter(t => t.status === "pending_confirm");
+  const approvedTasks = data.tasks.filter(t => t.status === "approved" || t.status === "done");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FFF0F5] via-[#F0EEFF] to-[#E8F8FF]" style={{ fontFamily: "Nunito, sans-serif" }}>
