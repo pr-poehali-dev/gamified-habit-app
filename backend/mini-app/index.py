@@ -418,14 +418,10 @@ def upload_photo_to_s3(photo_base64: str, task_id: int) -> str:
     access_key = os.environ.get("AWS_ACCESS_KEY_ID", "")
     secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
 
-    # На poehali.dev имя бакета = AWS_ACCESS_KEY_ID (это стандарт платформы)
-    # S3_BUCKET используем как fallback если access_key не задан
-    if access_key:
-        bucket = access_key
-    else:
-        bucket = os.environ.get("S3_BUCKET", "")
+    # Имя бакета берём из S3_BUCKET, а не из access_key (access_key — это учётные данные, не имя бакета)
+    bucket = os.environ.get("S3_BUCKET", "")
 
-    # Последний fallback — из схемы БД (схема вида t_p84704826_...)
+    # Fallback — из схемы БД (схема вида t_p84704826_...)
     if not bucket:
         schema_parts = SCHEMA.split("_")
         if len(schema_parts) >= 2:
