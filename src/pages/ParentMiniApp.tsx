@@ -6,7 +6,7 @@ import { ParentXpBar } from "@/components/ui/XpBar";
 import { getParentLevelInfo, getParentLevelTier, getParentTip, type StreakState } from "@/lib/gameTypes";
 import { Loading, ErrorScreen } from "@/components/parent/ParentScreens";
 import { ParentTabTasks } from "@/components/parent/ParentTabTasks";
-import { ParentTabGrades, ParentTabChildren, ParentTabBonuses, ParentTabProfile, ParentTabPartners } from "@/components/parent/ParentTabContent";
+import { ParentTabGrades, ParentTabBonuses, ParentTabProfile, ParentTabPartners } from "@/components/parent/ParentTabContent";
 import { ParentBottomNav, type ParentTab } from "@/components/parent/ParentBottomNav";
 import { ParentOnboarding } from "@/components/parent/ParentOnboarding";
 
@@ -209,7 +209,7 @@ export default function ParentMiniApp() {
     return (
       <ParentOnboarding
         name={data.name}
-        onDone={() => { localStorage.setItem("parent_onboarding_done", "1"); setOnboardingDone(true); setTab("children"); }}
+        onDone={() => { localStorage.setItem("parent_onboarding_done", "1"); setOnboardingDone(true); setTab("profile"); }}
       />
     );
   }
@@ -264,14 +264,6 @@ export default function ParentMiniApp() {
             onRejectGrade={rejectGrade}
           />
         )}
-        {tab === "children" && (
-          <ParentTabChildren
-            children={data.children}
-            onAddChild={addChild}
-            onRemoveChild={removeChild}
-            onRefreshInvite={refreshInvite}
-          />
-        )}
         {tab === "bonuses" && (
           <ParentTabBonuses
             streak={streak}
@@ -298,6 +290,9 @@ export default function ParentMiniApp() {
             children={data.children}
             tasks_count={data.tasks.length}
             streak_current={data.streak_current}
+            onAddChild={addChild}
+            onRemoveChild={removeChild}
+            onRefreshInvite={refreshInvite}
           />
         )}
       </div>
