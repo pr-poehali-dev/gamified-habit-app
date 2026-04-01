@@ -1,7 +1,8 @@
 """
 Регистрирует webhooks для обоих Telegram-ботов.
 Вызывается один раз после добавления токенов.
-GET / — регистрирует оба webhook и возвращает результат.
+GET / — регистрирует оба webhook и кнопки меню, возвращает результат.
+Боты: @parenttask_bot → /parent, @task4kids_bot → /child
 """
 import json
 import os
