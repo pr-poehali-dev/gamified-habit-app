@@ -436,7 +436,7 @@ def handle_confirm_task(conn, body):
     if not parent:
         return error_response("Parent not found", 404)
     task_id = body.get("task_id")
-    action = body.get("action", "approve")  # approve | reject
+    action = body.get("confirm_action", body.get("action", "approve"))  # approve | reject
     with conn.cursor() as cur:
         cur.execute(f"SELECT id, child_id, stars, title FROM {SCHEMA}.tasks WHERE id = %s AND parent_id = %s AND status IN ('pending_confirm', 'done')", (task_id, parent["id"]))
         task = cur.fetchone()

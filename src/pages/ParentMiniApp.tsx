@@ -107,13 +107,13 @@ export default function ParentMiniApp() {
   };
 
   const confirmTask = useCallback(async (taskId: number) => {
-    const res = await apiCall("parent/task/confirm", { task_id: taskId, action: "approve" });
+    const res = await apiCall("parent/task/confirm", { task_id: taskId, confirm_action: "approve" });
     if (res.ok) { showToast("✅ Задача подтверждена!"); load(false); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const rejectTask = useCallback(async (taskId: number) => {
-    const res = await apiCall("parent/task/confirm", { task_id: taskId, action: "reject" });
+    const res = await apiCall("parent/task/confirm", { task_id: taskId, confirm_action: "reject" });
     if (res.ok) { showToast("↩️ Задача возвращена"); load(false); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
