@@ -140,13 +140,13 @@ export default function ParentMiniApp() {
   }, [data]);
 
   const grantExtension = useCallback(async (taskId: number, hours: number) => {
-    const res = await apiCall("parent/task/extension", { task_id: taskId, action: "grant", hours });
+    const res = await apiCall("parent/task/extension", { task_id: taskId, extension_action: "grant", hours });
     if (res.ok) { showToast(`⏰ Продлено на ${hours}ч!`); load(false); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
   const denyExtension = useCallback(async (taskId: number) => {
-    const res = await apiCall("parent/task/extension", { task_id: taskId, action: "deny" });
+    const res = await apiCall("parent/task/extension", { task_id: taskId, extension_action: "deny" });
     if (res.ok) { showToast("✗ Запрос на продление отклонён"); load(false); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);

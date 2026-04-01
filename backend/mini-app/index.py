@@ -774,7 +774,7 @@ def handle_task_extension(conn, body):
     if not parent:
         return error_response("Parent not found", 404)
     task_id = body.get("task_id")
-    action = body.get("action", "grant")  # grant | deny
+    action = body.get("extension_action", "grant")  # grant | deny
     hours = int(body.get("hours", 24))
     if not task_id:
         return error_response("task_id required")
