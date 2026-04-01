@@ -197,13 +197,35 @@ export function ChildTabAchievements({ achievements }: AchievementsProps) {
 
 type Reward = { id: number; title: string; cost: number; emoji: string; childId: number | null; quantity: number };
 
+type RewardPurchase = {
+  id: number;
+  rewardId: number;
+  title: string;
+  emoji: string;
+  cost: number;
+  status: string;
+  purchasedAt: string;
+};
+
 type ShopProps = {
   stars: number;
   rewards: Reward[];
+  rewardPurchases: RewardPurchase[];
   onBuy: (rewardId: number) => void;
 };
 
-export function ChildTabShop({ stars, rewards, onBuy }: ShopProps) {
+export function ChildTabShop({ stars, rewards, rewardPurchases, onBuy }: ShopProps) {
+  const [showHistory, setShowHistory] = useState(false);
+
+  const formatDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+    } catch {
+      return dateStr;
+    }
+  };
+
   return (
     <>
       <h2 className="text-lg font-black text-[#2D1B69]">Магазин наград</h2>
@@ -252,6 +274,44 @@ export function ChildTabShop({ stars, rewards, onBuy }: ShopProps) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* История покупок из PostgreSQL */}
+      {rewardPurchases.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowHistory(v => !v)}
+            className="flex items-center justify-between w-full py-2 px-1"
+          >
+            <p className="text-xs font-black text-gray-400 uppercase tracking-wide">
+              🧾 История покупок ({rewardPurchases.length})
+            </p>
+            <span className="text-xs text-gray-400 font-bold">{showHistory ? "▲ Скрыть" : "▼ Показать"}</span>
+          </button>
+          {showHistory && (
+            <div className="space-y-2 mt-1">
+              {rewardPurchases.map(p => (
+                <div key={p.id} className={`bg-white rounded-2xl p-3 shadow-sm border flex items-center gap-3 ${
+                  p.status === "fulfilled" ? "border-green-100" : "border-amber-100"
+                }`}>
+                  <span className="text-2xl">{p.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-[#2D1B69] text-sm truncate">{p.title}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{formatDate(p.purchasedAt)}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs font-black text-amber-500">−{p.cost} ⭐</p>
+                    <p className={`text-xs font-bold mt-0.5 ${
+                      p.status === "fulfilled" ? "text-green-500" : "text-amber-500"
+                    }`}>
+                      {p.status === "fulfilled" ? "✅ Выдано" : "⏳ Ожидает"}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </>

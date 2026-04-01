@@ -15,6 +15,16 @@ import { ChildConnectScreen } from "@/components/child/ChildConnectScreen";
 
 type Reward = { id: number; title: string; cost: number; emoji: string; childId: number | null; quantity: number };
 
+type RewardPurchase = {
+  id: number;
+  rewardId: number;
+  title: string;
+  emoji: string;
+  cost: number;
+  status: string;
+  purchasedAt: string;
+};
+
 type ChildData = {
   role: "child";
   id: number; name: string; stars: number; age: number;
@@ -26,6 +36,7 @@ type ChildData = {
   gradeRequests: GradeReq[];
   tasks: Task[];
   rewards: Reward[];
+  rewardPurchases: RewardPurchase[];
 };
 
 type Task = {
@@ -267,6 +278,7 @@ export default function ChildMiniApp() {
           <ChildTabShop
             stars={data.stars}
             rewards={data.rewards || []}
+            rewardPurchases={data.rewardPurchases || []}
             onBuy={buyReward}
           />
         )}

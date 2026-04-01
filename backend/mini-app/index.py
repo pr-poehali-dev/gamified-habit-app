@@ -335,10 +335,24 @@ def handle_auth_child(conn, body):
         if child.get("parent_id"):
             cur.execute(f"SELECT id, title, cost, emoji, child_id, quantity FROM {SCHEMA}.rewards WHERE parent_id = %s AND child_id = %s AND quantity > 0 ORDER BY created_at", (child["parent_id"], child["id"]))
             rewards = [{"id": r[0], "title": r[1], "cost": r[2], "emoji": r[3], "childId": r[4], "quantity": r[5]} for r in cur.fetchall()]
+        # История покупок наград
+        cur.execute(
+            f"""SELECT rp.id, rp.reward_id, r.title, r.emoji, r.cost, rp.status, rp.purchased_at
+                FROM {SCHEMA}.reward_purchases rp
+                JOIN {SCHEMA}.rewards r ON rp.reward_id = r.id
+                WHERE rp.child_id = %s
+                ORDER BY rp.purchased_at DESC LIMIT 20""",
+            (child["id"],)
+        )
+        reward_purchases = [
+            {"id": r[0], "rewardId": r[1], "title": r[2], "emoji": r[3], "cost": r[4], "status": r[5], "purchasedAt": str(r[6])}
+            for r in cur.fetchall()
+        ]
     return json_response({
         **child, "telegram_id": tid, "level": level, "xpInLevel": xp_in,
         "achievements": achievements, "stickers": stickers,
         "gradeRequests": grades, "tasks": tasks, "rewards": rewards,
+        "rewardPurchases": reward_purchases,
     })
 
 
@@ -1115,6 +1129,30 @@ def handle_child_delete_task(conn, body):
     return json_response({"ok": True})
 
 
+def handle_child_purchases(conn, body):
+    """История покупок наград ребёнка из PostgreSQL."""
+    tid = resolve_telegram_id(body, CHILD_TOKEN)
+    if not tid:
+        return error_response("Unauthorized", 401)
+    child = get_child_by_tg(conn, tid)
+    if not child:
+        return error_response("Child not found", 404)
+    with conn.cursor() as cur:
+        cur.execute(
+            f"""SELECT rp.id, rp.reward_id, r.title, r.emoji, r.cost, rp.status, rp.purchased_at
+                FROM {SCHEMA}.reward_purchases rp
+                JOIN {SCHEMA}.rewards r ON rp.reward_id = r.id
+                WHERE rp.child_id = %s
+                ORDER BY rp.purchased_at DESC LIMIT 50""",
+            (child["id"],)
+        )
+        purchases = [
+            {"id": r[0], "rewardId": r[1], "title": r[2], "emoji": r[3], "cost": r[4], "status": r[5], "purchasedAt": str(r[6])}
+            for r in cur.fetchall()
+        ]
+    return json_response({"ok": True, "purchases": purchases, "totalSpent": sum(p["cost"] for p in purchases)})
+
+
 def handle_child_analytics(conn, body):
     """Детальная аналитика по всем детям родителя."""
     tid = resolve_telegram_id(body, PARENT_TOKEN)
@@ -1311,6 +1349,8 @@ def handler(event: dict, context) -> dict:
             return handle_request_extension(conn, body)
         if action == "child/task/delete":
             return handle_child_delete_task(conn, body)
+        if action == "child/purchases":
+            return handle_child_purchases(conn, body)
 
         # ── Parent routes ──
         if action == "parent/auth":
