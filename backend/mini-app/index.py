@@ -421,11 +421,13 @@ def upload_photo_to_s3(photo_base64: str, task_id: int) -> str:
     # Имя бакета берём из S3_BUCKET, а не из access_key (access_key — это учётные данные, не имя бакета)
     bucket = os.environ.get("S3_BUCKET", "")
 
-    # Fallback — из схемы БД (схема вида t_p84704826_...)
+    # Fallback — из схемы БД (схема вида t_p84704826_gamified_habit_app → бакет gamified-habit-app)
     if not bucket:
         schema_parts = SCHEMA.split("_")
-        if len(schema_parts) >= 2:
-            bucket = schema_parts[1]
+        # Схема: t_{user_id}_{project_slug_with_underscores}
+        # Берём всё после второго элемента и заменяем _ на -
+        if len(schema_parts) >= 3:
+            bucket = "-".join(schema_parts[2:])
 
     print(f"[S3] bucket={bucket!r}, access_key_len={len(access_key)}, secret_key_len={len(secret_key)}, schema={SCHEMA!r}, file_key={file_key}")
     print(f"[S3] S3_BUCKET env={os.environ.get('S3_BUCKET', 'NOT_SET')!r}, AWS_ACCESS_KEY_ID env={'SET' if access_key else 'NOT_SET'}")
