@@ -65,7 +65,7 @@ export default function ParentMiniApp() {
   const [data, setData] = useState<ParentData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string>("");
+  
   const [tab, setTab] = useState<ParentTab>("tasks");
   const [toast, setToast] = useState<string | null>(null);
   const [onboardingDone, setOnboardingDone] = useState(() => !!localStorage.getItem("parent_onboarding_done"));
@@ -95,8 +95,6 @@ export default function ParentMiniApp() {
     const tgId = webapp?.initDataUnsafe?.user?.id;
     const firstName = webapp?.initDataUnsafe?.user?.first_name || "";
     const initDataLen = webapp?.initData?.length ?? 0;
-
-    if (!silent) setDebugInfo(`tg: ${webapp ? "✓" : "✗"} | id: ${tgId ?? "—"} | initData: ${initDataLen}б`);
 
     const res = await apiCall("parent/auth", {
       ...(tgId ? { telegram_id: tgId, first_name: firstName } : {}),
@@ -224,7 +222,7 @@ export default function ParentMiniApp() {
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
-  if (loading) return <Loading debug={debugInfo} />;
+  if (loading) return <Loading />;
   if (error || !data) return <ErrorScreen msg={error || "Нет данных"} />;
 
   const streak: StreakState = {
