@@ -167,17 +167,16 @@ export default function Index() {
             transition: "opacity 0.7s ease, transform 0.7s ease",
           }}
         >
-          <div className="hero-badge">🎮 Геймификация домашних заданий</div>
+          <div className="hero-badge">🎮 Превращаем рутину в приключение</div>
           <h1 className="hero-title">
-            Учёба — это
+            Домашние дела —
             <br />
-            <span className="hero-title-accent">игра, в которой</span>
+            <span className="hero-title-accent">как игра, где дети</span>
             <br />
-            все побеждают!
+            сами хотят победить!
           </h1>
           <p className="hero-subtitle">
-            Дети зарабатывают звёзды за задания и оценки, родители следят за
-            прогрессом — и вся семья становится командой. Без скуки и уговоров.
+            Ребёнок выполняет задания, получает звёзды, прокачивает уровень и тратит награды в магазине. Родитель просто наблюдает за прогрессом. Никаких уговоров.
           </p>
 
           <div className="hero-actions">
@@ -202,7 +201,7 @@ export default function Index() {
           </div>
 
           <p className="hero-hint">
-            ✨ Бесплатно · Работает в Telegram · Без установки
+            ✨ 7 дней Premium бесплатно · Работает в Telegram · Без установки
           </p>
         </div>
 
@@ -256,64 +255,64 @@ export default function Index() {
       <section className="stats-strip">
         <div className="stat-item">
           <span className="stat-num">⭐ 10+</span>
-          <span className="stat-label">уровней прогресса</span>
+          <span className="stat-label">уровней прокачки</span>
         </div>
         <div className="stat-divider" />
         <div className="stat-item">
           <span className="stat-num">🏆 17</span>
-          <span className="stat-label">ачивментов</span>
+          <span className="stat-label">ачивок для детей</span>
         </div>
         <div className="stat-divider" />
         <div className="stat-item">
-          <span className="stat-num">🎁 ∞</span>
-          <span className="stat-label">наград в магазине</span>
+          <span className="stat-num">🛍️ ∞</span>
+          <span className="stat-label">призов в магазине</span>
         </div>
         <div className="stat-divider" />
         <div className="stat-item">
           <span className="stat-num">🔥 365</span>
-          <span className="stat-label">дней стрика</span>
+          <span className="stat-label">дней серий подряд</span>
         </div>
       </section>
 
       {/* Features */}
       <section className="section features-section">
-        <div className="section-label">Всё для мотивации</div>
-        <h2 className="section-title">Почему дети хотят делать<br />домашнее задание?</h2>
+        <div className="section-label">Игровая механика</div>
+        <h2 className="section-title">Почему дети сами просят<br />дать им задание?</h2>
         <div className="features-grid">
           <FeatureCard
             emoji="⭐"
-            title="Звёзды за всё"
-            description="Задания, оценки, уборка — ребёнок зарабатывает звёзды за каждое выполненное дело. Чем сложнее — тем больше награда."
+            title="Звёзды за каждое дело"
+            description="Убрал комнату — получи 3⭐. Получил пятёрку — ещё 5⭐. Ребёнок видит прямую связь: старание = награда."
             delay={0}
           />
           <FeatureCard
             emoji="🎮"
-            title="Уровни и прокачка"
-            description="От Новичка до Чемпиона — 6 тиров с уникальными значками. Каждый новый уровень — повод для гордости."
+            title="Уровни как в играх"
+            description="От Новичка до Легенды — 10+ уровней с уникальными значками. Каждый уровень — ощущение победы и нового достижения."
             delay={100}
           />
           <FeatureCard
             emoji="🏆"
-            title="Достижения"
-            description="17 уникальных достижений: первое задание, серия 7 дней, 100 звёзд и многое другое. Всегда есть к чему стремиться."
+            title="Секретные ачивки"
+            description="17 скрытых достижений: «Первая звезда», «Серия 7 дней», «Коллекционер». Дети обожают открывать их неожиданно!"
             delay={200}
           />
           <FeatureCard
             emoji="🛍️"
-            title="Магазин наград"
-            description="Родители создают магазин с реальными призами — прогулка, игра, сладкое. Ребёнок копит звёзды и выбирает сам."
+            title="Магазин желаний"
+            description="Ребёнок сам выбирает, на что потратить звёзды: пицца, поход в кино, лишний час игр. Родитель создаёт призы — ребёнок копит."
             delay={300}
           />
           <FeatureCard
             emoji="🔥"
-            title="Серии дней"
-            description="Ежедневный бонус за активность поддерживает привычку. Прерывать серию очень не хочется — это работает!"
+            title="Серии без пропусков"
+            description="Каждый день активности — бонус. Чем длиннее серия, тем больше награда. Прерывать серию? Ни за что!"
             delay={400}
           />
           <FeatureCard
             emoji="📸"
-            title="Фото-подтверждение"
-            description="Ребёнок присылает фото выполненного задания. Родитель подтверждает — никаких споров «сделал / не сделал»."
+            title="Фото «я сделал!»"
+            description="Ребёнок фотографирует результат, родитель подтверждает одним нажатием. Честно, быстро, без споров."
             delay={500}
           />
         </div>
@@ -326,12 +325,12 @@ export default function Index() {
             <div className="role-card__icon">👨‍👩‍👧</div>
             <h3 className="role-card__title">Для родителей</h3>
             <ul className="role-card__list">
-              <li>✅ Создавайте задания с дедлайнами</li>
-              <li>✅ Следите за оценками ребёнка</li>
-              <li>✅ Настраивайте магазин наград</li>
-              <li>✅ Видите всю аналитику прогресса</li>
-              <li>✅ Подтверждайте или отклоняйте фото</li>
-              <li>✅ Добавляйте несколько детей</li>
+              <li>✅ Создавай задания за минуту</li>
+              <li>✅ Ставь дедлайны и контролируй</li>
+              <li>✅ Проверяй фотоотчёты</li>
+              <li>✅ Настраивай магазин призов</li>
+              <li>✅ Смотри аналитику прогресса</li>
+              <li>✅ Добавляй нескольких детей</li>
             </ul>
             <a
               href={PARENT_BOT_URL}
@@ -347,12 +346,12 @@ export default function Index() {
             <div className="role-card__icon">🧒</div>
             <h3 className="role-card__title">Для детей</h3>
             <ul className="role-card__list">
-              <li>⭐ Зарабатывай звёзды за задания</li>
-              <li>⭐ Сдавай оценки и получай бонусы</li>
-              <li>⭐ Тратить звёзды на призы</li>
-              <li>⭐ Открывай достижения и значки</li>
-              <li>⭐ Соревнуйся сам с собой</li>
-              <li>⭐ Веди серию активных дней</li>
+              <li>⭐ Зарабатывай звёзды за всё</li>
+              <li>⭐ Качай уровень и открывай ачивки</li>
+              <li>⭐ Покупай призы в магазине</li>
+              <li>⭐ Обменивай оценки на звёзды</li>
+              <li>⭐ Проси награды у родителей</li>
+              <li>⭐ Держи серию дней и получай бонусы</li>
             </ul>
             <a
               href={CHILD_BOT_URL}
@@ -368,23 +367,23 @@ export default function Index() {
 
       {/* How it works */}
       <section className="section steps-section">
-        <div className="section-label">Просто и быстро</div>
-        <h2 className="section-title">Как начать за 3 минуты?</h2>
+        <div className="section-label">Старт за 2 минуты</div>
+        <h2 className="section-title">Как это работает?</h2>
         <div className="steps-grid">
           <div className="steps-col">
             <h3 className="steps-col__title">👨‍👩‍👧 Родитель</h3>
-            <StepItem num="1" text="Открой бота @parenttask_bot в Telegram" delay={0} />
-            <StepItem num="2" text="Нажми «Старт» и заполни профиль" delay={100} />
-            <StepItem num="3" text="Создай первое задание с наградой" delay={200} />
-            <StepItem num="4" text="Поделись кодом приглашения с ребёнком" delay={300} />
+            <StepItem num="1" text="Открой @parenttask_bot в Telegram" delay={0} />
+            <StepItem num="2" text="Добавь ребёнка и создай первое задание" delay={100} />
+            <StepItem num="3" text="Поделись кодом с ребёнком" delay={200} />
+            <StepItem num="4" text="Подтверждай выполнение и начисляй звёзды" delay={300} />
           </div>
           <div className="steps-divider" />
           <div className="steps-col">
             <h3 className="steps-col__title">🧒 Ребёнок</h3>
-            <StepItem num="1" text="Открой бота @task4kids_bot в Telegram" delay={0} />
-            <StepItem num="2" text="Введи код от родителя для подключения" delay={100} />
-            <StepItem num="3" text="Выполни задание и сфотографируй результат" delay={200} />
-            <StepItem num="4" text="Получи звёзды и потрать их в магазине!" delay={300} />
+            <StepItem num="1" text="Открой @task4kids_bot в Telegram" delay={0} />
+            <StepItem num="2" text="Введи код от родителя" delay={100} />
+            <StepItem num="3" text="Выполняй задания и зарабатывай звёзды" delay={200} />
+            <StepItem num="4" text="Покупай призы и прокачивай уровень!" delay={300} />
           </div>
         </div>
       </section>
@@ -395,19 +394,19 @@ export default function Index() {
         <h2 className="section-title">Родители уже в восторге</h2>
         <div className="reviews-grid">
           <ReviewCard
-            text="Сын сам напоминает о заданиях! Раньше это был ежедневный скандал, теперь — игра."
+            text="Сын сам бежит убирать комнату, чтобы заработать звёзды на новую игру. Раньше это был ежедневный скандал!"
             author="Анна М."
             role="мама двух сыновей"
             stars={5}
           />
           <ReviewCard
-            text="Дочь за неделю накопила звёзды на поход в кино. Мотивация работает лучше любых уговоров."
+            text="Дочь за неделю накопила на поход в кино. Открыла 5 ачивок и гордится больше, чем оценками."
             author="Дмитрий К."
             role="папа 9-летней Маши"
             stars={5}
           />
           <ReviewCard
-            text="Фото-подтверждение — гениальная идея. Никаких споров, всё честно и прозрачно."
+            text="Фото-подтверждение решило все споры. Дети соревнуются кто быстрее выполнит задание."
             author="Елена В."
             role="мама трёх детей"
             stars={5}
@@ -421,11 +420,11 @@ export default function Index() {
         <div className="cta-bg-blob cta-bg-blob--2" />
         <div className="cta-content">
           <div className="cta-emoji">🚀</div>
-          <h2 className="cta-title">Начните прямо сейчас!</h2>
+          <h2 className="cta-title">Попробуйте бесплатно!</h2>
           <p className="cta-subtitle">
-            Присоединяйтесь к семьям, которые уже сделали учёбу весёлой.
+            7 дней Premium в подарок каждому новому пользователю.
             <br />
-            Бесплатно. В Telegram. Без установки.
+            В Telegram. Без установки. Без привязки карты.
           </p>
           <div className="cta-actions">
             <a
@@ -462,7 +461,7 @@ export default function Index() {
           <span>⭐</span>
           <span>СтарКидс</span>
         </div>
-        <p className="footer-tagline">Делаем учёбу игрой с любовью ❤️</p>
+        <p className="footer-tagline">Превращаем рутину в игру ⭐</p>
         <div className="footer-links">
           <a href={PARENT_BOT_URL} target="_blank" rel="noopener noreferrer">@parenttask_bot</a>
           <span>·</span>
