@@ -232,7 +232,7 @@ const WISH_EMOJIS = ["🎁", "🎮", "🍕", "🎬", "🛝", "🧸", "📱", "�
 
 export function ChildTabShop({ stars, rewards, rewardPurchases, wishes, onBuy, onAddWish, onDeleteWish }: ShopProps) {
   const [showHistory, setShowHistory] = useState(false);
-  const [showWishForm, setShowWishForm] = useState(false);
+  const [showWishForm, setShowWishForm] = useState(rewards.length < 5);
   const [wishTitle, setWishTitle] = useState("");
   const [wishEmoji, setWishEmoji] = useState("🎁");
 
