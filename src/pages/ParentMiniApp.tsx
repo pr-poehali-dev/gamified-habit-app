@@ -26,6 +26,7 @@ type ParentData = {
   streak_last_date: string | null;
   streak_claimed_today: boolean;
   streak_longest: number;
+  is_premium: boolean;
   children: { id: number; name: string; stars: number; avatar: string; age: number; inviteCode: string | null; connected: boolean }[];
   tasks: Task[];
   gradeRequests: GradeRequest[];
@@ -138,6 +139,7 @@ export default function ParentMiniApp() {
   const addTask = useCallback(async (newTask: { title: string; stars: number; emoji: string; childId: number; requirePhoto: boolean; requireConfirm: boolean; deadline: string | null }) => {
     const res = await apiCall("parent/task/add", { ...newTask, child_id: newTask.childId, require_photo: newTask.requirePhoto, require_confirm: newTask.requireConfirm, deadline: newTask.deadline });
     if (res.ok) { showToast("📋 Задача создана!"); load(true); }
+    else if (res.error === "premium_required") showToast("👑 Фото-задачи доступны в Premium");
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, [data]);
 
@@ -174,6 +176,7 @@ export default function ParentMiniApp() {
   const addChild = useCallback(async (name: string, age: number, avatar: string) => {
     const res = await apiCall("parent/child/add", { name, age, avatar });
     if (res.ok) { showToast("👶 Ребёнок добавлен!"); load(true); }
+    else if (res.error === "premium_required") showToast("👑 Несколько детей доступно в Premium");
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
@@ -263,6 +266,7 @@ export default function ParentMiniApp() {
             onDenyExtension={denyExtension}
             onDeleteTask={deleteTask}
             onCancelTask={cancelTask}
+            isPremium={data.is_premium}
           />
         )}
         {tab === "grades" && (
@@ -302,6 +306,7 @@ export default function ParentMiniApp() {
             onAddChild={addChild}
             onRemoveChild={removeChild}
             onRefreshInvite={refreshInvite}
+            isPremium={data.is_premium}
           />
         )}
       </div>

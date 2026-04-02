@@ -119,7 +119,11 @@ export default function ChildMiniApp() {
       showToast("📤 Загружаю фото...");
       const uploadRes = await apiCall("child/upload_photo", { task_id: taskId, photo_base64: photoBase64 });
       if (!uploadRes.ok) {
-        showToast("❌ Ошибка загрузки фото: " + String(uploadRes.error || "Попробуй снова"));
+        if (uploadRes.error === "premium_required") {
+          showToast("👑 Фотоотчёт доступен в Premium-подписке родителя");
+        } else {
+          showToast("❌ Ошибка загрузки фото: " + String(uploadRes.error || "Попробуй снова"));
+        }
         return;
       }
       body.photo_url = uploadRes.photo_url;

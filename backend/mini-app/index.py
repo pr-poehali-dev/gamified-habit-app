@@ -192,7 +192,7 @@ def get_child_stats(conn, child_id: int) -> dict:
 def get_parent_by_tg(conn, telegram_id):
     with conn.cursor() as cur:
         cur.execute(
-            f"SELECT id, full_name, parent_xp, parent_points, streak_current, streak_last_date, streak_claimed_today, streak_longest FROM {SCHEMA}.parents WHERE telegram_id = %s",
+            f"SELECT id, full_name, parent_xp, parent_points, streak_current, streak_last_date, streak_claimed_today, streak_longest, is_premium FROM {SCHEMA}.parents WHERE telegram_id = %s",
             (telegram_id,)
         )
         row = cur.fetchone()
@@ -205,6 +205,7 @@ def get_parent_by_tg(conn, telegram_id):
         "streak_last_date": row[5].isoformat() if row[5] else None,
         "streak_claimed_today": row[6] or False,
         "streak_longest": row[7] or 0,
+        "is_premium": bool(row[8]),
     }
 
 
@@ -485,11 +486,15 @@ def handle_upload_photo(conn, body):
     photo_base64 = body.get("photo_base64")
     if not task_id or not photo_base64:
         return error_response("task_id and photo_base64 required")
-    # Проверяем что задача принадлежит ребёнку
     with conn.cursor() as cur:
-        cur.execute(f"SELECT id FROM {SCHEMA}.tasks WHERE id = %s AND child_id = %s", (task_id, child["id"]))
-        if not cur.fetchone():
+        cur.execute(f"SELECT id, parent_id FROM {SCHEMA}.tasks WHERE id = %s AND child_id = %s", (task_id, child["id"]))
+        task_row = cur.fetchone()
+        if not task_row:
             return error_response("Task not found", 404)
+        cur.execute(f"SELECT is_premium FROM {SCHEMA}.parents WHERE id = %s", (task_row[1],))
+        p_row = cur.fetchone()
+        if not p_row or not p_row[0]:
+            return error_response("premium_required", 403)
     try:
         photo_url = upload_photo_to_s3(photo_base64, task_id)
     except Exception as e:
@@ -638,6 +643,8 @@ def handle_add_task(conn, body):
     emoji = body.get("emoji", "📋")
     require_photo = bool(body.get("require_photo", False))
     require_confirm = bool(body.get("require_confirm", False))
+    if require_photo and not parent.get("is_premium"):
+        return error_response("premium_required", 403)
     deadline_str = body.get("deadline")  # ISO string or None
     if not title:
         return error_response("title required")
@@ -924,6 +931,12 @@ def handle_add_child(conn, body):
     parent = get_parent_by_tg(conn, tid)
     if not parent:
         return error_response("Parent not found", 404)
+    if not parent.get("is_premium"):
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT COUNT(*) FROM {SCHEMA}.children WHERE parent_id = %s", (parent["id"],))
+            child_count = cur.fetchone()[0]
+        if child_count >= 1:
+            return error_response("premium_required", 403)
     name = (body.get("name") or "").strip()
     age = body.get("age", 9)
     avatar = body.get("avatar", "👧")
@@ -1161,6 +1174,8 @@ def handle_child_analytics(conn, body):
     parent = get_parent_by_tg(conn, tid)
     if not parent:
         return error_response("Parent not found", 404)
+    if not parent.get("is_premium"):
+        return error_response("premium_required", 403)
 
     with conn.cursor() as cur:
         cur.execute(

@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { PremiumBadge } from "@/components/ui/PremiumBadge";
 
 type Child = { id: number; name: string; stars: number; avatar: string; age: number; inviteCode?: string | null; connected?: boolean };
 type Task = {
@@ -29,6 +30,7 @@ type Props = {
   onDenyExtension?: (taskId: number) => void;
   onDeleteTask?: (taskId: number) => void;
   onCancelTask?: (taskId: number) => void;
+  isPremium?: boolean;
 };
 
 const TASK_EMOJIS = ["📋", "🧹", "📚", "🦷", "🗑️", "📖", "🌸", "🐕", "🍽️", "🛁", "🧺", "🏃", "🎨", "🎵"];
@@ -102,7 +104,7 @@ const EXTENSION_HOURS_OPTIONS = [
   { label: "+2 дня", hours: 48 },
 ];
 
-export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, onRejectTask, onAddTask, onGrantExtension, onDenyExtension, onDeleteTask, onCancelTask }: Props) {
+export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, onRejectTask, onAddTask, onGrantExtension, onDenyExtension, onDeleteTask, onCancelTask, isPremium }: Props) {
   const [showAddTask, setShowAddTask] = useState(false);
   const [selectedDeadlineIdx, setSelectedDeadlineIdx] = useState(0);
   const [newTask, setNewTask] = useState<NewTask>({
@@ -248,19 +250,30 @@ export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, o
               )}
             </div>
 
-            {/* Фото — независимый тогл, но при включении автоматически включает подтверждение */}
-            <div onClick={() => setNewTask(t => {
-              const newVal = !t.requirePhoto;
-              return { ...t, requirePhoto: newVal, requireConfirm: newVal ? true : t.requireConfirm };
-            })}
-              className={`flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all ${newTask.requirePhoto ? "border-purple-400 bg-purple-50" : "border-gray-200 bg-gray-50"}`}>
-              <span className="text-xl">📸</span>
-              <div className="flex-1">
-                <p className={`text-sm font-black ${newTask.requirePhoto ? "text-purple-700" : "text-gray-600"}`}>Требовать фото</p>
-                <p className="text-xs text-gray-400">Ребёнок прикладывает фотоотчёт</p>
-              </div>
-              <div className={`w-10 h-5 rounded-full transition-all duration-300 ${newTask.requirePhoto ? "bg-purple-500" : "bg-gray-300"}`}>
-                <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-300 mt-0.5 ${newTask.requirePhoto ? "ml-5" : "ml-0.5"}`} />
+            {/* Фото — Premium-функция */}
+            <div className="relative">
+              <div onClick={() => {
+                if (!isPremium) return;
+                setNewTask(t => {
+                  const newVal = !t.requirePhoto;
+                  return { ...t, requirePhoto: newVal, requireConfirm: newVal ? true : t.requireConfirm };
+                });
+              }}
+                className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${
+                  !isPremium ? "border-gray-200 bg-gray-50 opacity-60" :
+                  newTask.requirePhoto ? "border-purple-400 bg-purple-50 cursor-pointer" : "border-gray-200 bg-gray-50 cursor-pointer"
+                }`}>
+                <span className="text-xl">📸</span>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className={`text-sm font-black ${!isPremium ? "text-gray-400" : newTask.requirePhoto ? "text-purple-700" : "text-gray-600"}`}>Требовать фото</p>
+                    {!isPremium && <PremiumBadge compact />}
+                  </div>
+                  <p className="text-xs text-gray-400">Ребёнок прикладывает фотоотчёт</p>
+                </div>
+                <div className={`w-10 h-5 rounded-full transition-all duration-300 ${newTask.requirePhoto && isPremium ? "bg-purple-500" : "bg-gray-300"}`}>
+                  <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-300 mt-0.5 ${newTask.requirePhoto && isPremium ? "ml-5" : "ml-0.5"}`} />
+                </div>
               </div>
             </div>
 

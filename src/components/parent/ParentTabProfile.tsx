@@ -2,6 +2,7 @@ import { useState } from "react";
 import { getParentLevelInfo, getParentLevelTier } from "@/lib/gameTypes";
 import { ChildAnalyticsCard, type ChildAnalytics } from "./ChildAnalyticsCard";
 import { apiCall } from "@/components/miniapp/useApi";
+import { PremiumBadge } from "@/components/ui/PremiumBadge";
 
 type Child = { id: number; name: string; stars: number; avatar: string; age: number; inviteCode: string | null; connected: boolean };
 
@@ -15,11 +16,12 @@ type ProfileProps = {
   onAddChild: (name: string, age: number, avatar: string) => void;
   onRemoveChild: (id: number) => void;
   onRefreshInvite: (id: number) => void;
+  isPremium?: boolean;
 };
 
 const CHILD_AVATARS = ["👦", "👧", "🧒", "👶", "🐱", "🦊", "🐼", "🦁", "🐸", "🐧", "🦋", "🌟"];
 
-export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, onAddChild, onRemoveChild, onRefreshInvite }: ProfileProps) {
+export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, onAddChild, onRemoveChild, onRefreshInvite, isPremium }: ProfileProps) {
   const { level } = getParentLevelInfo(parent_xp);
   const tier = getParentLevelTier(level);
 
@@ -133,9 +135,12 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
       {children.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-[#1E1B4B]">📊 Аналитика</h2>
             <div className="flex items-center gap-2">
-              {showAnalytics && analyticsData && (
+              <h2 className="text-lg font-bold text-[#1E1B4B]">📊 Аналитика</h2>
+              {!isPremium && <PremiumBadge compact />}
+            </div>
+            <div className="flex items-center gap-2">
+              {isPremium && showAnalytics && analyticsData && (
                 <button
                   onClick={refreshAnalytics}
                   disabled={analyticsLoading}
@@ -144,28 +149,30 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
                   {analyticsLoading ? "⏳" : "🔄 Обновить"}
                 </button>
               )}
-              <button
-                onClick={loadAnalytics}
-                disabled={analyticsLoading}
-                className={`text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-transform disabled:opacity-50 ${
-                  showAnalytics
-                    ? "bg-gray-100 text-gray-500"
-                    : "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white"
-                }`}
-              >
-                {analyticsLoading ? "⏳ Загрузка..." : showAnalytics ? "✕ Скрыть" : "📈 Показать"}
-              </button>
+              {isPremium && (
+                <button
+                  onClick={loadAnalytics}
+                  disabled={analyticsLoading}
+                  className={`text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-transform disabled:opacity-50 ${
+                    showAnalytics
+                      ? "bg-gray-100 text-gray-500"
+                      : "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white"
+                  }`}
+                >
+                  {analyticsLoading ? "⏳ Загрузка..." : showAnalytics ? "✕ Скрыть" : "📈 Показать"}
+                </button>
+              )}
             </div>
           </div>
 
-          {analyticsError && (
+          {isPremium && analyticsError && (
             <div className="bg-red-50 border border-red-100 rounded-2xl p-3 text-center">
               <p className="text-sm font-bold text-red-500">{analyticsError}</p>
               <button onClick={refreshAnalytics} className="text-xs font-bold text-red-400 underline mt-1">Попробовать снова</button>
             </div>
           )}
 
-          {showAnalytics && analyticsData && (
+          {isPremium && showAnalytics && analyticsData && (
             <div className="space-y-4">
               {analyticsData.length === 0 ? (
                 <div className="bg-white rounded-3xl p-6 text-center shadow-sm">
@@ -181,7 +188,7 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
           )}
 
           {!showAnalytics && !analyticsLoading && (
-            <div className="bg-gradient-to-r from-[#6B7BFF]/8 to-[#9B6BFF]/8 border border-[#6B7BFF]/20 rounded-2xl p-4 flex items-center gap-3">
+            <div className={`bg-gradient-to-r from-[#6B7BFF]/8 to-[#9B6BFF]/8 border border-[#6B7BFF]/20 rounded-2xl p-4 flex items-center gap-3 ${!isPremium ? "opacity-60" : ""}`}>
               <span className="text-2xl">📈</span>
               <div className="flex-1">
                 <p className="text-sm font-bold text-[#1E1B4B]">Детальная статистика</p>
@@ -195,9 +202,22 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
       {/* Children section */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-[#1E1B4B]">Мои дети</h2>
-        <button onClick={() => setShowForm(v => !v)} className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-transform">
-          {showForm ? "✕ Закрыть" : "+ Добавить"}
-        </button>
+        <div className="flex items-center gap-2">
+          {!isPremium && children.length >= 1 && <PremiumBadge compact />}
+          <button
+            onClick={() => {
+              if (!isPremium && children.length >= 1) return;
+              setShowForm(v => !v);
+            }}
+            className={`text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-transform ${
+              !isPremium && children.length >= 1
+                ? "bg-gray-200 text-gray-400"
+                : "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white"
+            }`}
+          >
+            {showForm ? "✕ Закрыть" : "+ Добавить"}
+          </button>
+        </div>
       </div>
 
       {showForm && (
