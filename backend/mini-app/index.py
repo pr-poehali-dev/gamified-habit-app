@@ -472,6 +472,29 @@ def upload_photo_to_s3(photo_base64: str, task_id: int) -> str:
     return f"https://cdn.poehali.dev/projects/{access_key}/bucket/{file_key}"
 
 
+def delete_photo_from_s3(photo_url: str):
+    """Удаляет фото из S3 по CDN-ссылке."""
+    try:
+        import boto3
+        prefix = "/bucket/"
+        idx = photo_url.find(prefix)
+        if idx == -1:
+            return
+        file_key = photo_url[idx + len(prefix):]
+        access_key = os.environ.get("AWS_ACCESS_KEY_ID", "")
+        secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
+        s3 = boto3.client(
+            "s3",
+            endpoint_url="https://bucket.poehali.dev",
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+            region_name="us-east-1",
+        )
+        s3.delete_object(Bucket="files", Key=file_key)
+    except Exception as e:
+        print(f"[S3] delete error: {e}")
+
+
 def handle_upload_photo(conn, body):
     """Загружает фото задачи в S3 и возвращает URL. Вызывается отдельно перед child/complete."""
     tid = resolve_telegram_id(body, CHILD_TOKEN)
@@ -605,16 +628,20 @@ def handle_confirm_task(conn, body):
     t_id, child_id, stars, title = task
     if action == "approve":
         with conn.cursor() as cur:
-            cur.execute(f"UPDATE {SCHEMA}.tasks SET status = 'approved' WHERE id = %s", (t_id,))
+            cur.execute(f"SELECT photo_url FROM {SCHEMA}.tasks WHERE id = %s", (t_id,))
+            photo_row = cur.fetchone()
+            photo_url = photo_row[0] if photo_row else None
+            cur.execute(f"UPDATE {SCHEMA}.tasks SET status = 'approved', photo_url = NULL, photo_status = 'deleted' WHERE id = %s", (t_id,))
             cur.execute(
                 f"UPDATE {SCHEMA}.children SET stars = stars + %s, total_stars_earned = total_stars_earned + %s WHERE id = %s RETURNING stars",
                 (stars, stars, child_id)
             )
             new_stars = cur.fetchone()[0]
         conn.commit()
+        if photo_url:
+            delete_photo_from_s3(photo_url)
         add_parent_xp(conn, parent["id"], 30)
         advance_streak(conn, parent["id"])
-        # Notify child
         with conn.cursor() as cur:
             cur.execute(f"SELECT telegram_id, name FROM {SCHEMA}.children WHERE id = %s", (child_id,))
             c_row = cur.fetchone()
