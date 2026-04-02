@@ -650,8 +650,13 @@ def handle_confirm_task(conn, body):
         return json_response({"ok": True, "new_stars": new_stars})
     else:
         with conn.cursor() as cur:
-            cur.execute(f"UPDATE {SCHEMA}.tasks SET status = 'pending' WHERE id = %s", (t_id,))
+            cur.execute(f"UPDATE {SCHEMA}.tasks SET status = 'pending', photo_url = NULL, photo_status = 'none' WHERE id = %s", (t_id,))
         conn.commit()
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT telegram_id FROM {SCHEMA}.children WHERE id = %s", (child_id,))
+            c_row = cur.fetchone()
+        if c_row and CHILD_TOKEN:
+            send_tg_message(CHILD_TOKEN, c_row[0], f"↩️ Родитель вернул задачу «<b>{title}</b>».\n\nПопробуй выполнить ещё раз! Открой @task4kids_bot.")
         return json_response({"ok": True, "rejected": True})
 
 
