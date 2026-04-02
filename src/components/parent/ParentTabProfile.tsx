@@ -343,13 +343,7 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
         );
       })}
 
-      {children.length === 0 && !showForm && (
-        <div className="text-center py-8 text-gray-400">
-          <p className="text-4xl mb-2">👨‍👧</p>
-          <p className="font-bold">Нет детей</p>
-          <p className="text-sm mt-1">Нажми «+ Добавить», чтобы создать профиль ребёнка</p>
-        </div>
-      )}
+      
     </div>
   );
 }
