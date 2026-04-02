@@ -557,14 +557,10 @@ def handle_upload_photo(conn, body):
     if not task_id or not photo_base64:
         return error_response("task_id and photo_base64 required")
     with conn.cursor() as cur:
-        cur.execute(f"SELECT id, parent_id FROM {SCHEMA}.tasks WHERE id = %s AND child_id = %s", (task_id, child["id"]))
+        cur.execute(f"SELECT id, parent_id, require_photo FROM {SCHEMA}.tasks WHERE id = %s AND child_id = %s", (task_id, child["id"]))
         task_row = cur.fetchone()
         if not task_row:
             return error_response("Task not found", 404)
-        cur.execute(f"SELECT is_premium FROM {SCHEMA}.parents WHERE id = %s", (task_row[1],))
-        p_row = cur.fetchone()
-        if not p_row or not p_row[0]:
-            return error_response("premium_required", 403)
     try:
         photo_url = upload_photo_to_s3(photo_base64, task_id)
     except Exception as e:
