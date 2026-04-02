@@ -13,6 +13,8 @@ type StreakReward = {
   claimed: boolean;
 };
 
+type RewardWish = { id: number; childId: number; childName: string; title: string; emoji: string; createdAt: string };
+
 type BonusesProps = {
   streak: StreakState;
   streakReward?: StreakReward;
@@ -22,6 +24,8 @@ type BonusesProps = {
   children: Child[];
   onAddReward: (title: string, cost: number, emoji: string, childId: number, quantity: number) => void;
   onRemoveReward: (id: number) => void;
+  rewardWishes?: RewardWish[];
+  onDismissWish?: (wishId: number) => void;
 };
 
 const REWARD_EMOJIS = ["🎁", "🍕", "🍦", "🎮", "🎬", "📚", "🎨", "🧸", "🎠", "🏆", "🚀", "⚽", "🎯", "🎪", "🛍️", "🍫"];
@@ -34,7 +38,7 @@ const REWARD_TEMPLATES = [
   { emoji: "🍦", title: "Мороженое на выбор", cost: 5 },
 ];
 
-export function ParentTabBonuses({ streak, streakReward, parent_points, parent_xp, rewards, children, onAddReward, onRemoveReward }: BonusesProps) {
+export function ParentTabBonuses({ streak, streakReward, parent_points, parent_xp, rewards, children, onAddReward, onRemoveReward, rewardWishes, onDismissWish }: BonusesProps) {
   const { level } = getParentLevelInfo(parent_xp);
   const tier = getParentLevelTier(level);
   const [showForm, setShowForm] = useState(false);
@@ -59,6 +63,31 @@ export function ParentTabBonuses({ streak, streakReward, parent_points, parent_x
   return (
     <div className="space-y-4">
       <StreakCard streak={streak} reward={streakReward} />
+
+      {/* Желаемые награды от детей */}
+      {rewardWishes && rewardWishes.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="text-base font-bold text-[#1E1B4B]">💫 Желаемые награды</h3>
+            <span className="bg-pink-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{rewardWishes.length}</span>
+          </div>
+          <div className="space-y-2">
+            {rewardWishes.map(w => (
+              <div key={w.id} className="bg-white rounded-2xl shadow-sm border border-pink-100 p-4 flex items-center gap-3">
+                <span className="text-2xl">{w.emoji}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-[#1E1B4B] text-sm">{w.title}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{w.childName} хочет эту награду</p>
+                </div>
+                <button
+                  onClick={() => onDismissWish?.(w.id)}
+                  className="text-gray-300 text-sm active:scale-90 transition-transform shrink-0"
+                >✕</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Магазин наград для детей */}
       <div>

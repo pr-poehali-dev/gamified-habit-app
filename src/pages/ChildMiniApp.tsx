@@ -37,6 +37,7 @@ type ChildData = {
   tasks: Task[];
   rewards: Reward[];
   rewardPurchases: RewardPurchase[];
+  wishes: { id: number; title: string; emoji: string; status: string; createdAt: string }[];
 };
 
 type Task = {
@@ -188,6 +189,23 @@ export default function ChildMiniApp() {
     }
   }, []);
 
+  const addWish = useCallback(async (title: string, emoji: string) => {
+    const res = await apiCall("child/wish/add", { title, emoji });
+    if (res.ok) {
+      showToast("💫 Запрос отправлен родителю!");
+      load(true);
+    } else if (res.error === "too_many_wishes") {
+      showToast("Можно запросить не больше 10 наград");
+    } else {
+      showToast("❌ " + String(res.error || "Ошибка"));
+    }
+  }, []);
+
+  const deleteWish = useCallback(async (wishId: number) => {
+    const res = await apiCall("child/wish/delete", { wish_id: wishId });
+    if (res.ok) { load(true); }
+  }, []);
+
   useEffect(() => {
     if (!data) return;
     // Уровень считается от total_stars_earned, а не от текущего баланса
@@ -283,7 +301,10 @@ export default function ChildMiniApp() {
             stars={data.stars}
             rewards={data.rewards || []}
             rewardPurchases={data.rewardPurchases || []}
+            wishes={data.wishes || []}
             onBuy={buyReward}
+            onAddWish={addWish}
+            onDeleteWish={deleteWish}
           />
         )}
         {tab === "grades" && (

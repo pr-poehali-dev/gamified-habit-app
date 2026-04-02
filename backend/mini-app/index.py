@@ -376,11 +376,13 @@ def handle_auth_child(conn, body):
             {"id": r[0], "rewardId": r[1], "title": r[2], "emoji": r[3], "cost": r[4], "status": r[5], "purchasedAt": str(r[6])}
             for r in cur.fetchall()
         ]
+        cur.execute(f"SELECT id, title, emoji, status, created_at FROM {SCHEMA}.reward_wishes WHERE child_id = %s AND status = 'pending' ORDER BY created_at DESC", (child["id"],))
+        wishes = [{"id": r[0], "title": r[1], "emoji": r[2], "status": r[3], "createdAt": str(r[4])} for r in cur.fetchall()]
     return json_response({
         **child, "telegram_id": tid, "level": level, "xpInLevel": xp_in,
         "achievements": achievements, "stickers": stickers,
         "gradeRequests": grades, "tasks": tasks, "rewards": rewards,
-        "rewardPurchases": reward_purchases,
+        "rewardPurchases": reward_purchases, "wishes": wishes,
     })
 
 
@@ -460,6 +462,8 @@ def handle_auth_parent(conn, body):
             grades = []
         cur.execute(f"SELECT id, title, cost, emoji, child_id, quantity FROM {SCHEMA}.rewards WHERE parent_id = %s ORDER BY created_at", (parent["id"],))
         rewards = [{"id": r[0], "title": r[1], "cost": r[2], "emoji": r[3], "childId": r[4], "quantity": r[5]} for r in cur.fetchall()]
+        cur.execute(f"SELECT rw.id, rw.child_id, c.name, rw.title, rw.emoji, rw.created_at FROM {SCHEMA}.reward_wishes rw JOIN {SCHEMA}.children c ON rw.child_id = c.id WHERE rw.parent_id = %s AND rw.status = 'pending' ORDER BY rw.created_at DESC", (parent["id"],))
+        reward_wishes = [{"id": r[0], "childId": r[1], "childName": r[2], "title": r[3], "emoji": r[4], "createdAt": str(r[5])} for r in cur.fetchall()]
     streak_claimed = advance_streak(conn, parent["id"])
     if streak_claimed:
         parent = get_parent_by_tg(conn, tid)
@@ -473,7 +477,7 @@ def handle_auth_parent(conn, body):
         "claimed": parent["streak_claimed_today"],
     }
     check_trial_reminder(conn, parent["id"], tid)
-    return json_response({**parent, "telegram_id": tid, "children": children, "tasks": tasks, "gradeRequests": grades, "rewards": rewards, "streakReward": streak_reward})
+    return json_response({**parent, "telegram_id": tid, "children": children, "tasks": tasks, "gradeRequests": grades, "rewards": rewards, "rewardWishes": reward_wishes, "streakReward": streak_reward})
 
 
 def upload_photo_to_s3(photo_base64: str, task_id: int) -> str:
@@ -1258,6 +1262,72 @@ def handle_child_purchases(conn, body):
     return json_response({"ok": True, "purchases": purchases, "totalSpent": sum(p["cost"] for p in purchases)})
 
 
+def handle_child_wish_add(conn, body):
+    """Ребёнок запрашивает желаемую награду."""
+    tid = resolve_telegram_id(body, CHILD_TOKEN)
+    if not tid:
+        return error_response("Unauthorized", 401)
+    child = get_child_by_tg(conn, tid)
+    if not child:
+        return error_response("Child not found", 404)
+    title = (body.get("title") or "").strip()
+    emoji = body.get("emoji", "🎁")
+    if not title:
+        return error_response("title required", 400)
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT COUNT(*) FROM {SCHEMA}.reward_wishes WHERE child_id = %s AND status = 'pending'", (child["id"],))
+        cnt = cur.fetchone()[0]
+        if cnt >= 10:
+            return error_response("too_many_wishes", 400)
+        cur.execute(
+            f"INSERT INTO {SCHEMA}.reward_wishes (child_id, parent_id, title, emoji) VALUES (%s, %s, %s, %s) RETURNING id",
+            (child["id"], child["parent_id"], title, emoji)
+        )
+        wish_id = cur.fetchone()[0]
+    conn.commit()
+    if PARENT_TOKEN:
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT p.telegram_id FROM {SCHEMA}.parents p WHERE p.id = %s", (child["parent_id"],))
+            p_row = cur.fetchone()
+        if p_row:
+            send_tg_message(PARENT_TOKEN, p_row[0], f"💫 {child['name']} хочет награду: <b>{emoji} {title}</b>\n\nПосмотри в разделе Бонусы → Желаемые награды")
+    return json_response({"ok": True, "wish_id": wish_id})
+
+
+def handle_child_wish_delete(conn, body):
+    """Ребёнок удаляет свой запрос на награду."""
+    tid = resolve_telegram_id(body, CHILD_TOKEN)
+    if not tid:
+        return error_response("Unauthorized", 401)
+    child = get_child_by_tg(conn, tid)
+    if not child:
+        return error_response("Child not found", 404)
+    wish_id = body.get("wish_id")
+    if not wish_id:
+        return error_response("wish_id required", 400)
+    with conn.cursor() as cur:
+        cur.execute(f"DELETE FROM {SCHEMA}.reward_wishes WHERE id = %s AND child_id = %s", (wish_id, child["id"]))
+    conn.commit()
+    return json_response({"ok": True})
+
+
+def handle_parent_wish_dismiss(conn, body):
+    """Родитель отклоняет желание ребёнка."""
+    tid = resolve_telegram_id(body, PARENT_TOKEN)
+    if not tid:
+        return error_response("Unauthorized", 401)
+    parent = get_parent_by_tg(conn, tid)
+    if not parent:
+        return error_response("Parent not found", 404)
+    wish_id = body.get("wish_id")
+    if not wish_id:
+        return error_response("wish_id required", 400)
+    with conn.cursor() as cur:
+        cur.execute(f"DELETE FROM {SCHEMA}.reward_wishes WHERE id = %s AND parent_id = %s", (wish_id, parent["id"]))
+    conn.commit()
+    return json_response({"ok": True})
+
+
 def handle_child_analytics(conn, body):
     """Детальная аналитика по всем детям родителя."""
     tid = resolve_telegram_id(body, PARENT_TOKEN)
@@ -1458,6 +1528,10 @@ def handler(event: dict, context) -> dict:
             return handle_child_delete_task(conn, body)
         if action == "child/purchases":
             return handle_child_purchases(conn, body)
+        if action == "child/wish/add":
+            return handle_child_wish_add(conn, body)
+        if action == "child/wish/delete":
+            return handle_child_wish_delete(conn, body)
 
         # ── Parent routes ──
         if action == "parent/auth":
@@ -1490,6 +1564,8 @@ def handler(event: dict, context) -> dict:
             return handle_child_analytics(conn, body)
         if action == "parent/trial/activate":
             return handle_activate_trial(conn, body)
+        if action == "parent/wish/dismiss":
+            return handle_parent_wish_dismiss(conn, body)
 
         return error_response("Not found", 404)
     finally:

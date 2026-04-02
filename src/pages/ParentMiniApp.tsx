@@ -38,6 +38,7 @@ type ParentData = {
   tasks: Task[];
   gradeRequests: GradeRequest[];
   rewards: Reward[];
+  rewardWishes: { id: number; childId: number; childName: string; title: string; emoji: string; createdAt: string }[];
 };
 
 type Task = {
@@ -214,6 +215,12 @@ export default function ParentMiniApp() {
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
+  const dismissWish = useCallback(async (wishId: number) => {
+    const res = await apiCall("parent/wish/dismiss", { wish_id: wishId });
+    if (res.ok) { load(true); }
+    else showToast("❌ " + String(res.error || "Ошибка"));
+  }, []);
+
   const activateTrial = useCallback(async () => {
     const res = await apiCall("parent/trial/activate", {});
     if (res.ok) { showToast("🎉 Пробный период активирован на 7 дней!"); setShowPremium(false); load(true); }
@@ -330,6 +337,8 @@ export default function ParentMiniApp() {
             children={data.children}
             onAddReward={addReward}
             onRemoveReward={removeReward}
+            rewardWishes={data.rewardWishes || []}
+            onDismissWish={dismissWish}
           />
         )}
         {tab === "partners" && (
