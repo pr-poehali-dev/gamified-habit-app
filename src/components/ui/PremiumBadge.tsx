@@ -3,10 +3,21 @@ import { createPortal } from "react-dom";
 
 type Props = {
   compact?: boolean;
+  trialUsed?: boolean;
+  onActivateTrial?: () => Promise<void>;
 };
 
-export function PremiumBadge({ compact }: Props) {
+export function PremiumBadge({ compact, trialUsed, onActivateTrial }: Props) {
   const [showModal, setShowModal] = useState(false);
+  const [activating, setActivating] = useState(false);
+
+  const handleActivate = async () => {
+    if (!onActivateTrial) return;
+    setActivating(true);
+    await onActivateTrial();
+    setActivating(false);
+    setShowModal(false);
+  };
 
   return (
     <>
@@ -47,8 +58,19 @@ export function PremiumBadge({ compact }: Props) {
                 </div>
               ))}
             </div>
-            <div className="px-6 pb-6">
-              <p className="text-center text-xs text-gray-400 mb-4">Скоро! Подписка появится в ближайшем обновлении</p>
+            <div className="px-6 pb-6 space-y-2">
+              {!trialUsed && onActivateTrial && (
+                <button
+                  onClick={handleActivate}
+                  disabled={activating}
+                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-black text-sm shadow-lg active:scale-95 transition-transform disabled:opacity-50"
+                >
+                  {activating ? "Активация..." : "🎁 Попробовать 7 дней бесплатно"}
+                </button>
+              )}
+              {trialUsed && (
+                <p className="text-center text-xs text-gray-400">Скоро! Подписка появится в ближайшем обновлении</p>
+              )}
               <button
                 onClick={() => setShowModal(false)}
                 className="w-full py-3 rounded-2xl bg-gray-100 text-gray-500 font-black text-sm active:scale-95 transition-transform"

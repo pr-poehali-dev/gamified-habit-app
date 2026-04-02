@@ -309,6 +309,8 @@ export default function ParentMiniApp() {
             onDeleteTask={deleteTask}
             onCancelTask={cancelTask}
             isPremium={data.is_premium}
+            trialUsed={data.trial_used}
+            onActivateTrial={activateTrial}
           />
         )}
         {tab === "grades" && (
@@ -349,6 +351,8 @@ export default function ParentMiniApp() {
             onRemoveChild={removeChild}
             onRefreshInvite={refreshInvite}
             isPremium={data.is_premium}
+            trialUsed={data.trial_used}
+            onActivateTrial={activateTrial}
           />
         )}
       </div>

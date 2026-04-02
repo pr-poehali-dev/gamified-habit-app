@@ -17,11 +17,13 @@ type ProfileProps = {
   onRemoveChild: (id: number) => void;
   onRefreshInvite: (id: number) => void;
   isPremium?: boolean;
+  trialUsed?: boolean;
+  onActivateTrial?: () => Promise<void>;
 };
 
 const CHILD_AVATARS = ["👦", "👧", "🧒", "👶", "🐱", "🦊", "🐼", "🦁", "🐸", "🐧", "🦋", "🌟"];
 
-export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, onAddChild, onRemoveChild, onRefreshInvite, isPremium }: ProfileProps) {
+export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, onAddChild, onRemoveChild, onRefreshInvite, isPremium, trialUsed, onActivateTrial }: ProfileProps) {
   const { level } = getParentLevelInfo(parent_xp);
   const tier = getParentLevelTier(level);
 
@@ -137,7 +139,7 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-bold text-[#1E1B4B]">📊 Аналитика</h2>
-              {!isPremium && <PremiumBadge compact />}
+              {!isPremium && <PremiumBadge compact trialUsed={trialUsed} onActivateTrial={onActivateTrial} />}
             </div>
             <div className="flex items-center gap-2">
               {isPremium && showAnalytics && analyticsData && (
@@ -203,7 +205,7 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-[#1E1B4B]">Мои дети</h2>
         <div className="flex items-center gap-2">
-          {!isPremium && children.length >= 1 && <PremiumBadge compact />}
+          {!isPremium && children.length >= 1 && <PremiumBadge compact trialUsed={trialUsed} onActivateTrial={onActivateTrial} />}
           <button
             onClick={() => {
               if (!isPremium && children.length >= 1) return;
