@@ -1071,6 +1071,7 @@ def handle_remove_reward(conn, body):
         cur.execute(f"SELECT id FROM {SCHEMA}.rewards WHERE id = %s AND parent_id = %s", (reward_id, parent["id"]))
         if not cur.fetchone():
             return error_response("Reward not found", 404)
+        cur.execute(f"DELETE FROM {SCHEMA}.reward_purchases WHERE reward_id = %s", (reward_id,))
         cur.execute(f"DELETE FROM {SCHEMA}.rewards WHERE id = %s", (reward_id,))
     conn.commit()
     return json_response({"ok": True})
