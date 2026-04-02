@@ -5,11 +5,19 @@ import { getParentLevelInfo, getParentLevelTier, type StreakState } from "@/lib/
 type Child = { id: number; name: string; stars: number; avatar: string; age: number; inviteCode: string | null; connected: boolean };
 type Reward = { id: number; title: string; cost: number; emoji: string; childId: number | null; quantity: number };
 
+type StreakReward = {
+  todayXp: number;
+  todayPoints: number;
+  nextXp: number;
+  nextPoints: number;
+  claimed: boolean;
+};
+
 type BonusesProps = {
   streak: StreakState;
+  streakReward?: StreakReward;
   parent_points: number;
   parent_xp: number;
-  onClaimStreak: () => void;
   rewards: Reward[];
   children: Child[];
   onAddReward: (title: string, cost: number, emoji: string, childId: number, quantity: number) => void;
@@ -26,7 +34,7 @@ const REWARD_TEMPLATES = [
   { emoji: "🍦", title: "Мороженое на выбор", cost: 5 },
 ];
 
-export function ParentTabBonuses({ streak, parent_points, parent_xp, onClaimStreak, rewards, children, onAddReward, onRemoveReward }: BonusesProps) {
+export function ParentTabBonuses({ streak, streakReward, parent_points, parent_xp, rewards, children, onAddReward, onRemoveReward }: BonusesProps) {
   const { level } = getParentLevelInfo(parent_xp);
   const tier = getParentLevelTier(level);
   const [showForm, setShowForm] = useState(false);
@@ -50,7 +58,7 @@ export function ParentTabBonuses({ streak, parent_points, parent_xp, onClaimStre
 
   return (
     <div className="space-y-4">
-      <StreakCard streak={streak} onClaim={onClaimStreak} />
+      <StreakCard streak={streak} reward={streakReward} />
 
       {/* Магазин наград для детей */}
       <div>

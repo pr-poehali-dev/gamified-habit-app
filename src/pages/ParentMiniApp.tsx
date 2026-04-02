@@ -27,6 +27,7 @@ type ParentData = {
   streak_claimed_today: boolean;
   streak_longest: number;
   is_premium: boolean;
+  streakReward: { todayXp: number; todayPoints: number; nextXp: number; nextPoints: number; claimed: boolean };
   children: { id: number; name: string; stars: number; avatar: string; age: number; inviteCode: string | null; connected: boolean }[];
   tasks: Task[];
   gradeRequests: GradeRequest[];
@@ -167,11 +168,7 @@ export default function ParentMiniApp() {
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
-  const claimStreak = useCallback(async () => {
-    const res = await apiCall("parent/streak/claim");
-    if (res.ok) { showToast(`🔥 +${res.xp} XP и +${res.points} баллов!`); load(true); }
-    else showToast(String(res.error || "Уже получено сегодня"));
-  }, []);
+  const streakReward = data?.streakReward;
 
   const addChild = useCallback(async (name: string, age: number, avatar: string) => {
     const res = await apiCall("parent/child/add", { name, age, avatar });
@@ -245,7 +242,7 @@ export default function ParentMiniApp() {
             <h1 className="text-xl font-bold text-[#1E1B4B]">{data.name}</h1>
           </div>
           <div className="flex items-center gap-2">
-            <StreakCard streak={streak} onClaim={claimStreak} compact />
+            <StreakCard streak={streak} reward={streakReward} compact />
             <div className="w-10 h-10 bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] rounded-2xl flex items-center justify-center text-xl shadow-md">👨</div>
           </div>
         </div>
@@ -280,9 +277,9 @@ export default function ParentMiniApp() {
         {tab === "bonuses" && (
           <ParentTabBonuses
             streak={streak}
+            streakReward={streakReward}
             parent_points={data.parent_points}
             parent_xp={data.parent_xp}
-            onClaimStreak={claimStreak}
             rewards={data.rewards}
             children={data.children}
             onAddReward={addReward}

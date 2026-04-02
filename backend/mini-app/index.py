@@ -209,30 +209,40 @@ def get_parent_by_tg(conn, telegram_id):
     }
 
 
+def get_streak_bonus(streak: int):
+    """Рассчитать бонус за ежедневную активность по длине серии."""
+    xp = round((min(streak, 10) / 10) * 100)
+    points = round((min(streak, 10) / 10) * 1000)
+    return xp, points
+
+
 def advance_streak(conn, parent_id: int):
+    """Обновить серию и автоматически начислить бонус за ежедневную активность."""
     today = date.today()
     with conn.cursor() as cur:
         cur.execute(
-            f"SELECT streak_current, streak_last_date, streak_longest FROM {SCHEMA}.parents WHERE id = %s",
+            f"SELECT streak_current, streak_last_date, streak_longest, streak_claimed_today FROM {SCHEMA}.parents WHERE id = %s",
             (parent_id,)
         )
         row = cur.fetchone()
     if not row:
-        return
-    current, last_date, longest = row[0] or 0, row[1], row[2] or 0
+        return None
+    current, last_date, longest, claimed_today = row[0] or 0, row[1], row[2] or 0, row[3]
     if last_date == today:
-        return  # уже обновляли сегодня
+        return None
     if last_date and (today - last_date).days <= 1:
         new_current = current + 1
     else:
         new_current = 1
     new_longest = max(longest, new_current)
+    xp_bonus, points_bonus = get_streak_bonus(new_current)
     with conn.cursor() as cur:
         cur.execute(
-            f"UPDATE {SCHEMA}.parents SET streak_current=%s, streak_last_date=%s, streak_claimed_today=false, streak_longest=%s WHERE id=%s",
-            (new_current, today, new_longest, parent_id)
+            f"UPDATE {SCHEMA}.parents SET streak_current=%s, streak_last_date=%s, streak_claimed_today=true, streak_longest=%s, parent_xp=parent_xp+%s, parent_points=parent_points+%s WHERE id=%s",
+            (new_current, today, new_longest, xp_bonus, points_bonus, parent_id)
         )
     conn.commit()
+    return {"streak": new_current, "xp": xp_bonus, "points": points_bonus, "longest": new_longest}
 
 
 def add_parent_xp(conn, parent_id: int, xp: int):
@@ -402,7 +412,15 @@ def handle_auth_parent(conn, body):
             grades = []
         cur.execute(f"SELECT id, title, cost, emoji, child_id, quantity FROM {SCHEMA}.rewards WHERE parent_id = %s ORDER BY created_at", (parent["id"],))
         rewards = [{"id": r[0], "title": r[1], "cost": r[2], "emoji": r[3], "childId": r[4], "quantity": r[5]} for r in cur.fetchall()]
-    return json_response({**parent, "telegram_id": tid, "children": children, "tasks": tasks, "gradeRequests": grades, "rewards": rewards})
+    streak = parent["streak_current"]
+    next_xp, next_points = get_streak_bonus(streak + 1 if streak > 0 else 1)
+    today_xp, today_points = get_streak_bonus(streak) if parent["streak_claimed_today"] else (0, 0)
+    streak_reward = {
+        "todayXp": today_xp, "todayPoints": today_points,
+        "nextXp": next_xp, "nextPoints": next_points,
+        "claimed": parent["streak_claimed_today"],
+    }
+    return json_response({**parent, "telegram_id": tid, "children": children, "tasks": tasks, "gradeRequests": grades, "rewards": rewards, "streakReward": streak_reward})
 
 
 def upload_photo_to_s3(photo_base64: str, task_id: int) -> str:
@@ -894,24 +912,16 @@ def handle_buy_reward(conn, body):
 
 
 def handle_streak_claim(conn, body):
+    """Бонус начисляется автоматически. Эндпоинт оставлен для совместимости."""
     tid = resolve_telegram_id(body, PARENT_TOKEN)
     if not tid:
         return error_response("Unauthorized", 401)
     parent = get_parent_by_tg(conn, tid)
     if not parent:
         return error_response("Parent not found", 404)
-    if parent["streak_claimed_today"]:
-        return error_response("Already claimed today")
     streak = parent["streak_current"]
-    xp_bonus = round((min(streak, 10) / 10) * 100)
-    points_bonus = round((min(streak, 10) / 10) * 1000)
-    with conn.cursor() as cur:
-        cur.execute(
-            f"UPDATE {SCHEMA}.parents SET streak_claimed_today=true, parent_xp=parent_xp+%s, parent_points=parent_points+%s WHERE id=%s",
-            (xp_bonus, points_bonus, parent["id"])
-        )
-    conn.commit()
-    return json_response({"ok": True, "xp": xp_bonus, "points": points_bonus, "streak": streak})
+    xp, points = get_streak_bonus(streak)
+    return json_response({"ok": True, "xp": xp, "points": points, "streak": streak, "auto": True})
 
 
 CHILD_AVATARS = ["👦", "👧", "🧒", "👶", "🐱", "🦊", "🐼", "🦁", "🐸", "🐧", "🦋", "🌟"]

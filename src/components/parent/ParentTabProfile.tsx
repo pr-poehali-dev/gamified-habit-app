@@ -121,7 +121,7 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
           { label: "Детей", value: children.length, emoji: "👨‍👧‍👦" },
           { label: "Задач создано", value: tasks_count, emoji: "📋" },
           { label: "Уровень", value: level, emoji: tier.emoji },
-          { label: "Стрик", value: `${streak_current}🔥`, emoji: "📅" },
+          { label: "Дни подряд", value: `${streak_current}🔥`, emoji: "📅" },
         ].map(s => (
           <div key={s.label} className="bg-white/90 rounded-3xl p-4 text-center shadow-sm">
             <div className="text-3xl mb-1">{s.emoji}</div>
