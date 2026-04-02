@@ -384,6 +384,34 @@ def handle_auth_child(conn, body):
     })
 
 
+def check_trial_reminder(conn, parent_id: int, telegram_id: int):
+    """Отправляет напоминание за 1 день до окончания trial."""
+    from datetime import datetime, timezone, timedelta
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT trial_ends_at, trial_reminder_sent, is_premium FROM {SCHEMA}.parents WHERE id = %s",
+            (parent_id,)
+        )
+        row = cur.fetchone()
+    if not row or not row[0] or row[1] or row[2]:
+        return
+    trial_ends_at, reminder_sent, is_premium_paid = row
+    now = datetime.now(timezone.utc)
+    time_left = trial_ends_at - now
+    if timedelta(0) < time_left <= timedelta(hours=24):
+        with conn.cursor() as cur:
+            cur.execute(f"UPDATE {SCHEMA}.parents SET trial_reminder_sent = true WHERE id = %s", (parent_id,))
+        conn.commit()
+        if PARENT_TOKEN:
+            hours_left = max(1, int(time_left.total_seconds() // 3600))
+            send_tg_message(
+                PARENT_TOKEN, telegram_id,
+                f"⏰ Пробный период Premium заканчивается через {hours_left}ч!\n\n"
+                f"После окончания Premium-функции (📸 фото-задачи, 👨‍👩‍👧‍👦 несколько детей, 📊 аналитика) станут недоступны.\n\n"
+                f"Откройте приложение, чтобы узнать подробнее о подписке."
+            )
+
+
 def handle_auth_parent(conn, body):
     tid = resolve_telegram_id(body, PARENT_TOKEN)
     if not tid:
@@ -444,6 +472,7 @@ def handle_auth_parent(conn, body):
         "nextXp": next_xp, "nextPoints": next_points,
         "claimed": parent["streak_claimed_today"],
     }
+    check_trial_reminder(conn, parent["id"], tid)
     return json_response({**parent, "telegram_id": tid, "children": children, "tasks": tasks, "gradeRequests": grades, "rewards": rewards, "streakReward": streak_reward})
 
 
