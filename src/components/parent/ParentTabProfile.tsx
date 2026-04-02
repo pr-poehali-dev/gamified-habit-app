@@ -318,9 +318,10 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
                     </div>
                     <div className="bg-white/70 rounded-xl px-3 py-2 space-y-1">
                       <p className="text-[10px] font-black text-gray-500 uppercase tracking-wide">Инструкция для {c.name}:</p>
-                      <p className="text-xs text-gray-600">1️⃣ Открыть Telegram → найти <b>@task4kids_bot</b></p>
-                      <p className="text-xs text-gray-600">2️⃣ Нажать кнопку <b>«Открыть СтарКидс»</b></p>
-                      <p className="text-xs text-gray-600">3️⃣ Ввести код <b>{c.inviteCode}</b></p>
+                      <p className="text-xs text-gray-600">👆 <b>Нажми на код выше и перешли его ребёнку</b></p>
+                      <p className="text-xs text-gray-600">1️⃣ Ребёнок открывает Telegram → находит <b>@task4kids_bot</b></p>
+                      <p className="text-xs text-gray-600">2️⃣ Нажимает <b>«Открыть СтарКидс»</b></p>
+                      <p className="text-xs text-gray-600">3️⃣ Вводит код <b>{c.inviteCode}</b></p>
                     </div>
                   </>
                 ) : (
