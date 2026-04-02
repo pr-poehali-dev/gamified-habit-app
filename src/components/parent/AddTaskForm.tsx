@@ -63,21 +63,38 @@ function getDeadlineDate(option: typeof DEADLINE_OPTIONS[number]): string | null
 }
 
 export function AddTaskForm({ children, onAddTask, onClose, isPremium, trialUsed, onActivateTrial }: Props) {
+  const connectedChildren = children.filter(c => c.connected);
   const [selectedDeadlineIdx, setSelectedDeadlineIdx] = useState(0);
   const [newTask, setNewTask] = useState<NewTask>({
     title: "", stars: 3, emoji: "📋",
-    childId: children[0]?.id ?? 0,
+    childId: connectedChildren[0]?.id ?? 0,
     requirePhoto: false, requireConfirm: false,
     deadline: null,
   });
 
   const handleAdd = () => {
     if (!newTask.title.trim() || !newTask.childId) return;
+    if (!connectedChildren.some(c => c.id === newTask.childId)) return;
     const deadlineOpt = DEADLINE_OPTIONS[selectedDeadlineIdx];
     const deadline = getDeadlineDate(deadlineOpt);
     onAddTask({ ...newTask, deadline });
     onClose();
   };
+
+  if (connectedChildren.length === 0) {
+    return (
+      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] px-5 py-4">
+          <p className="text-white font-black text-base">📋 Новая задача</p>
+        </div>
+        <div className="p-6 text-center">
+          <div className="text-3xl mb-2">⏳</div>
+          <p className="font-bold text-[#1E1B4B] mb-1">Нет подключённых детей</p>
+          <p className="text-sm text-gray-500">Ребёнок должен подключить Telegram, чтобы получать задачи</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
@@ -90,12 +107,22 @@ export function AddTaskForm({ children, onAddTask, onClose, isPremium, trialUsed
             <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-2">Для кого</label>
             <div className="flex gap-2">
               {children.map(c => (
-                <button key={c.id} onClick={() => setNewTask(t => ({ ...t, childId: c.id }))}
-                  className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${newTask.childId === c.id ? "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white" : "bg-gray-50 text-gray-600"}`}>
-                  {c.avatar} {c.name}
+                <button key={c.id}
+                  onClick={() => c.connected && setNewTask(t => ({ ...t, childId: c.id }))}
+                  className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${
+                    !c.connected
+                      ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                      : newTask.childId === c.id
+                        ? "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white"
+                        : "bg-gray-50 text-gray-600"
+                  }`}>
+                  {c.avatar} {c.name} {!c.connected && "⏳"}
                 </button>
               ))}
             </div>
+            {children.some(c => !c.connected) && (
+              <p className="text-[10px] text-gray-400 mt-1.5">⏳ — ожидает подключения Telegram</p>
+            )}
           </div>
         )}
         <div>
