@@ -217,33 +217,40 @@ export default function Index() {
           <div className="phone-shell">
             <div className="phone-screen">
               <div className="phone-header">
-                <div className="phone-avatar">👨‍👩‍👧</div>
+                <div className="phone-avatar">🧒</div>
                 <div>
-                  <div className="phone-name">СтарКидс</div>
-                  <div className="phone-status">онлайн</div>
+                  <div className="phone-name">Маша · 42⭐</div>
+                  <div className="phone-status">🔥 серия 5 дней</div>
                 </div>
               </div>
               <div className="phone-body">
                 <div className="phone-card phone-card--purple">
-                  <span>📚 Математика</span>
+                  <span>🧹 Убраться в комнате</span>
                   <span className="phone-stars">+3 ⭐</span>
                 </div>
                 <div className="phone-card phone-card--pink">
-                  <span>✏️ Сочинение</span>
-                  <span className="phone-stars">+5 ⭐</span>
+                  <span>📚 Сделать уроки</span>
+                  <span className="phone-stars">+4 ⭐</span>
                 </div>
                 <div className="phone-card phone-card--orange">
-                  <span>🏅 Уборка комнаты</span>
+                  <span>📸 Полить цветы</span>
                   <span className="phone-stars">+2 ⭐</span>
+                </div>
+                <div className="phone-card phone-card--green">
+                  <span>✅ Почистить зубы</span>
+                  <span className="phone-stars">выполнено</span>
                 </div>
                 <div className="phone-progress">
                   <div className="phone-progress__label">
                     <span>Уровень 4 🥈</span>
-                    <span>28/30 ⭐</span>
+                    <span>42/50 ⭐</span>
                   </div>
                   <div className="phone-progress__bar">
-                    <div className="phone-progress__fill" style={{ width: "93%" }} />
+                    <div className="phone-progress__fill" style={{ width: "84%" }} />
                   </div>
+                </div>
+                <div className="phone-achievements">
+                  <span>🏆</span><span>⚡</span><span>🌟</span><span>🔥</span><span style={{ opacity: 0.3 }}>🎯</span>
                 </div>
               </div>
             </div>
