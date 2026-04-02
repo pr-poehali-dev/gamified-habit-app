@@ -455,45 +455,21 @@ def upload_photo_to_s3(photo_base64: str, task_id: int) -> str:
     access_key = os.environ.get("AWS_ACCESS_KEY_ID", "")
     secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
 
-    # Имя бакета берём из переменной окружения S3_BUCKET, фолбэк на имя проекта
-    bucket = os.environ.get("S3_BUCKET", "") or "p84704826-gamified-habit-app"
-
-    print(f"[S3] bucket={bucket!r}, access_key_len={len(access_key)}, secret_key_len={len(secret_key)}, file_key={file_key}")
-    print(f"[S3] S3_BUCKET env={os.environ.get('S3_BUCKET', 'NOT_SET')!r}, AWS_ACCESS_KEY_ID env={'SET' if access_key else 'NOT_SET'}")
-
     s3 = boto3.client(
         "s3",
-        endpoint_url="https://s3.poehali.dev",
+        endpoint_url="https://bucket.poehali.dev",
         aws_access_key_id=access_key,
         aws_secret_access_key=secret_key,
         region_name="us-east-1",
     )
 
-    # Сначала пробуем с ACL, если не поддерживается — без него
-    try:
-        s3.put_object(
-            Bucket=bucket,
-            Key=file_key,
-            Body=image_bytes,
-            ContentType=f"image/{ext}",
-            ACL="public-read",
-        )
-        print(f"[S3] put_object success (with ACL) | bucket={bucket!r} | key={file_key}")
-    except Exception as e:
-        print(f"[S3] put_object error with ACL: {e} | bucket={bucket!r} | key={file_key}")
-        # Пробуем без ACL
-        try:
-            s3.put_object(
-                Bucket=bucket,
-                Key=file_key,
-                Body=image_bytes,
-                ContentType=f"image/{ext}",
-            )
-            print(f"[S3] put_object success (without ACL) | bucket={bucket!r} | key={file_key}")
-        except Exception as e2:
-            print(f"[S3] put_object error without ACL: {e2} | bucket={bucket!r} | key={file_key}")
-            raise e2
-    return f"https://s3.poehali.dev/{bucket}/{file_key}"
+    s3.put_object(
+        Bucket="files",
+        Key=file_key,
+        Body=image_bytes,
+        ContentType=f"image/{ext}",
+    )
+    return f"https://cdn.poehali.dev/projects/{access_key}/bucket/{file_key}"
 
 
 def handle_upload_photo(conn, body):
