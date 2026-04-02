@@ -37,7 +37,8 @@ type Props = {
 };
 
 export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, onRejectTask, onAddTask, onGrantExtension, onDenyExtension, onDeleteTask, onCancelTask, isPremium, trialUsed, onActivateTrial }: Props) {
-  const [showAddTask, setShowAddTask] = useState(false);
+  const hasActiveTasks = tasks.some(t => t.status === "pending" || t.status === "pending_confirm");
+  const [showAddTask, setShowAddTask] = useState(!hasActiveTasks);
 
   return (
     <div className="space-y-4">
