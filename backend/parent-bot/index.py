@@ -109,8 +109,131 @@ def handle_premium_command(token, chat_id, args):
         conn.close()
 
 
+def handle_trial_command(token, chat_id, args):
+    """Включить/выключить Trial для родителя по telegram_id."""
+    if chat_id not in ADMIN_IDS:
+        tg(token, chat_id, "⛔ Нет доступа к этой команде.")
+        return
+
+    if not args:
+        tg(token, chat_id,
+           "📋 <b>Управление Trial</b>\n\n"
+           "Использование:\n"
+           "<code>/trial 123456789 on</code> — включить Trial на 7 дней\n"
+           "<code>/trial 123456789 on 14</code> — включить Trial на 14 дней\n"
+           "<code>/trial 123456789 off</code> — выключить Trial\n"
+           "<code>/trial 123456789 reset</code> — сбросить (можно взять снова)\n"
+           "<code>/trial list</code> — список пользователей с активным Trial")
+        return
+
+    if args[0] == "list":
+        db_url = os.environ.get("DATABASE_URL", "")
+        if not db_url:
+            tg(token, chat_id, "❌ DATABASE_URL не настроен")
+            return
+        conn = psycopg2.connect(db_url)
+        try:
+            with conn.cursor() as cur:
+                cur.execute(f"SELECT telegram_id, full_name, trial_ends_at FROM {SCHEMA}.parents WHERE trial_ends_at IS NOT NULL AND trial_ends_at > NOW() AND is_premium = false ORDER BY trial_ends_at")
+                rows = cur.fetchall()
+            if not rows:
+                tg(token, chat_id, "📋 Нет пользователей с активным Trial")
+                return
+            lines = [f"🎁 <b>Активные Trial ({len(rows)})</b>\n"]
+            for tid, name, ends in rows:
+                from datetime import datetime, timezone
+                left = ends - datetime.now(timezone.utc)
+                days = max(0, left.days)
+                lines.append(f"• <code>{tid}</code> — {name or '—'} ({days}д)")
+            tg(token, chat_id, "\n".join(lines))
+        finally:
+            conn.close()
+        return
+
+    target_id = args[0]
+    try:
+        target_id = int(target_id)
+    except ValueError:
+        tg(token, chat_id, "❌ Укажи telegram_id числом.\n\nПример: <code>/trial 123456789 on</code>")
+        return
+
+    if len(args) < 2:
+        tg(token, chat_id, "❌ Укажи действие: on, off или reset.\n\nПример: <code>/trial 123456789 on</code>")
+        return
+
+    action = args[1].lower()
+    db_url = os.environ.get("DATABASE_URL", "")
+    if not db_url:
+        tg(token, chat_id, "❌ DATABASE_URL не настроен")
+        return
+
+    conn = psycopg2.connect(db_url)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT id, full_name, trial_ends_at, trial_used FROM {SCHEMA}.parents WHERE telegram_id = %s", (target_id,))
+            row = cur.fetchone()
+
+        if not row:
+            tg(token, chat_id, f"❌ Родитель с telegram_id <code>{target_id}</code> не найден.")
+            return
+
+        parent_id, name, trial_ends, trial_used = row
+
+        if action in ("on", "1", "true"):
+            from datetime import datetime, timezone, timedelta
+            days = 7
+            if len(args) > 2:
+                try:
+                    days = int(args[2])
+                except ValueError:
+                    pass
+            now = datetime.now(timezone.utc)
+            trial_end = now + timedelta(days=days)
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"UPDATE {SCHEMA}.parents SET trial_started_at = %s, trial_ends_at = %s, trial_used = true, trial_reminder_sent = false WHERE id = %s",
+                    (now, trial_end, parent_id)
+                )
+            conn.commit()
+            tg(token, chat_id,
+               f"🎁 Trial включён на {days} дней\n\n"
+               f"👤 {name or '—'}\n"
+               f"🆔 <code>{target_id}</code>\n"
+               f"📅 До: {trial_end.strftime('%d.%m.%Y %H:%M')} UTC")
+
+        elif action in ("off", "0", "false"):
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"UPDATE {SCHEMA}.parents SET trial_ends_at = %s, trial_used = true WHERE id = %s",
+                    (now, parent_id)
+                )
+            conn.commit()
+            tg(token, chat_id,
+               f"❌ Trial выключен\n\n"
+               f"👤 {name or '—'}\n"
+               f"🆔 <code>{target_id}</code>")
+
+        elif action == "reset":
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"UPDATE {SCHEMA}.parents SET trial_started_at = NULL, trial_ends_at = NULL, trial_used = false, trial_reminder_sent = false WHERE id = %s",
+                    (parent_id,)
+                )
+            conn.commit()
+            tg(token, chat_id,
+               f"🔄 Trial сброшен (можно взять снова)\n\n"
+               f"👤 {name or '—'}\n"
+               f"🆔 <code>{target_id}</code>")
+        else:
+            tg(token, chat_id, "❌ Неизвестное действие. Используй: on, off, reset")
+    finally:
+        conn.close()
+
+
 def handler(event: dict, context) -> dict:
-    """Webhook родительского бота: /start и /premium."""
+    """Webhook родительского бота: /start, /premium и /trial."""
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": {"Access-Control-Allow-Origin": "*"}, "body": ""}
 
@@ -135,6 +258,11 @@ def handler(event: dict, context) -> dict:
     if text.startswith("/premium"):
         args = text.split()[1:]
         handle_premium_command(token, chat_id, args)
+        return {"statusCode": 200, "body": "ok"}
+
+    if text.startswith("/trial"):
+        args = text.split()[1:]
+        handle_trial_command(token, chat_id, args)
         return {"statusCode": 200, "body": "ok"}
 
     if text.startswith("/start"):
