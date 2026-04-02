@@ -27,7 +27,7 @@ type ParentData = {
   streak_claimed_today: boolean;
   streak_longest: number;
   is_premium: boolean;
-  streakReward: { todayXp: number; todayPoints: number; nextXp: number; nextPoints: number; claimed: boolean };
+  streakReward: { justClaimed: boolean; todayXp: number; todayPoints: number; nextXp: number; nextPoints: number; claimed: boolean };
   children: { id: number; name: string; stars: number; avatar: string; age: number; inviteCode: string | null; connected: boolean }[];
   tasks: Task[];
   gradeRequests: GradeRequest[];
@@ -95,7 +95,15 @@ export default function ParentMiniApp() {
       ...(tgId ? { telegram_id: tgId, first_name: firstName } : {}),
     });
     if (res.role === "parent") {
-      setData(res as unknown as ParentData);
+      const d = res as unknown as ParentData;
+      if (!silent && d.streakReward?.justClaimed) {
+        setTimeout(() => {
+          setToast(`🔥 День ${d.streak_current}! +${d.streakReward.todayXp} XP и +${d.streakReward.todayPoints} баллов`);
+          tg()?.HapticFeedback?.notificationOccurred("success");
+          setTimeout(() => setToast(null), 4000);
+        }, 800);
+      }
+      setData(d);
     } else if (res.role === "unknown") {
       if (!silent) {
         setTimeout(() => load(false), 1000);

@@ -412,10 +412,14 @@ def handle_auth_parent(conn, body):
             grades = []
         cur.execute(f"SELECT id, title, cost, emoji, child_id, quantity FROM {SCHEMA}.rewards WHERE parent_id = %s ORDER BY created_at", (parent["id"],))
         rewards = [{"id": r[0], "title": r[1], "cost": r[2], "emoji": r[3], "childId": r[4], "quantity": r[5]} for r in cur.fetchall()]
+    streak_claimed = advance_streak(conn, parent["id"])
+    if streak_claimed:
+        parent = get_parent_by_tg(conn, tid)
     streak = parent["streak_current"]
     next_xp, next_points = get_streak_bonus(streak + 1 if streak > 0 else 1)
     today_xp, today_points = get_streak_bonus(streak) if parent["streak_claimed_today"] else (0, 0)
     streak_reward = {
+        "justClaimed": streak_claimed is not None,
         "todayXp": today_xp, "todayPoints": today_points,
         "nextXp": next_xp, "nextPoints": next_points,
         "claimed": parent["streak_claimed_today"],
