@@ -53,7 +53,32 @@ export function ParentTabGrades({ gradeRequests, pendingGrades, onApproveGrade, 
           {g.status === "approved" ? <span className="text-xs font-bold text-green-500">+{g.starsAwarded}⭐</span> : <span className="text-xs font-bold text-red-400">Отклонено</span>}
         </div>
       ))}
-      {gradeRequests.length === 0 && <p className="text-center text-gray-400 py-8">Нет запросов на обмен оценок</p>}
+      {gradeRequests.length === 0 && (
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 space-y-4">
+          <div className="text-center">
+            <div className="text-4xl mb-2">📝</div>
+            <p className="font-bold text-[#1E1B4B] mb-1">Как это работает?</p>
+            <p className="text-sm text-gray-500">Ребёнок получает звёзды за хорошие оценки в школе</p>
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <span className="text-lg">1️⃣</span>
+              <p className="text-sm text-gray-600">Ребёнок получает оценку в школе и отправляет запрос через своё приложение</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-lg">2️⃣</span>
+              <p className="text-sm text-gray-600">Вы получаете уведомление и проверяете — подтверждаете или отклоняете</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-lg">3️⃣</span>
+              <p className="text-sm text-gray-600">После подтверждения ребёнок получает звёзды: оценка 5 = 5⭐, оценка 4 = 4⭐ и т.д.</p>
+            </div>
+          </div>
+          <div className="bg-gray-50 rounded-2xl px-4 py-3 text-center">
+            <p className="text-xs text-gray-400">Запросы появятся здесь, когда ребёнок отправит первую оценку</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
