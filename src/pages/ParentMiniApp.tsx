@@ -311,6 +311,7 @@ export default function ParentMiniApp() {
             isPremium={data.is_premium}
             trialUsed={data.trial_used}
             onActivateTrial={activateTrial}
+            onGoToProfile={() => setTab("profile")}
           />
         )}
         {tab === "grades" && (

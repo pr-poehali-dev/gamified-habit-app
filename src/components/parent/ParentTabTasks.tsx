@@ -34,22 +34,39 @@ type Props = {
   isPremium?: boolean;
   trialUsed?: boolean;
   onActivateTrial?: () => Promise<void>;
+  onGoToProfile?: () => void;
 };
 
-export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, onRejectTask, onAddTask, onGrantExtension, onDenyExtension, onDeleteTask, onCancelTask, isPremium, trialUsed, onActivateTrial }: Props) {
+export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, onRejectTask, onAddTask, onGrantExtension, onDenyExtension, onDeleteTask, onCancelTask, isPremium, trialUsed, onActivateTrial, onGoToProfile }: Props) {
+  const noChildren = children.length === 0;
   const hasActiveTasks = tasks.some(t => t.status === "pending" || t.status === "pending_confirm");
-  const [showAddTask, setShowAddTask] = useState(!hasActiveTasks);
+  const [showAddTask, setShowAddTask] = useState(!hasActiveTasks && !noChildren);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-[#1E1B4B]">Задачи</h2>
-        <button onClick={() => setShowAddTask(v => !v)} className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-transform">
-          {showAddTask ? "✕ Закрыть" : "+ Добавить"}
-        </button>
+        {!noChildren && (
+          <button onClick={() => setShowAddTask(v => !v)} className="bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-transform">
+            {showAddTask ? "✕ Закрыть" : "+ Добавить"}
+          </button>
+        )}
       </div>
 
-      {showAddTask && (
+      {noChildren && (
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 text-center">
+          <div className="text-4xl mb-3">👶</div>
+          <p className="font-bold text-[#1E1B4B] mb-1">Нет добавленных детей</p>
+          <p className="text-sm text-gray-500 mb-4">Сперва добавьте ребёнка, чтобы создавать задачи</p>
+          <button
+            onClick={onGoToProfile}
+            className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-bold text-sm active:scale-95 transition-transform">
+            Перейти в раздел «Дети»
+          </button>
+        </div>
+      )}
+
+      {!noChildren && showAddTask && (
         <AddTaskForm
           children={children}
           onAddTask={onAddTask}
