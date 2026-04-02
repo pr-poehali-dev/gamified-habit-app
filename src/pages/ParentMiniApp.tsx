@@ -10,6 +10,7 @@ import { ParentTabTasks } from "@/components/parent/ParentTabTasks";
 import { ParentTabGrades, ParentTabBonuses, ParentTabProfile, ParentTabPartners } from "@/components/parent/ParentTabContent";
 import { ParentBottomNav, type ParentTab } from "@/components/parent/ParentBottomNav";
 import { ParentOnboarding } from "@/components/parent/ParentOnboarding";
+import { PremiumModal } from "@/components/parent/PremiumModal";
 
 const POLL_INTERVAL = 10_000; // 10 секунд
 
@@ -27,6 +28,11 @@ type ParentData = {
   streak_claimed_today: boolean;
   streak_longest: number;
   is_premium: boolean;
+  is_premium_paid: boolean;
+  trial_active: boolean;
+  trial_days_left: number;
+  trial_used: boolean;
+  trial_ends_at: string | null;
   streakReward: { justClaimed: boolean; todayXp: number; todayPoints: number; nextXp: number; nextPoints: number; claimed: boolean };
   children: { id: number; name: string; stars: number; avatar: string; age: number; inviteCode: string | null; connected: boolean }[];
   tasks: Task[];
@@ -63,6 +69,7 @@ export default function ParentMiniApp() {
   const [tab, setTab] = useState<ParentTab>("tasks");
   const [toast, setToast] = useState<string | null>(null);
   const [onboardingDone, setOnboardingDone] = useState(() => !!localStorage.getItem("parent_onboarding_done"));
+  const [showPremium, setShowPremium] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -209,6 +216,14 @@ export default function ParentMiniApp() {
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
+  const activateTrial = useCallback(async () => {
+    const res = await apiCall("parent/trial/activate", {});
+    if (res.ok) { showToast("🎉 Пробный период активирован на 7 дней!"); setShowPremium(false); load(true); }
+    else if (res.error === "trial_already_used") showToast("Пробный период уже был использован");
+    else if (res.error === "already_premium") showToast("У вас уже есть Premium");
+    else showToast("❌ " + String(res.error || "Ошибка"));
+  }, []);
+
   if (loading) return <Loading debug={debugInfo} />;
   if (error || !data) return <ErrorScreen msg={error || "Нет данных"} />;
 
@@ -243,11 +258,33 @@ export default function ParentMiniApp() {
         </div>
       )}
 
+      <PremiumModal
+        open={showPremium}
+        onClose={() => setShowPremium(false)}
+        isPremium={data.is_premium}
+        isPremiumPaid={data.is_premium_paid}
+        trialActive={data.trial_active}
+        trialDaysLeft={data.trial_days_left}
+        trialUsed={data.trial_used}
+        onActivateTrial={activateTrial}
+      />
+
       <div className="px-4 pt-5 pb-4">
         <div className="flex items-center justify-between mb-3">
           <div>
             <p className="text-xs text-gray-500 font-medium">Добро пожаловать</p>
-            <h1 className="text-xl font-bold text-[#1E1B4B]">{data.name}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-[#1E1B4B]">{data.name}</h1>
+              <button
+                onClick={() => setShowPremium(true)}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-black active:scale-95 transition-transform ${
+                  data.is_premium
+                    ? "bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-sm"
+                    : "bg-gray-200 text-gray-500"
+                }`}>
+                {data.trial_active ? `👑 Trial · ${data.trial_days_left}д` : data.is_premium_paid ? "👑 Premium" : "👑 Premium"}
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <StreakCard streak={streak} reward={streakReward} compact />

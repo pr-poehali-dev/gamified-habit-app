@@ -192,12 +192,24 @@ def get_child_stats(conn, child_id: int) -> dict:
 def get_parent_by_tg(conn, telegram_id):
     with conn.cursor() as cur:
         cur.execute(
-            f"SELECT id, full_name, parent_xp, parent_points, streak_current, streak_last_date, streak_claimed_today, streak_longest, is_premium FROM {SCHEMA}.parents WHERE telegram_id = %s",
+            f"SELECT id, full_name, parent_xp, parent_points, streak_current, streak_last_date, streak_claimed_today, streak_longest, is_premium, trial_started_at, trial_ends_at, trial_used FROM {SCHEMA}.parents WHERE telegram_id = %s",
             (telegram_id,)
         )
         row = cur.fetchone()
     if not row:
         return None
+    from datetime import datetime, timezone
+    is_premium_db = bool(row[8])
+    trial_ends_at = row[10]
+    trial_used = bool(row[11])
+    trial_active = False
+    trial_days_left = 0
+    if trial_ends_at and not is_premium_db:
+        now = datetime.now(timezone.utc)
+        if trial_ends_at > now:
+            trial_active = True
+            trial_days_left = max(0, (trial_ends_at - now).days)
+    is_premium = is_premium_db or trial_active
     return {
         "id": row[0], "name": row[1], "role": "parent",
         "parent_xp": row[2] or 0, "parent_points": row[3] or 0,
@@ -205,7 +217,12 @@ def get_parent_by_tg(conn, telegram_id):
         "streak_last_date": row[5].isoformat() if row[5] else None,
         "streak_claimed_today": row[6] or False,
         "streak_longest": row[7] or 0,
-        "is_premium": bool(row[8]),
+        "is_premium": is_premium,
+        "is_premium_paid": is_premium_db,
+        "trial_active": trial_active,
+        "trial_days_left": trial_days_left,
+        "trial_used": trial_used,
+        "trial_ends_at": trial_ends_at.isoformat() if trial_ends_at else None,
     }
 
 
@@ -387,10 +404,13 @@ def handle_auth_parent(conn, body):
             except Exception:
                 pass
         full_name = first_name or f"Родитель {tid}"
+        from datetime import datetime, timezone, timedelta
+        now = datetime.now(timezone.utc)
+        trial_end = now + timedelta(days=7)
         with conn.cursor() as cur:
             cur.execute(
-                f"INSERT INTO {SCHEMA}.parents (telegram_id, full_name) VALUES (%s, %s) ON CONFLICT (telegram_id) DO UPDATE SET full_name = EXCLUDED.full_name RETURNING id",
-                (tid, full_name)
+                f"INSERT INTO {SCHEMA}.parents (telegram_id, full_name, trial_started_at, trial_ends_at, trial_used) VALUES (%s, %s, %s, %s, true) ON CONFLICT (telegram_id) DO UPDATE SET full_name = EXCLUDED.full_name RETURNING id",
+                (tid, full_name, now, trial_end)
             )
             new_id = cur.fetchone()[0]
         conn.commit()
@@ -1085,6 +1105,30 @@ def handle_remove_reward(conn, body):
     return json_response({"ok": True})
 
 
+def handle_activate_trial(conn, body):
+    """Активация 7-дневного пробного периода Premium."""
+    tid = resolve_telegram_id(body, PARENT_TOKEN)
+    if not tid:
+        return error_response("Unauthorized", 401)
+    parent = get_parent_by_tg(conn, tid)
+    if not parent:
+        return error_response("Parent not found", 404)
+    if parent.get("is_premium_paid"):
+        return error_response("already_premium", 400)
+    if parent.get("trial_used"):
+        return error_response("trial_already_used", 400)
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone.utc)
+    trial_end = now + timedelta(days=7)
+    with conn.cursor() as cur:
+        cur.execute(
+            f"UPDATE {SCHEMA}.parents SET trial_started_at = %s, trial_ends_at = %s, trial_used = true WHERE id = %s",
+            (now, trial_end, parent["id"])
+        )
+    conn.commit()
+    return json_response({"ok": True, "trial_ends_at": trial_end.isoformat(), "trial_days_left": 7})
+
+
 def handle_delete_task(conn, body):
     """Родитель удаляет выполненное задание (статус approved/done) из истории."""
     tid = resolve_telegram_id(body, PARENT_TOKEN)
@@ -1419,6 +1463,8 @@ def handler(event: dict, context) -> dict:
             return handle_cancel_task(conn, body)
         if action == "parent/analytics":
             return handle_child_analytics(conn, body)
+        if action == "parent/trial/activate":
+            return handle_activate_trial(conn, body)
 
         return error_response("Not found", 404)
     finally:
