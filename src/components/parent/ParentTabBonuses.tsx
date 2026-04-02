@@ -48,6 +48,8 @@ export function ParentTabBonuses({ streak, streakReward, parent_points, parent_x
   const [selectedChildId, setSelectedChildId] = useState<number | null>(children.length === 1 ? children[0].id : null);
   const [quantity, setQuantity] = useState(1);
   const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
+  const [wishAddId, setWishAddId] = useState<number | null>(null);
+  const [wishCost, setWishCost] = useState(10);
 
   const handleAdd = () => {
     if (!title.trim() || cost < 1 || !selectedChildId || quantity < 1) return;
@@ -73,16 +75,49 @@ export function ParentTabBonuses({ streak, streakReward, parent_points, parent_x
           </div>
           <div className="space-y-2">
             {rewardWishes.map(w => (
-              <div key={w.id} className="bg-white rounded-2xl shadow-sm border border-pink-100 p-4 flex items-center gap-3">
-                <span className="text-2xl">{w.emoji}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-[#1E1B4B] text-sm">{w.title}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{w.childName} хочет эту награду</p>
+              <div key={w.id} className="bg-white rounded-2xl shadow-sm border border-pink-100 overflow-hidden">
+                <div className="p-4 flex items-center gap-3">
+                  <span className="text-2xl">{w.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-[#1E1B4B] text-sm">{w.title}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{w.childName} хочет эту награду</p>
+                  </div>
+                  <button
+                    onClick={() => onDismissWish?.(w.id)}
+                    className="text-gray-300 text-sm active:scale-90 transition-transform shrink-0"
+                  >✕</button>
                 </div>
-                <button
-                  onClick={() => onDismissWish?.(w.id)}
-                  className="text-gray-300 text-sm active:scale-90 transition-transform shrink-0"
-                >✕</button>
+                {wishAddId === w.id ? (
+                  <div className="px-4 pb-4 space-y-2">
+                    <p className="text-xs font-black text-gray-500 uppercase tracking-wide">Стоимость в звёздах</p>
+                    <div className="flex gap-2">
+                      {[5, 10, 15, 20, 25].map(s => (
+                        <button key={s} onClick={() => setWishCost(s)}
+                          className={`flex-1 py-2 rounded-xl text-sm font-black transition-all ${wishCost === s ? "bg-gradient-to-br from-amber-400 to-orange-500 text-white scale-105" : "bg-gray-50 text-gray-600"}`}>
+                          {s}⭐
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => setWishAddId(null)} className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-500 font-bold text-sm active:scale-95 transition-transform">Отмена</button>
+                      <button onClick={() => {
+                        onAddReward(w.title, wishCost, w.emoji, w.childId, 1);
+                        onDismissWish?.(w.id);
+                        setWishAddId(null);
+                        setWishCost(10);
+                      }} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-bold text-sm active:scale-95 transition-transform">
+                        Добавить за {wishCost}⭐
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="px-4 pb-4">
+                    <button onClick={() => { setWishAddId(w.id); setWishCost(10); }}
+                      className="w-full py-2 rounded-xl bg-gradient-to-r from-[#6B7BFF]/10 to-[#9B6BFF]/10 border border-[#6B7BFF]/20 text-[#6B7BFF] font-bold text-xs active:scale-95 transition-transform">
+                      🛍️ Добавить в магазин
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
