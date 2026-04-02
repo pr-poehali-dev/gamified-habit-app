@@ -111,6 +111,18 @@
   }
 }
 
+@keyframes addChildPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 14px rgba(107, 123, 255, 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(107, 123, 255, 0.5);
+  }
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;

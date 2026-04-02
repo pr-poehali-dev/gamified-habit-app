@@ -214,13 +214,23 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
             className={`text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-transform ${
               !isPremium && children.length >= 1
                 ? "bg-gray-200 text-gray-400"
-                : "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white"
+                : children.length === 0
+                  ? "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white shadow-lg animate-[addChildPulse_2s_ease-in-out_infinite]"
+                  : "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white"
             }`}
           >
-            {showForm ? "✕ Закрыть" : "+ Добавить"}
+            {showForm ? "✕ Закрыть" : children.length === 0 ? "👶 Добавить ребёнка" : "+ Добавить"}
           </button>
         </div>
       </div>
+
+      {children.length === 0 && !showForm && (
+        <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl border-2 border-dashed border-[#6B7BFF]/30 p-6 text-center">
+          <div className="text-4xl mb-3">👨‍👧</div>
+          <p className="font-bold text-[#1E1B4B] mb-1">Добавьте первого ребёнка</p>
+          <p className="text-sm text-gray-500">Чтобы начать давать задания и награждать звёздами</p>
+        </div>
+      )}
 
       {showForm && (
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
