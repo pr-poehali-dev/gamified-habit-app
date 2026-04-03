@@ -11,6 +11,7 @@ import { ParentTabGrades, ParentTabBonuses, ParentTabProfile, ParentTabPartners 
 import { ParentBottomNav, type ParentTab } from "@/components/parent/ParentBottomNav";
 import { ParentOnboarding } from "@/components/parent/ParentOnboarding";
 import { PremiumModal } from "@/components/parent/PremiumModal";
+import ymGoal from "@/lib/ym";
 
 const POLL_INTERVAL = 10_000; // 10 секунд
 
@@ -102,6 +103,10 @@ export default function ParentMiniApp() {
     });
     if (res.role === "parent") {
       const d = res as unknown as ParentData;
+      if (!silent && !localStorage.getItem("ym_parent_auth")) {
+        ymGoal("parent_auth");
+        localStorage.setItem("ym_parent_auth", "1");
+      }
       if (!silent && d.streakReward?.justClaimed) {
         setTimeout(() => {
           setToast(`🔥 День ${d.streak_current}! +${d.streakReward.todayXp} XP и +${d.streakReward.todayPoints} баллов`);
@@ -153,7 +158,7 @@ export default function ParentMiniApp() {
 
   const addTask = useCallback(async (newTask: { title: string; stars: number; emoji: string; childId: number; requirePhoto: boolean; requireConfirm: boolean; deadline: string | null }) => {
     const res = await apiCall("parent/task/add", { ...newTask, child_id: newTask.childId, require_photo: newTask.requirePhoto, require_confirm: newTask.requireConfirm, deadline: newTask.deadline });
-    if (res.ok) { showToast("📋 Задача создана!"); load(true); }
+    if (res.ok) { ymGoal("task_created"); showToast("📋 Задача создана!"); load(true); }
     else if (res.error === "premium_required") showToast("👑 Фото-задачи доступны в Premium");
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, [data]);
@@ -186,7 +191,7 @@ export default function ParentMiniApp() {
 
   const addChild = useCallback(async (name: string, age: number, avatar: string) => {
     const res = await apiCall("parent/child/add", { name, age, avatar });
-    if (res.ok) { showToast("👶 Ребёнок добавлен!"); load(true); }
+    if (res.ok) { ymGoal("child_added"); showToast("👶 Ребёнок добавлен!"); load(true); }
     else if (res.error === "premium_required") showToast("👑 Несколько детей доступно в Premium");
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
@@ -205,7 +210,7 @@ export default function ParentMiniApp() {
 
   const addReward = useCallback(async (title: string, cost: number, emoji: string, childId: number, quantity: number) => {
     const res = await apiCall("parent/reward/add", { title, cost, emoji, child_id: childId, quantity });
-    if (res.ok) { showToast("🎁 Награда добавлена!"); load(true); }
+    if (res.ok) { ymGoal("reward_created"); showToast("🎁 Награда добавлена!"); load(true); }
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
@@ -223,7 +228,7 @@ export default function ParentMiniApp() {
 
   const activateTrial = useCallback(async () => {
     const res = await apiCall("parent/trial/activate", {});
-    if (res.ok) { showToast("🎉 Пробный период активирован на 7 дней!"); setShowPremium(false); load(true); }
+    if (res.ok) { ymGoal("trial_activated"); showToast("🎉 Пробный период активирован на 7 дней!"); setShowPremium(false); load(true); }
     else if (res.error === "trial_already_used") showToast("Пробный период уже был использован");
     else if (res.error === "already_premium") showToast("У вас уже есть Premium");
     else showToast("❌ " + String(res.error || "Ошибка"));
@@ -250,7 +255,7 @@ export default function ParentMiniApp() {
     return (
       <ParentOnboarding
         name={data.name}
-        onDone={() => { localStorage.setItem("parent_onboarding_done", "1"); setOnboardingDone(true); setTab("profile"); }}
+        onDone={() => { ymGoal("parent_onboarding_done"); localStorage.setItem("parent_onboarding_done", "1"); setOnboardingDone(true); setTab("profile"); }}
       />
     );
   }
@@ -281,7 +286,7 @@ export default function ParentMiniApp() {
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-[#1E1B4B]">{data.name}</h1>
               <button
-                onClick={() => setShowPremium(true)}
+                onClick={() => { ymGoal("premium_modal_open"); setShowPremium(true); }}
                 className={`px-2 py-0.5 rounded-lg text-[10px] font-black active:scale-95 transition-transform ${
                   data.is_premium
                     ? "bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-sm"

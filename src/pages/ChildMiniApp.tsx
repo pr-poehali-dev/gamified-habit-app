@@ -10,6 +10,7 @@ import { ChildTabShop, ChildTabGrades, ChildTabAchievements, ChildTabProfile } f
 import { ChildBottomNav, type ChildTab } from "@/components/child/ChildBottomNav";
 import { ChildOnboarding } from "@/components/child/ChildOnboarding";
 import { ChildConnectScreen } from "@/components/child/ChildConnectScreen";
+import ymGoal from "@/lib/ym";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -97,6 +98,10 @@ export default function ChildMiniApp() {
       if (!silent) prevLevelRef.current = lvl;
       // Запоминаем, что ребёнок был успешно подключён
       localStorage.setItem("child_was_connected", "1");
+      if (!silent && !localStorage.getItem("ym_child_auth")) {
+        ymGoal("child_auth");
+        localStorage.setItem("ym_child_auth", "1");
+      }
       setData(d);
     } else if (res.role === "unknown") {
       if (!silent) setError("not_connected");
@@ -132,6 +137,7 @@ export default function ChildMiniApp() {
 
     const res = await apiCall("child/complete", body);
     if (res.ok) {
+      ymGoal("task_completed");
       tg()?.HapticFeedback?.notificationOccurred("success");
       if (res.pending_confirm) {
         showToast("⏳ Отправлено на проверку родителю!");
@@ -147,6 +153,7 @@ export default function ChildMiniApp() {
   const submitGrade = useCallback(async (subject: string, grade: GradeValue, date: string) => {
     const res = await apiCall("child/grade/submit", { subject, grade, date });
     if (res.ok) {
+      ymGoal("grade_submitted");
       tg()?.HapticFeedback?.notificationOccurred("success");
       showToast("📝 Запрос отправлен родителю!");
       load(false);
@@ -181,6 +188,7 @@ export default function ChildMiniApp() {
     tg()?.HapticFeedback?.impactOccurred("medium");
     const res = await apiCall("child/reward/buy", { reward_id: rewardId });
     if (res.ok) {
+      ymGoal("reward_purchased");
       tg()?.HapticFeedback?.notificationOccurred("success");
       showToast("🎁 Награда куплена! Родитель получил уведомление.");
       load(false);
@@ -238,7 +246,7 @@ export default function ChildMiniApp() {
     return (
       <ChildOnboarding
         name={data.name}
-        onDone={() => { localStorage.setItem("child_onboarding_done", "1"); setOnboardingDone(true); }}
+        onDone={() => { ymGoal("child_onboarding_done"); localStorage.setItem("child_onboarding_done", "1"); setOnboardingDone(true); }}
       />
     );
   }
