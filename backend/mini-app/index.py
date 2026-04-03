@@ -199,6 +199,7 @@ def get_parent_by_tg(conn, telegram_id):
     if not row:
         return None
     from datetime import datetime, timezone
+    from math import ceil
     is_premium_db = bool(row[8])
     trial_ends_at = row[10]
     trial_used = bool(row[11])
@@ -208,7 +209,8 @@ def get_parent_by_tg(conn, telegram_id):
         now = datetime.now(timezone.utc)
         if trial_ends_at > now:
             trial_active = True
-            trial_days_left = max(0, (trial_ends_at - now).days)
+            remaining = trial_ends_at - now
+            trial_days_left = max(1, ceil(remaining.total_seconds() / 86400))
     is_premium = is_premium_db or trial_active
     return {
         "id": row[0], "name": row[1], "role": "parent",

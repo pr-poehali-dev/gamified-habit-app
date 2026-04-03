@@ -142,8 +142,9 @@ def handle_trial_command(token, chat_id, args):
             lines = [f"🎁 <b>Активные Trial ({len(rows)})</b>\n"]
             for tid, name, ends in rows:
                 from datetime import datetime, timezone
+                from math import ceil
                 left = ends - datetime.now(timezone.utc)
-                days = max(0, left.days)
+                days = max(1, ceil(left.total_seconds() / 86400))
                 lines.append(f"• <code>{tid}</code> — {name or '—'} ({days}д)")
             tg(token, chat_id, "\n".join(lines))
         finally:
