@@ -9,11 +9,11 @@ type Props = {
   pendingGradesCount: number;
 };
 
-const NAV_ITEMS: { key: ParentTab; emoji: string; label: string; special?: boolean }[] = [
+const NAV_ITEMS: { key: ParentTab; emoji: string; label: string; special?: boolean; hidden?: boolean }[] = [
   { key: "tasks",    emoji: "📋", label: "Задачи" },
   { key: "grades",   emoji: "📝", label: "Оценки" },
   { key: "bonuses",  emoji: "🏅", label: "Бонусы" },
-  { key: "partners", emoji: "🎁", label: "Призы", special: true },
+  { key: "partners", emoji: "🎁", label: "Призы", special: true, hidden: true },
   { key: "profile",  emoji: "👤", label: "Профиль" },
 ];
 
@@ -27,7 +27,7 @@ export function ParentBottomNav({ tab, onTabChange, pendingTasksCount, pendingGr
   return (
     <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-4 px-4">
       <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl px-2 py-2 flex gap-0.5 border border-white">
-        {NAV_ITEMS.map(t => {
+        {NAV_ITEMS.filter(t => !t.hidden).map(t => {
           const badge = getBadge(t.key);
           const isActive = tab === t.key;
           const isSpecial = t.special;
