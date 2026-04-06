@@ -289,14 +289,14 @@ def check_new_wishes(conn, cur, token, parent_id, tg_id, name):
 
 
 TRIGGERS = [
-    check_no_children,
-    check_no_tasks_today,
-    check_pending_tasks,
-    check_all_tasks_done,
-    check_streak_warning,
-    check_child_inactive,
-    check_pending_grades,
-    check_new_wishes,
+    ("important", check_pending_tasks),
+    ("important", check_pending_grades),
+    ("important", check_new_wishes),
+    ("tips", check_no_children),
+    ("tips", check_no_tasks_today),
+    ("tips", check_all_tasks_done),
+    ("activity", check_streak_warning),
+    ("activity", check_child_inactive),
 ]
 
 
@@ -330,13 +330,19 @@ def handler(event: dict, context) -> dict:
     try:
         with conn.cursor() as cur:
             cur.execute(
-                f"SELECT id, telegram_id, full_name FROM {SCHEMA}.parents "
+                f"SELECT id, telegram_id, full_name, notification_settings FROM {SCHEMA}.parents "
                 f"WHERE telegram_id IS NOT NULL AND notifications_enabled = true ORDER BY id"
             )
             parents = cur.fetchall()
 
-        for parent_id, tg_id, name in parents:
-            for trigger_fn in TRIGGERS:
+        for parent_id, tg_id, name, settings_raw in parents:
+            try:
+                settings = json.loads(settings_raw) if settings_raw else {"tips": True, "activity": True}
+            except Exception:
+                settings = {"tips": True, "activity": True}
+            for category, trigger_fn in TRIGGERS:
+                if category != "important" and not settings.get(category, True):
+                    continue
                 try:
                     with conn.cursor() as cur:
                         sent = trigger_fn(conn, cur, token, parent_id, tg_id, name)

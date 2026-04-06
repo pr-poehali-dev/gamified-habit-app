@@ -129,7 +129,7 @@ def send_tg_message(token: str, chat_id: int, text: str, parse_mode="HTML"):
 def get_child_by_tg(conn, telegram_id):
     with conn.cursor() as cur:
         cur.execute(
-            f"SELECT id, name, stars, parent_id, avatar, age, total_stars_earned, notifications_enabled FROM {SCHEMA}.children WHERE telegram_id = %s",
+            f"SELECT id, name, stars, parent_id, avatar, age, total_stars_earned, notifications_enabled, notification_settings FROM {SCHEMA}.children WHERE telegram_id = %s",
             (telegram_id,)
         )
         row = cur.fetchone()
@@ -138,7 +138,8 @@ def get_child_by_tg(conn, telegram_id):
     return {"id": row[0], "name": row[1], "stars": row[2], "parent_id": row[3],
             "avatar": row[4] or "👧", "age": row[5] or 9, "role": "child",
             "total_stars_earned": row[6] or 0,
-            "notifications_enabled": bool(row[7]) if row[7] is not None else True}
+            "notifications_enabled": bool(row[7]) if row[7] is not None else True,
+            "notification_settings": json.loads(row[8]) if row[8] else {"reminders": True, "motivation": True}}
 
 
 def compute_level(stars: int):
@@ -193,7 +194,7 @@ def get_child_stats(conn, child_id: int) -> dict:
 def get_parent_by_tg(conn, telegram_id):
     with conn.cursor() as cur:
         cur.execute(
-            f"SELECT id, full_name, parent_xp, parent_points, streak_current, streak_last_date, streak_claimed_today, streak_longest, is_premium, trial_started_at, trial_ends_at, trial_used, notifications_enabled FROM {SCHEMA}.parents WHERE telegram_id = %s",
+            f"SELECT id, full_name, parent_xp, parent_points, streak_current, streak_last_date, streak_claimed_today, streak_longest, is_premium, trial_started_at, trial_ends_at, trial_used, notifications_enabled, notification_settings FROM {SCHEMA}.parents WHERE telegram_id = %s",
             (telegram_id,)
         )
         row = cur.fetchone()
@@ -227,6 +228,7 @@ def get_parent_by_tg(conn, telegram_id):
         "trial_used": trial_used,
         "trial_ends_at": trial_ends_at.isoformat() if trial_ends_at else None,
         "notifications_enabled": bool(row[12]) if row[12] is not None else True,
+        "notification_settings": json.loads(row[13]) if row[13] else {"tips": True, "activity": True},
     }
 
 
@@ -1672,14 +1674,21 @@ def handle_parent_toggle_notifications(conn, body):
     parent = get_parent_by_tg(conn, tid)
     if not parent:
         return error_response("not_found")
-    enabled = body.get("enabled", True)
+    enabled = body.get("enabled")
+    settings = body.get("settings")
     with conn.cursor() as cur:
-        cur.execute(
-            f"UPDATE {SCHEMA}.parents SET notifications_enabled = %s WHERE id = %s",
-            (bool(enabled), parent["id"]),
-        )
+        if enabled is not None:
+            cur.execute(
+                f"UPDATE {SCHEMA}.parents SET notifications_enabled = %s WHERE id = %s",
+                (bool(enabled), parent["id"]),
+            )
+        if settings:
+            cur.execute(
+                f"UPDATE {SCHEMA}.parents SET notification_settings = %s WHERE id = %s",
+                (json.dumps(settings), parent["id"]),
+            )
         conn.commit()
-    return json_response({"ok": True, "notifications_enabled": bool(enabled)})
+    return json_response({"ok": True})
 
 
 def handle_child_toggle_notifications(conn, body):
@@ -1690,14 +1699,21 @@ def handle_child_toggle_notifications(conn, body):
     child = get_child_by_tg(conn, tid)
     if not child:
         return error_response("not_found")
-    enabled = body.get("enabled", True)
+    enabled = body.get("enabled")
+    settings = body.get("settings")
     with conn.cursor() as cur:
-        cur.execute(
-            f"UPDATE {SCHEMA}.children SET notifications_enabled = %s WHERE id = %s",
-            (bool(enabled), child["id"]),
-        )
+        if enabled is not None:
+            cur.execute(
+                f"UPDATE {SCHEMA}.children SET notifications_enabled = %s WHERE id = %s",
+                (bool(enabled), child["id"]),
+            )
+        if settings:
+            cur.execute(
+                f"UPDATE {SCHEMA}.children SET notification_settings = %s WHERE id = %s",
+                (json.dumps(settings), child["id"]),
+            )
         conn.commit()
-    return json_response({"ok": True, "notifications_enabled": bool(enabled)})
+    return json_response({"ok": True})
 
 
 def handler(event: dict, context) -> dict:

@@ -31,12 +31,13 @@ type ProfileProps = {
   trialUsed?: boolean;
   onActivateTrial?: () => Promise<void>;
   notificationsEnabled?: boolean;
-  onToggleNotifications?: (enabled: boolean) => void;
+  notificationSettings?: { tips: boolean; activity: boolean };
+  onToggleNotifications?: (enabled: boolean, settings?: { tips: boolean; activity: boolean }) => void;
 };
 
 const CHILD_AVATARS = ["👦", "👧", "🧒", "👶", "🐱", "🦊", "🐼", "🦁", "🐸", "🐧", "🦋", "🌟"];
 
-export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, streak, streakReward, onAddChild, onRemoveChild, onRefreshInvite, isPremium, trialUsed, onActivateTrial, notificationsEnabled = true, onToggleNotifications }: ProfileProps) {
+export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, streak, streakReward, onAddChild, onRemoveChild, onRefreshInvite, isPremium, trialUsed, onActivateTrial, notificationsEnabled = true, notificationSettings, onToggleNotifications }: ProfileProps) {
   const { level } = getParentLevelInfo(parent_xp);
   const tier = getParentLevelTier(level);
 
@@ -370,21 +371,60 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
         );
       })}
 
-      {/* Notifications toggle */}
-      <div className="bg-white/90 rounded-3xl p-4 shadow-sm flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">🔔</span>
-          <div>
-            <p className="font-bold text-[#1E1B4B] text-sm">Уведомления</p>
-            <p className="text-xs text-gray-400">Советы и напоминания в Telegram</p>
+      {/* Notifications settings */}
+      <div className="bg-white/90 rounded-3xl p-4 shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🔔</span>
+            <div>
+              <p className="font-bold text-[#1E1B4B] text-sm">Уведомления</p>
+              <p className="text-xs text-gray-400">Настройте, что получать в Telegram</p>
+            </div>
           </div>
+          <button
+            onClick={() => onToggleNotifications?.(!notificationsEnabled)}
+            className={`w-12 h-7 rounded-full transition-all duration-300 relative ${notificationsEnabled ? "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF]" : "bg-gray-300"}`}
+          >
+            <div className={`w-5 h-5 bg-white rounded-full shadow-md absolute top-1 transition-all duration-300 ${notificationsEnabled ? "left-6" : "left-1"}`} />
+          </button>
         </div>
-        <button
-          onClick={() => onToggleNotifications?.(!notificationsEnabled)}
-          className={`w-12 h-7 rounded-full transition-all duration-300 relative ${notificationsEnabled ? "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF]" : "bg-gray-300"}`}
-        >
-          <div className={`w-5 h-5 bg-white rounded-full shadow-md absolute top-1 transition-all duration-300 ${notificationsEnabled ? "left-6" : "left-1"}`} />
-        </button>
+        {notificationsEnabled && (
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-xl">
+              <div className="flex items-center gap-2">
+                <span className="text-sm">✅</span>
+                <div>
+                  <p className="text-xs font-bold text-[#1E1B4B]">Важные</p>
+                  <p className="text-[10px] text-gray-400">Проверки, оценки, желания</p>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold text-green-500 bg-green-50 px-2 py-0.5 rounded-full">Всегда вкл</span>
+            </div>
+            {[
+              { key: "tips" as const, icon: "💡", title: "Советы", desc: "Задания за день, добавление детей" },
+              { key: "activity" as const, icon: "🔥", title: "Активность", desc: "Стрик, неактивность ребёнка" },
+            ].map(cat => (
+              <div key={cat.key} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">{cat.icon}</span>
+                  <div>
+                    <p className="text-xs font-bold text-[#1E1B4B]">{cat.title}</p>
+                    <p className="text-[10px] text-gray-400">{cat.desc}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    const next = { ...notificationSettings, [cat.key]: !notificationSettings?.[cat.key] };
+                    onToggleNotifications?.(true, next);
+                  }}
+                  className={`w-10 h-6 rounded-full transition-all duration-300 relative ${notificationSettings?.[cat.key] !== false ? "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF]" : "bg-gray-300"}`}
+                >
+                  <div className={`w-4 h-4 bg-white rounded-full shadow-md absolute top-1 transition-all duration-300 ${notificationSettings?.[cat.key] !== false ? "left-5" : "left-1"}`} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

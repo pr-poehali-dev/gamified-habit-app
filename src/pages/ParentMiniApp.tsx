@@ -41,6 +41,7 @@ type ParentData = {
   rewards: Reward[];
   rewardWishes: { id: number; childId: number; childName: string; title: string; emoji: string; createdAt: string }[];
   notifications_enabled: boolean;
+  notification_settings: { tips: boolean; activity: boolean };
 };
 
 type Task = {
@@ -366,8 +367,9 @@ export default function ParentMiniApp() {
             trialUsed={data.trial_used}
             onActivateTrial={activateTrial}
             notificationsEnabled={data.notifications_enabled}
-            onToggleNotifications={async (enabled: boolean) => {
-              await apiCall("parent/notifications/toggle", { enabled });
+            notificationSettings={data.notification_settings}
+            onToggleNotifications={async (enabled: boolean, settings?: { tips: boolean; activity: boolean }) => {
+              await apiCall("parent/notifications/toggle", { enabled, settings });
               load(true);
             }}
           />

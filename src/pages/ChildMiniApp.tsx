@@ -42,6 +42,7 @@ type ChildData = {
   rewardPurchases: RewardPurchase[];
   wishes: { id: number; title: string; emoji: string; status: string; createdAt: string }[];
   notifications_enabled: boolean;
+  notification_settings: { reminders: boolean; motivation: boolean };
 };
 
 type Task = {
@@ -359,8 +360,9 @@ export default function ChildMiniApp() {
             approvedTasksCount={approvedTasks.length}
             achievements={data.achievements}
             notificationsEnabled={data.notifications_enabled}
-            onToggleNotifications={async (enabled: boolean) => {
-              await apiCall("child/notifications/toggle", { enabled });
+            notificationSettings={data.notification_settings}
+            onToggleNotifications={async (enabled: boolean, settings?: { reminders: boolean; motivation: boolean }) => {
+              await apiCall("child/notifications/toggle", { enabled, settings });
               load(true);
             }}
           />
