@@ -342,7 +342,7 @@ export default function ChildMiniApp() {
             level={level}
             levelEmoji={levelEmoji}
             approvedTasksCount={approvedTasks.length}
-            achievementsCount={data.achievements.length}
+            achievements={data.achievements}
           />
         )}
       </div>

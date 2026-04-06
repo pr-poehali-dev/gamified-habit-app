@@ -2,6 +2,7 @@ import { useState } from "react";
 import { XpBar } from "@/components/ui/XpBar";
 import { AchievementGrid } from "@/components/ui/AchievementBadge";
 import { getLevelInfo, getLevelTier, getLevelEmoji, LEVEL_TIERS, STARS_PER_LEVEL, getSubjectsByAge, GRADE_STARS, type GradeValue, type AchievementId } from "@/lib/gameTypes";
+export type { AchievementId };
 
 type GradeReq = {
   id: number; subject: string; grade: number; date: string;
@@ -408,11 +409,12 @@ export function ChildTabShop({ stars, rewards, rewardPurchases, wishes, onBuy, o
 type ProfileProps = {
   name: string; avatar: string; age: number;
   stars: number; totalStarsEarned: number; level: number; levelEmoji: string;
-  approvedTasksCount: number; achievementsCount: number;
+  approvedTasksCount: number; achievements: AchievementId[];
 };
 
-export function ChildTabProfile({ name, avatar, age, stars, totalStarsEarned, level, levelEmoji, approvedTasksCount, achievementsCount }: ProfileProps) {
+export function ChildTabProfile({ name, avatar, age, stars, totalStarsEarned, level, levelEmoji, approvedTasksCount, achievements }: ProfileProps) {
   const earned = totalStarsEarned ?? stars;
+  const [showAchievements, setShowAchievements] = useState(false);
   return (
     <>
       <div className="bg-gradient-to-br from-[#FF6B9D] to-[#FF9B6B] rounded-3xl p-6 text-center text-white shadow-lg">
@@ -425,7 +427,6 @@ export function ChildTabProfile({ name, avatar, age, stars, totalStarsEarned, le
         </div>
       </div>
       <div className="bg-white/80 rounded-2xl px-4 py-3 shadow-sm">
-        {/* XP считается от всех заработанных звёзд, не от баланса */}
         <XpBar stars={earned} showTierHint />
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -433,7 +434,7 @@ export function ChildTabProfile({ name, avatar, age, stars, totalStarsEarned, le
           { label: "Звёзд", value: stars, emoji: "⭐" },
           { label: "Уровень", value: level, emoji: levelEmoji },
           { label: "Задач выполнено", value: approvedTasksCount, emoji: "✅" },
-          { label: "Ачивок", value: achievementsCount, emoji: "🏅" },
+          { label: "Ачивок", value: `${achievements.length}/16`, emoji: "🏅" },
         ].map(s => (
           <div key={s.label} className="bg-white/90 rounded-3xl p-4 text-center shadow-sm">
             <div className="text-3xl mb-1">{s.emoji}</div>
@@ -441,6 +442,26 @@ export function ChildTabProfile({ name, avatar, age, stars, totalStarsEarned, le
             <div className="text-xs font-bold text-gray-500">{s.label}</div>
           </div>
         ))}
+      </div>
+      <div>
+        <button
+          onClick={() => setShowAchievements(v => !v)}
+          className="w-full flex items-center justify-between bg-gradient-to-r from-[#FFF0F5] to-[#F0EEFF] rounded-2xl p-4 border border-[#FF6B9D]/20 active:scale-[0.98] transition-transform"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">🏅</span>
+            <div className="text-left">
+              <p className="font-black text-[#2D1B69] text-sm">Мои ачивки</p>
+              <p className="text-xs text-gray-500">{achievements.length} из 16 открыто</p>
+            </div>
+          </div>
+          <span className={`text-gray-400 text-lg transition-transform ${showAchievements ? "rotate-180" : ""}`}>▼</span>
+        </button>
+        {showAchievements && (
+          <div className="mt-3">
+            <AchievementGrid unlockedIds={achievements} />
+          </div>
+        )}
       </div>
     </>
   );
