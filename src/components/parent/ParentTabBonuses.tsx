@@ -1,25 +1,11 @@
 import { useState } from "react";
-import { StreakCard } from "@/components/ui/StreakCard";
-import { getParentLevelInfo, getParentLevelTier, type StreakState } from "@/lib/gameTypes";
 
 type Child = { id: number; name: string; stars: number; avatar: string; age: number; inviteCode: string | null; connected: boolean };
 type Reward = { id: number; title: string; cost: number; emoji: string; childId: number | null; quantity: number };
 
-type StreakReward = {
-  todayXp: number;
-  todayPoints: number;
-  nextXp: number;
-  nextPoints: number;
-  claimed: boolean;
-};
-
 type RewardWish = { id: number; childId: number; childName: string; title: string; emoji: string; createdAt: string };
 
 type BonusesProps = {
-  streak: StreakState;
-  streakReward?: StreakReward;
-  parent_points: number;
-  parent_xp: number;
   rewards: Reward[];
   children: Child[];
   onAddReward: (title: string, cost: number, emoji: string, childId: number, quantity: number) => void;
@@ -38,9 +24,7 @@ const REWARD_TEMPLATES = [
   { emoji: "🍦", title: "Мороженое на выбор", cost: 5 },
 ];
 
-export function ParentTabBonuses({ streak, streakReward, parent_points, parent_xp, rewards, children, onAddReward, onRemoveReward, rewardWishes, onDismissWish }: BonusesProps) {
-  const { level } = getParentLevelInfo(parent_xp);
-  const tier = getParentLevelTier(level);
+export function ParentTabBonuses({ rewards, children, onAddReward, onRemoveReward, rewardWishes, onDismissWish }: BonusesProps) {
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [cost, setCost] = useState(10);
@@ -64,8 +48,6 @@ export function ParentTabBonuses({ streak, streakReward, parent_points, parent_x
 
   return (
     <div className="space-y-4">
-      <StreakCard streak={streak} reward={streakReward} />
-
       {/* Желаемые награды от детей */}
       {rewardWishes && rewardWishes.length > 0 && (
         <div>
@@ -253,29 +235,6 @@ export function ParentTabBonuses({ streak, streakReward, parent_points, parent_x
         })}
       </div>
 
-      {/* Баллы родителя */}
-      <div className="bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] rounded-3xl p-5 text-white shadow-lg">
-        <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">Ваш баланс</p>
-        <p className="text-4xl font-black">{parent_points.toLocaleString()} <span className="text-2xl font-bold">баллов</span></p>
-        <p className="text-white/70 text-xs mt-2">+1 000 баллов за каждый новый уровень</p>
-        <div className="mt-3 flex items-center gap-2">
-          <span className="text-lg">{tier.emoji}</span>
-          <span className="text-sm font-bold">{tier.badge}</span>
-        </div>
-      </div>
-
-      {/* Промо-баннер магазина партнёров */}
-      <div className="bg-gradient-to-r from-[#FF6B35] to-[#FF3D9A] rounded-3xl p-4 text-white shadow-lg flex items-center gap-3">
-        <span className="text-4xl">🎁</span>
-        <div className="flex-1">
-          <p className="font-black text-sm">Магазин призов партнёров</p>
-          <p className="text-white/80 text-xs mt-0.5">Тратьте баллы на реальные призы!</p>
-        </div>
-        <div className="text-right">
-          <p className="text-xs font-bold text-white/70">вкладка</p>
-          <p className="text-lg font-black">Призы 🎁</p>
-        </div>
-      </div>
     </div>
   );
 }

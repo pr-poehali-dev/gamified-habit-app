@@ -1,10 +1,19 @@
 import { useState } from "react";
-import { getParentLevelInfo, getParentLevelTier } from "@/lib/gameTypes";
+import { getParentLevelInfo, getParentLevelTier, type StreakState } from "@/lib/gameTypes";
 import { ChildAnalyticsCard, type ChildAnalytics } from "./ChildAnalyticsCard";
 import { apiCall } from "@/components/miniapp/useApi";
 import { PremiumBadge } from "@/components/ui/PremiumBadge";
+import { StreakCard } from "@/components/ui/StreakCard";
 
 type Child = { id: number; name: string; stars: number; avatar: string; age: number; inviteCode: string | null; connected: boolean };
+
+type StreakReward = {
+  todayXp: number;
+  todayPoints: number;
+  nextXp: number;
+  nextPoints: number;
+  claimed: boolean;
+};
 
 type ProfileProps = {
   name: string;
@@ -13,6 +22,8 @@ type ProfileProps = {
   children: Child[];
   tasks_count: number;
   streak_current: number;
+  streak: StreakState;
+  streakReward?: StreakReward;
   onAddChild: (name: string, age: number, avatar: string) => void;
   onRemoveChild: (id: number) => void;
   onRefreshInvite: (id: number) => void;
@@ -23,7 +34,7 @@ type ProfileProps = {
 
 const CHILD_AVATARS = ["👦", "👧", "🧒", "👶", "🐱", "🦊", "🐼", "🦁", "🐸", "🐧", "🦋", "🌟"];
 
-export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, onAddChild, onRemoveChild, onRefreshInvite, isPremium, trialUsed, onActivateTrial }: ProfileProps) {
+export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, streak, streakReward, onAddChild, onRemoveChild, onRefreshInvite, isPremium, trialUsed, onActivateTrial }: ProfileProps) {
   const { level } = getParentLevelInfo(parent_xp);
   const tier = getParentLevelTier(level);
 
@@ -114,6 +125,19 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
         <p className="opacity-80 font-bold">{tier.badge}</p>
         <div className="mt-3 bg-white/20 rounded-2xl px-4 py-2 inline-block">
           <p className="text-sm font-black">{parent_points.toLocaleString()} баллов</p>
+        </div>
+      </div>
+
+      <StreakCard streak={streak} reward={streakReward} />
+
+      {/* Баланс баллов */}
+      <div className="bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] rounded-3xl p-5 text-white shadow-lg">
+        <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">Ваш баланс</p>
+        <p className="text-4xl font-black">{parent_points.toLocaleString()} <span className="text-2xl font-bold">баллов</span></p>
+        <p className="text-white/70 text-xs mt-2">+1 000 баллов за каждый новый уровень</p>
+        <div className="mt-3 flex items-center gap-2">
+          <span className="text-lg">{tier.emoji}</span>
+          <span className="text-sm font-bold">{tier.badge}</span>
         </div>
       </div>
 

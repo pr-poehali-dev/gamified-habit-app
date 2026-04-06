@@ -334,10 +334,6 @@ export default function ParentMiniApp() {
         )}
         {tab === "bonuses" && (
           <ParentTabBonuses
-            streak={streak}
-            streakReward={streakReward}
-            parent_points={data.parent_points}
-            parent_xp={data.parent_xp}
             rewards={data.rewards}
             children={data.children}
             onAddReward={addReward}
@@ -360,6 +356,8 @@ export default function ParentMiniApp() {
             children={data.children}
             tasks_count={data.tasks.length}
             streak_current={data.streak_current}
+            streak={streak}
+            streakReward={streakReward}
             onAddChild={addChild}
             onRemoveChild={removeChild}
             onRefreshInvite={refreshInvite}

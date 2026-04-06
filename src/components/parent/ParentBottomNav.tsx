@@ -12,7 +12,7 @@ type Props = {
 const NAV_ITEMS: { key: ParentTab; emoji: string; label: string; special?: boolean; hidden?: boolean }[] = [
   { key: "tasks",    emoji: "📋", label: "Задачи" },
   { key: "grades",   emoji: "📝", label: "Оценки" },
-  { key: "bonuses",  emoji: "🏅", label: "Бонусы" },
+  { key: "bonuses",  emoji: "🎁", label: "Награды" },
   { key: "partners", emoji: "🎁", label: "Призы", special: true, hidden: true },
   { key: "profile",  emoji: "👤", label: "Профиль" },
 ];
