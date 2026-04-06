@@ -30,11 +30,13 @@ type ProfileProps = {
   isPremium?: boolean;
   trialUsed?: boolean;
   onActivateTrial?: () => Promise<void>;
+  notificationsEnabled?: boolean;
+  onToggleNotifications?: (enabled: boolean) => void;
 };
 
 const CHILD_AVATARS = ["👦", "👧", "🧒", "👶", "🐱", "🦊", "🐼", "🦁", "🐸", "🐧", "🦋", "🌟"];
 
-export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, streak, streakReward, onAddChild, onRemoveChild, onRefreshInvite, isPremium, trialUsed, onActivateTrial }: ProfileProps) {
+export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, streak, streakReward, onAddChild, onRemoveChild, onRefreshInvite, isPremium, trialUsed, onActivateTrial, notificationsEnabled = true, onToggleNotifications }: ProfileProps) {
   const { level } = getParentLevelInfo(parent_xp);
   const tier = getParentLevelTier(level);
 
@@ -368,7 +370,22 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
         );
       })}
 
-      
+      {/* Notifications toggle */}
+      <div className="bg-white/90 rounded-3xl p-4 shadow-sm flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">🔔</span>
+          <div>
+            <p className="font-bold text-[#1E1B4B] text-sm">Уведомления</p>
+            <p className="text-xs text-gray-400">Советы и напоминания в Telegram</p>
+          </div>
+        </div>
+        <button
+          onClick={() => onToggleNotifications?.(!notificationsEnabled)}
+          className={`w-12 h-7 rounded-full transition-all duration-300 relative ${notificationsEnabled ? "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF]" : "bg-gray-300"}`}
+        >
+          <div className={`w-5 h-5 bg-white rounded-full shadow-md absolute top-1 transition-all duration-300 ${notificationsEnabled ? "left-6" : "left-1"}`} />
+        </button>
+      </div>
     </div>
   );
 }

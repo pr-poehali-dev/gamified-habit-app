@@ -331,7 +331,7 @@ def handler(event: dict, context) -> dict:
         with conn.cursor() as cur:
             cur.execute(
                 f"SELECT id, telegram_id, full_name FROM {SCHEMA}.parents "
-                f"WHERE telegram_id IS NOT NULL ORDER BY id"
+                f"WHERE telegram_id IS NOT NULL AND notifications_enabled = true ORDER BY id"
             )
             parents = cur.fetchall()
 

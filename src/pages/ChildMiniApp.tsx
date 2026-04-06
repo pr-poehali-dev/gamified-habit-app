@@ -41,6 +41,7 @@ type ChildData = {
   rewards: Reward[];
   rewardPurchases: RewardPurchase[];
   wishes: { id: number; title: string; emoji: string; status: string; createdAt: string }[];
+  notifications_enabled: boolean;
 };
 
 type Task = {
@@ -357,6 +358,11 @@ export default function ChildMiniApp() {
             levelEmoji={levelEmoji}
             approvedTasksCount={approvedTasks.length}
             achievements={data.achievements}
+            notificationsEnabled={data.notifications_enabled}
+            onToggleNotifications={async (enabled: boolean) => {
+              await apiCall("child/notifications/toggle", { enabled });
+              load(true);
+            }}
           />
         )}
       </div>

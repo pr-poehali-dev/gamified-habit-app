@@ -129,7 +129,7 @@ def send_tg_message(token: str, chat_id: int, text: str, parse_mode="HTML"):
 def get_child_by_tg(conn, telegram_id):
     with conn.cursor() as cur:
         cur.execute(
-            f"SELECT id, name, stars, parent_id, avatar, age, total_stars_earned FROM {SCHEMA}.children WHERE telegram_id = %s",
+            f"SELECT id, name, stars, parent_id, avatar, age, total_stars_earned, notifications_enabled FROM {SCHEMA}.children WHERE telegram_id = %s",
             (telegram_id,)
         )
         row = cur.fetchone()
@@ -137,7 +137,8 @@ def get_child_by_tg(conn, telegram_id):
         return None
     return {"id": row[0], "name": row[1], "stars": row[2], "parent_id": row[3],
             "avatar": row[4] or "👧", "age": row[5] or 9, "role": "child",
-            "total_stars_earned": row[6] or 0}
+            "total_stars_earned": row[6] or 0,
+            "notifications_enabled": bool(row[7]) if row[7] is not None else True}
 
 
 def compute_level(stars: int):
@@ -192,7 +193,7 @@ def get_child_stats(conn, child_id: int) -> dict:
 def get_parent_by_tg(conn, telegram_id):
     with conn.cursor() as cur:
         cur.execute(
-            f"SELECT id, full_name, parent_xp, parent_points, streak_current, streak_last_date, streak_claimed_today, streak_longest, is_premium, trial_started_at, trial_ends_at, trial_used FROM {SCHEMA}.parents WHERE telegram_id = %s",
+            f"SELECT id, full_name, parent_xp, parent_points, streak_current, streak_last_date, streak_claimed_today, streak_longest, is_premium, trial_started_at, trial_ends_at, trial_used, notifications_enabled FROM {SCHEMA}.parents WHERE telegram_id = %s",
             (telegram_id,)
         )
         row = cur.fetchone()
@@ -225,6 +226,7 @@ def get_parent_by_tg(conn, telegram_id):
         "trial_days_left": trial_days_left,
         "trial_used": trial_used,
         "trial_ends_at": trial_ends_at.isoformat() if trial_ends_at else None,
+        "notifications_enabled": bool(row[12]) if row[12] is not None else True,
     }
 
 
@@ -1662,6 +1664,42 @@ def handle_friend_remove(conn, body):
     return json_response({"ok": True})
 
 
+def handle_parent_toggle_notifications(conn, body):
+    """Переключить уведомления для родителя."""
+    tid = resolve_telegram_id(body, PARENT_TOKEN)
+    if not tid:
+        return error_response("no_tg_id")
+    parent = get_parent_by_tg(conn, tid)
+    if not parent:
+        return error_response("not_found")
+    enabled = body.get("enabled", True)
+    with conn.cursor() as cur:
+        cur.execute(
+            f"UPDATE {SCHEMA}.parents SET notifications_enabled = %s WHERE id = %s",
+            (bool(enabled), parent["id"]),
+        )
+        conn.commit()
+    return json_response({"ok": True, "notifications_enabled": bool(enabled)})
+
+
+def handle_child_toggle_notifications(conn, body):
+    """Переключить уведомления для ребёнка."""
+    tid = resolve_telegram_id(body, CHILD_TOKEN)
+    if not tid:
+        return error_response("no_tg_id")
+    child = get_child_by_tg(conn, tid)
+    if not child:
+        return error_response("not_found")
+    enabled = body.get("enabled", True)
+    with conn.cursor() as cur:
+        cur.execute(
+            f"UPDATE {SCHEMA}.children SET notifications_enabled = %s WHERE id = %s",
+            (bool(enabled), child["id"]),
+        )
+        conn.commit()
+    return json_response({"ok": True, "notifications_enabled": bool(enabled)})
+
+
 def handler(event: dict, context) -> dict:
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": cors_headers(), "body": ""}
@@ -1711,6 +1749,8 @@ def handler(event: dict, context) -> dict:
             return handle_friend_reject(conn, body)
         if action == "child/friends/remove":
             return handle_friend_remove(conn, body)
+        if action == "child/notifications/toggle":
+            return handle_child_toggle_notifications(conn, body)
 
         # ── Parent routes ──
         if action == "parent/auth":
@@ -1745,6 +1785,8 @@ def handler(event: dict, context) -> dict:
             return handle_activate_trial(conn, body)
         if action == "parent/wish/dismiss":
             return handle_parent_wish_dismiss(conn, body)
+        if action == "parent/notifications/toggle":
+            return handle_parent_toggle_notifications(conn, body)
 
         return error_response("Not found", 404)
     finally:

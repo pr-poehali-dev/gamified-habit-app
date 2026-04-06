@@ -40,6 +40,7 @@ type ParentData = {
   gradeRequests: GradeRequest[];
   rewards: Reward[];
   rewardWishes: { id: number; childId: number; childName: string; title: string; emoji: string; createdAt: string }[];
+  notifications_enabled: boolean;
 };
 
 type Task = {
@@ -364,6 +365,11 @@ export default function ParentMiniApp() {
             isPremium={data.is_premium}
             trialUsed={data.trial_used}
             onActivateTrial={activateTrial}
+            notificationsEnabled={data.notifications_enabled}
+            onToggleNotifications={async (enabled: boolean) => {
+              await apiCall("parent/notifications/toggle", { enabled });
+              load(true);
+            }}
           />
         )}
       </div>

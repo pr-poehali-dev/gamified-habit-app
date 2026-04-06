@@ -410,9 +410,11 @@ type ProfileProps = {
   name: string; avatar: string; age: number;
   stars: number; totalStarsEarned: number; level: number; levelEmoji: string;
   approvedTasksCount: number; achievements: AchievementId[];
+  notificationsEnabled?: boolean;
+  onToggleNotifications?: (enabled: boolean) => void;
 };
 
-export function ChildTabProfile({ name, avatar, age, stars, totalStarsEarned, level, levelEmoji, approvedTasksCount, achievements }: ProfileProps) {
+export function ChildTabProfile({ name, avatar, age, stars, totalStarsEarned, level, levelEmoji, approvedTasksCount, achievements, notificationsEnabled = true, onToggleNotifications }: ProfileProps) {
   const earned = totalStarsEarned ?? stars;
   const [showAchievements, setShowAchievements] = useState(false);
   return (
@@ -462,6 +464,22 @@ export function ChildTabProfile({ name, avatar, age, stars, totalStarsEarned, le
             <AchievementGrid unlockedIds={achievements} />
           </div>
         )}
+      </div>
+      {/* Notifications toggle */}
+      <div className="bg-white/90 rounded-3xl p-4 shadow-sm flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">🔔</span>
+          <div>
+            <p className="font-bold text-[#2D1B69] text-sm">Уведомления</p>
+            <p className="text-xs text-gray-400">Напоминания в Telegram</p>
+          </div>
+        </div>
+        <button
+          onClick={() => onToggleNotifications?.(!notificationsEnabled)}
+          className={`w-12 h-7 rounded-full transition-all duration-300 relative ${notificationsEnabled ? "bg-gradient-to-r from-[#FF6B9D] to-[#FF9B6B]" : "bg-gray-300"}`}
+        >
+          <div className={`w-5 h-5 bg-white rounded-full shadow-md absolute top-1 transition-all duration-300 ${notificationsEnabled ? "left-6" : "left-1"}`} />
+        </button>
       </div>
     </>
   );
