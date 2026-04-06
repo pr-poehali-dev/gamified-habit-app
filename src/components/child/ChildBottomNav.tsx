@@ -8,6 +8,7 @@ type Props = {
   pendingTasksCount: number;
   doneTasksCount: number;
   pendingGradesCount: number;
+  friendRequestsCount: number;
   level: number;
 };
 
@@ -19,10 +20,11 @@ const NAV_ITEMS: { key: ChildTab; emoji: string; label: string }[] = [
   { key: "profile",      emoji: "👤", label: "Профиль" },
 ];
 
-export function ChildBottomNav({ tab, onTabChange, pendingTasksCount, doneTasksCount, pendingGradesCount, level }: Props) {
+export function ChildBottomNav({ tab, onTabChange, pendingTasksCount, doneTasksCount, pendingGradesCount, friendRequestsCount, level }: Props) {
   const getBadge = (key: ChildTab) => {
     if (key === "tasks") return pendingTasksCount + doneTasksCount;
     if (key === "grades") return pendingGradesCount;
+    if (key === "friends") return friendRequestsCount;
     return 0;
   };
   const isLocked = (key: ChildTab) => key === "grades" && level < 2;

@@ -67,6 +67,7 @@ export default function ChildMiniApp() {
   const [toast, setToast] = useState<string | null>(null);
   const [onboardingDone, setOnboardingDone] = useState(() => !!localStorage.getItem("child_onboarding_done"));
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
+  const [friendRequests, setFriendRequests] = useState(0);
   const prevLevelRef = useRef<number>(1);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -104,6 +105,9 @@ export default function ChildMiniApp() {
         localStorage.setItem("ym_child_auth", "1");
       }
       setData(d);
+      apiCall("child/friends/list", {}).then(fr => {
+        if (fr.ok) setFriendRequests(((fr.incoming as unknown[]) || []).length);
+      });
     } else if (res.role === "unknown") {
       if (!silent) setError("not_connected");
     } else {
@@ -349,6 +353,7 @@ export default function ChildMiniApp() {
         pendingTasksCount={pendingTasks.length}
         doneTasksCount={doneTasks.length}
         pendingGradesCount={pendingGrades.length}
+        friendRequestsCount={friendRequests}
         level={level}
       />
     </div>
