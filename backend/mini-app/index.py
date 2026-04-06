@@ -1495,6 +1495,173 @@ def handle_child_analytics(conn, body):
     return json_response({"ok": True, "analytics": result})
 
 
+import secrets as _secrets
+
+
+def ensure_friend_code(conn, child_id):
+    """Генерирует friend_code если его нет."""
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT friend_code FROM {SCHEMA}.children WHERE id = %s", (child_id,))
+        code = cur.fetchone()[0]
+        if code:
+            return code
+        code = _secrets.token_hex(4).upper()
+        cur.execute(f"UPDATE {SCHEMA}.children SET friend_code = %s WHERE id = %s", (code, child_id))
+        conn.commit()
+        return code
+
+
+def handle_friends_list(conn, body):
+    """Список друзей + входящие заявки."""
+    tid = resolve_telegram_id(body, CHILD_TOKEN)
+    if not tid:
+        return error_response("no_tg_id")
+    child = get_child_by_tg(conn, tid)
+    if not child:
+        return error_response("not_found")
+    cid = child["id"]
+    friend_code = ensure_friend_code(conn, cid)
+    with conn.cursor() as cur:
+        cur.execute(f"""
+            SELECT c.id, c.name, c.avatar, c.stars, c.total_stars_earned, c.age,
+                   (SELECT COUNT(*) FROM {SCHEMA}.tasks WHERE child_id = c.id AND status = 'approved') as tasks_done
+            FROM {SCHEMA}.friendships f
+            JOIN {SCHEMA}.children c ON c.id = CASE WHEN f.requester_id = %s THEN f.addressee_id ELSE f.requester_id END
+            WHERE (f.requester_id = %s OR f.addressee_id = %s) AND f.status = 'accepted'
+            ORDER BY c.total_stars_earned DESC
+        """, (cid, cid, cid))
+        friends = []
+        for r in cur.fetchall():
+            lvl, _ = compute_level(r[4])
+            friends.append({"id": r[0], "name": r[1], "avatar": r[2], "stars": r[3], "totalStarsEarned": r[4], "age": r[5], "tasksDone": r[6], "level": lvl})
+        cur.execute(f"""
+            SELECT f.id, c.id as child_id, c.name, c.avatar, c.age
+            FROM {SCHEMA}.friendships f
+            JOIN {SCHEMA}.children c ON c.id = f.requester_id
+            WHERE f.addressee_id = %s AND f.status = 'pending'
+            ORDER BY f.created_at DESC
+        """, (cid,))
+        incoming = [{"requestId": r[0], "childId": r[1], "name": r[2], "avatar": r[3], "age": r[4]} for r in cur.fetchall()]
+        cur.execute(f"""
+            SELECT f.id, c.id as child_id, c.name, c.avatar
+            FROM {SCHEMA}.friendships f
+            JOIN {SCHEMA}.children c ON c.id = f.addressee_id
+            WHERE f.requester_id = %s AND f.status = 'pending'
+        """, (cid,))
+        outgoing = [{"requestId": r[0], "childId": r[1], "name": r[2], "avatar": r[3]} for r in cur.fetchall()]
+    my_tasks_done = 0
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT COUNT(*) FROM {SCHEMA}.tasks WHERE child_id = %s AND status = 'approved'", (cid,))
+        my_tasks_done = cur.fetchone()[0]
+    my_level, _ = compute_level(child["total_stars_earned"])
+    return json_response({
+        "ok": True,
+        "friendCode": friend_code,
+        "me": {"id": cid, "name": child["name"], "avatar": child["avatar"], "stars": child["stars"], "totalStarsEarned": child["total_stars_earned"], "level": my_level, "tasksDone": my_tasks_done},
+        "friends": friends,
+        "incoming": incoming,
+        "outgoing": outgoing,
+    })
+
+
+def handle_friend_add(conn, body):
+    """Отправить запрос дружбы по friend_code."""
+    tid = resolve_telegram_id(body, CHILD_TOKEN)
+    if not tid:
+        return error_response("no_tg_id")
+    child = get_child_by_tg(conn, tid)
+    if not child:
+        return error_response("not_found")
+    code = (body.get("friend_code") or "").strip().upper()
+    if not code:
+        return error_response("no_code")
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT id FROM {SCHEMA}.children WHERE friend_code = %s", (code,))
+        row = cur.fetchone()
+        if not row:
+            return error_response("invalid_code")
+        target_id = row[0]
+        if target_id == child["id"]:
+            return error_response("self_add")
+        a, b = min(child["id"], target_id), max(child["id"], target_id)
+        cur.execute(f"SELECT id, status FROM {SCHEMA}.friendships WHERE (requester_id = %s AND addressee_id = %s) OR (requester_id = %s AND addressee_id = %s)", (child["id"], target_id, target_id, child["id"]))
+        existing = cur.fetchone()
+        if existing:
+            if existing[1] == "accepted":
+                return error_response("already_friends")
+            if existing[1] == "pending":
+                return error_response("already_sent")
+            if existing[1] == "rejected":
+                cur.execute(f"UPDATE {SCHEMA}.friendships SET status = 'pending', requester_id = %s, addressee_id = %s, updated_at = now() WHERE id = %s", (child["id"], target_id, existing[0]))
+                conn.commit()
+                return json_response({"ok": True})
+        cur.execute(f"INSERT INTO {SCHEMA}.friendships (requester_id, addressee_id, status) VALUES (%s, %s, 'pending')", (child["id"], target_id))
+        conn.commit()
+    return json_response({"ok": True})
+
+
+def handle_friend_accept(conn, body):
+    """Принять заявку."""
+    tid = resolve_telegram_id(body, CHILD_TOKEN)
+    if not tid:
+        return error_response("no_tg_id")
+    child = get_child_by_tg(conn, tid)
+    if not child:
+        return error_response("not_found")
+    request_id = body.get("request_id")
+    if not request_id:
+        return error_response("no_request_id")
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT id, addressee_id, status FROM {SCHEMA}.friendships WHERE id = %s", (request_id,))
+        row = cur.fetchone()
+        if not row or row[1] != child["id"] or row[2] != "pending":
+            return error_response("invalid_request")
+        cur.execute(f"UPDATE {SCHEMA}.friendships SET status = 'accepted', updated_at = now() WHERE id = %s", (request_id,))
+        conn.commit()
+    return json_response({"ok": True})
+
+
+def handle_friend_reject(conn, body):
+    """Отклонить заявку."""
+    tid = resolve_telegram_id(body, CHILD_TOKEN)
+    if not tid:
+        return error_response("no_tg_id")
+    child = get_child_by_tg(conn, tid)
+    if not child:
+        return error_response("not_found")
+    request_id = body.get("request_id")
+    if not request_id:
+        return error_response("no_request_id")
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT id, addressee_id, status FROM {SCHEMA}.friendships WHERE id = %s", (request_id,))
+        row = cur.fetchone()
+        if not row or row[1] != child["id"] or row[2] != "pending":
+            return error_response("invalid_request")
+        cur.execute(f"UPDATE {SCHEMA}.friendships SET status = 'rejected', updated_at = now() WHERE id = %s", (request_id,))
+        conn.commit()
+    return json_response({"ok": True})
+
+
+def handle_friend_remove(conn, body):
+    """Удалить друга (ставим rejected)."""
+    tid = resolve_telegram_id(body, CHILD_TOKEN)
+    if not tid:
+        return error_response("no_tg_id")
+    child = get_child_by_tg(conn, tid)
+    if not child:
+        return error_response("not_found")
+    friend_id = body.get("friend_id")
+    if not friend_id:
+        return error_response("no_friend_id")
+    with conn.cursor() as cur:
+        cur.execute(f"""
+            UPDATE {SCHEMA}.friendships SET status = 'rejected', updated_at = now()
+            WHERE ((requester_id = %s AND addressee_id = %s) OR (requester_id = %s AND addressee_id = %s)) AND status = 'accepted'
+        """, (child["id"], friend_id, friend_id, child["id"]))
+        conn.commit()
+    return json_response({"ok": True})
+
+
 def handler(event: dict, context) -> dict:
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": cors_headers(), "body": ""}
@@ -1534,6 +1701,16 @@ def handler(event: dict, context) -> dict:
             return handle_child_wish_add(conn, body)
         if action == "child/wish/delete":
             return handle_child_wish_delete(conn, body)
+        if action == "child/friends/list":
+            return handle_friends_list(conn, body)
+        if action == "child/friends/add":
+            return handle_friend_add(conn, body)
+        if action == "child/friends/accept":
+            return handle_friend_accept(conn, body)
+        if action == "child/friends/reject":
+            return handle_friend_reject(conn, body)
+        if action == "child/friends/remove":
+            return handle_friend_remove(conn, body)
 
         # ── Parent routes ──
         if action == "parent/auth":

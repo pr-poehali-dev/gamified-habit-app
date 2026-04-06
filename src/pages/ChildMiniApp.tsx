@@ -6,10 +6,11 @@ import { XpBar, LevelUpModal } from "@/components/ui/XpBar";
 import { TipCard } from "@/components/ui/TipCard";
 import { Loading, ErrorScreen } from "@/components/child/ChildScreens";
 import { ChildTabTasks } from "@/components/child/ChildTabTasks";
-import { ChildTabShop, ChildTabGrades, ChildTabAchievements, ChildTabProfile } from "@/components/child/ChildTabContent";
+import { ChildTabShop, ChildTabGrades, ChildTabProfile } from "@/components/child/ChildTabContent";
 import { ChildBottomNav, type ChildTab } from "@/components/child/ChildBottomNav";
 import { ChildOnboarding } from "@/components/child/ChildOnboarding";
 import { ChildConnectScreen } from "@/components/child/ChildConnectScreen";
+import { ChildTabFriends } from "@/components/child/ChildTabFriends";
 import ymGoal from "@/lib/ym";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -324,8 +325,8 @@ export default function ChildMiniApp() {
             onSubmitGrade={submitGrade}
           />
         )}
-        {tab === "achievements" && (
-          <ChildTabAchievements achievements={data.achievements} />
+        {tab === "friends" && (
+          <ChildTabFriends />
         )}
         {tab === "profile" && (
           <ChildTabProfile

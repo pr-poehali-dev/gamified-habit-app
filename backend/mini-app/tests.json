@@ -32,6 +32,23 @@
       "expectedStatus": 400,
       "expectedBody": {"error": "Имя обязательно"},
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Friends list unknown child",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "child/friends/list", "telegram_id": 999999999},
+      "expectedStatus": 400,
+      "expectedBody": {"error": "not_found"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Friend add no code",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "child/friends/add", "telegram_id": 999999999},
+      "expectedStatus": 400,
+      "bodyMatcher": "partial"
     }
   ]
 }
