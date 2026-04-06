@@ -104,4 +104,52 @@ export function AchievementGrid({ unlockedIds }: Props) {
   );
 }
 
+type UnlockProps = { achievementId: AchievementId; onClose: () => void };
+
+export function AchievementUnlockModal({ achievementId, onClose }: UnlockProps) {
+  const ach = ACHIEVEMENTS[achievementId];
+  if (!ach) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="relative mx-6 w-full max-w-xs"
+        onClick={e => e.stopPropagation()}
+        style={{ animation: "achBounce 0.6s ease" }}
+      >
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+          <span className="bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-black px-4 py-1.5 rounded-full shadow-lg" style={{ animation: "achShine 2s infinite" }}>
+            НОВАЯ АЧИВКА!
+          </span>
+        </div>
+        <div className="bg-white rounded-3xl overflow-hidden shadow-2xl pt-4">
+          <div className="relative h-44 mx-4 rounded-2xl overflow-hidden">
+            <img src={ach.img} alt={ach.title} className="w-full h-full object-cover" style={{ animation: "achZoom 0.8s ease" }} />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+            <div className="absolute bottom-3 left-3 right-3">
+              <p className="text-3xl font-black text-white drop-shadow-lg" style={{ animation: "achSlide 0.6s ease 0.3s both" }}>
+                {ach.emoji} {ach.title}
+              </p>
+            </div>
+          </div>
+          <div className="p-5 text-center">
+            <p className="text-sm text-gray-600 leading-relaxed mb-4">{ach.detail}</p>
+            <button
+              onClick={onClose}
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#FF6B9D] to-[#FF9B6B] text-white font-black text-sm active:scale-95 transition-transform shadow-lg"
+            >
+              Круто! 🎉
+            </button>
+          </div>
+        </div>
+      </div>
+      <style>{`
+        @keyframes achBounce { 0%{transform:scale(0.3) translateY(40px);opacity:0} 60%{transform:scale(1.08) translateY(-5px);opacity:1} 100%{transform:scale(1) translateY(0)} }
+        @keyframes achZoom { 0%{transform:scale(1.3)} 100%{transform:scale(1)} }
+        @keyframes achSlide { 0%{transform:translateY(20px);opacity:0} 100%{transform:translateY(0);opacity:1} }
+        @keyframes achShine { 0%,100%{opacity:1} 50%{opacity:0.7} }
+      `}</style>
+    </div>
+  );
+}
+
 export default AchievementGrid;

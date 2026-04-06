@@ -11,6 +11,7 @@ import { ChildBottomNav, type ChildTab } from "@/components/child/ChildBottomNav
 import { ChildOnboarding } from "@/components/child/ChildOnboarding";
 import { ChildConnectScreen } from "@/components/child/ChildConnectScreen";
 import { ChildTabFriends } from "@/components/child/ChildTabFriends";
+import { AchievementUnlockModal } from "@/components/ui/AchievementBadge";
 import ymGoal from "@/lib/ym";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -68,7 +69,9 @@ export default function ChildMiniApp() {
   const [onboardingDone, setOnboardingDone] = useState(() => !!localStorage.getItem("child_onboarding_done"));
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
   const [friendRequests, setFriendRequests] = useState(0);
+  const [newAchievement, setNewAchievement] = useState<AchievementId | null>(null);
   const prevLevelRef = useRef<number>(1);
+  const prevAchievementsRef = useRef<AchievementId[]>([]);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -221,14 +224,24 @@ export default function ChildMiniApp() {
 
   useEffect(() => {
     if (!data) return;
-    // Уровень считается от total_stars_earned, а не от текущего баланса
     const newLevel = getLevelInfo(data.total_stars_earned ?? data.stars).level;
     if (newLevel > prevLevelRef.current) {
       setLevelUpLevel(newLevel);
       tg()?.HapticFeedback?.notificationOccurred("success");
     }
     prevLevelRef.current = newLevel;
-  }, [data?.total_stars_earned]);
+    const prev = prevAchievementsRef.current;
+    if (prev.length > 0 && data.achievements.length > prev.length) {
+      const fresh = data.achievements.find(a => !prev.includes(a));
+      if (fresh) {
+        setTimeout(() => {
+          setNewAchievement(fresh);
+          tg()?.HapticFeedback?.notificationOccurred("success");
+        }, levelUpLevel ? 2500 : 500);
+      }
+    }
+    prevAchievementsRef.current = [...data.achievements];
+  }, [data?.total_stars_earned, data?.achievements]);
 
   if (loading) return <Loading />;
   if (error === "not_connected") {
@@ -273,6 +286,7 @@ export default function ChildMiniApp() {
       )}
 
       {levelUpLevel !== null && <LevelUpModal level={levelUpLevel} onClose={() => setLevelUpLevel(null)} />}
+      {newAchievement && <AchievementUnlockModal achievementId={newAchievement} onClose={() => setNewAchievement(null)} />}
 
       <div className="px-4 pt-5 pb-4">
         <div className="flex items-center justify-between mb-3">
