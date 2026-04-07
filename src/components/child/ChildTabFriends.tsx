@@ -108,16 +108,27 @@ export function ChildTabFriends() {
     }
   };
 
+  const BOT_LINK = "https://t.me/task4kids_bot";
+
   const copyCode = async () => {
     if (!data) return;
-    const text = `Добавь меня в друзья в СтарКидс! Мой код: ${data.friendCode}`;
+    await navigator.clipboard.writeText(data.friendCode);
+    tg()?.HapticFeedback?.notificationOccurred("success");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const shareCode = async () => {
+    if (!data) return;
+    const text = `Добавь меня в друзья в СтарКидс! 🌟\n\nМой код: ${data.friendCode}\n\n👉 Открой бота: ${BOT_LINK}\n→ Нажми «Открыть СтарКидс»\n→ Перейди в «Друзья»\n→ Введи мой код`;
     if (navigator.share) {
       try { await navigator.share({ text }); } catch (_) { /* user cancelled */ }
     } else {
-      await navigator.clipboard.writeText(data.friendCode);
+      await navigator.clipboard.writeText(text);
+      tg()?.HapticFeedback?.notificationOccurred("success");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   if (loading) {
@@ -222,21 +233,35 @@ export function ChildTabFriends() {
       )}
 
       {/* My code */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-        <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-2">Твой код для друзей</p>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 bg-gradient-to-r from-[#F0EEFF] to-[#FFF0F5] rounded-xl px-4 py-3 text-center">
-            <span className="text-xl font-black text-[#2D1B69] tracking-widest">{data.friendCode}</span>
-          </div>
-          <button onClick={copyCode} className="px-4 py-3 rounded-xl bg-gradient-to-r from-[#FF6B9D] to-[#FF9B6B] text-white font-bold text-sm active:scale-95 transition-transform shrink-0">
-            {copied ? "✓" : "📤"}
-          </button>
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
+        <p className="text-xs font-black text-gray-400 uppercase tracking-wide">Твой код для друзей</p>
+        <button
+          onClick={copyCode}
+          className="w-full bg-gradient-to-r from-[#F0EEFF] to-[#FFF0F5] rounded-xl px-4 py-4 text-center active:scale-[0.98] transition-transform relative"
+        >
+          <span className="text-2xl font-black text-[#2D1B69] tracking-[0.3em]">{data.friendCode}</span>
+          <span className={`absolute top-2 right-3 text-xs font-bold transition-all ${copied ? "text-green-500" : "text-gray-400"}`}>
+            {copied ? "✓ Скопировано" : "Нажми, чтобы скопировать"}
+          </span>
+        </button>
+        <div className="bg-[#F8F7FF] rounded-xl p-3 space-y-1.5">
+          <p className="text-xs font-bold text-[#2D1B69]">📋 Как добавить друга:</p>
+          <p className="text-[11px] text-gray-500">1. Отправь свой код другу</p>
+          <p className="text-[11px] text-gray-500">2. Друг открывает <b>@task4kids_bot</b> в Telegram</p>
+          <p className="text-[11px] text-gray-500">3. Нажимает «Открыть СтарКидс» → «Друзья»</p>
+          <p className="text-[11px] text-gray-500">4. Вводит твой код — и вы друзья!</p>
         </div>
+        <button
+          onClick={shareCode}
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-[#FF6B9D] to-[#FF9B6B] text-white font-bold text-sm active:scale-95 transition-transform flex items-center justify-center gap-2"
+        >
+          <span>📤</span> Отправить код другу
+        </button>
       </div>
 
       {/* Add friend */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-        <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-2">Добавить друга по коду</p>
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
+        <p className="text-xs font-black text-gray-400 uppercase tracking-wide">У тебя есть код от друга?</p>
         <div className="flex gap-2">
           <input
             type="text"
@@ -254,6 +279,7 @@ export function ChildTabFriends() {
             {sending ? "⏳" : "➕"}
           </button>
         </div>
+        <p className="text-[11px] text-gray-400 text-center">Введи код, который тебе прислал друг, и нажми ➕</p>
       </div>
 
       {/* Outgoing requests */}
