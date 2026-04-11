@@ -34,10 +34,11 @@ type Props = {
   isPremium?: boolean;
   trialUsed?: boolean;
   onActivateTrial?: () => Promise<void>;
+  onSubscribe?: () => void;
   onGoToProfile?: () => void;
 };
 
-export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, onRejectTask, onAddTask, onGrantExtension, onDenyExtension, onDeleteTask, onCancelTask, isPremium, trialUsed, onActivateTrial, onGoToProfile }: Props) {
+export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, onRejectTask, onAddTask, onGrantExtension, onDenyExtension, onDeleteTask, onCancelTask, isPremium, trialUsed, onActivateTrial, onSubscribe, onGoToProfile }: Props) {
   const noChildren = children.length === 0;
   const hasActiveTasks = tasks.some(t => t.status === "pending" || t.status === "pending_confirm");
   const [showAddTask, setShowAddTask] = useState(!hasActiveTasks && !noChildren);
@@ -74,6 +75,7 @@ export function ParentTabTasks({ tasks, children, pendingTasks, onConfirmTask, o
           isPremium={isPremium}
           trialUsed={trialUsed}
           onActivateTrial={onActivateTrial}
+          onSubscribe={onSubscribe}
         />
       )}
 

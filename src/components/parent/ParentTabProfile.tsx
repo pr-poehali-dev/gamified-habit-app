@@ -30,6 +30,7 @@ type ProfileProps = {
   isPremium?: boolean;
   trialUsed?: boolean;
   onActivateTrial?: () => Promise<void>;
+  onSubscribe?: () => void;
   notificationsEnabled?: boolean;
   notificationSettings?: { tips: boolean; activity: boolean };
   onToggleNotifications?: (enabled: boolean, settings?: { tips: boolean; activity: boolean }) => void;
@@ -37,7 +38,7 @@ type ProfileProps = {
 
 const CHILD_AVATARS = ["👦", "👧", "🧒", "👶", "🐱", "🦊", "🐼", "🦁", "🐸", "🐧", "🦋", "🌟"];
 
-export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, streak, streakReward, onAddChild, onRemoveChild, onRefreshInvite, isPremium, trialUsed, onActivateTrial, notificationsEnabled = true, notificationSettings, onToggleNotifications }: ProfileProps) {
+export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, streak, streakReward, onAddChild, onRemoveChild, onRefreshInvite, isPremium, trialUsed, onActivateTrial, onSubscribe, notificationsEnabled = true, notificationSettings, onToggleNotifications }: ProfileProps) {
   const { level } = getParentLevelInfo(parent_xp);
   const tier = getParentLevelTier(level);
 
@@ -166,7 +167,7 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-bold text-[#1E1B4B]">📊 Аналитика</h2>
-              {!isPremium && <PremiumBadge compact trialUsed={trialUsed} onActivateTrial={onActivateTrial} />}
+              {!isPremium && <PremiumBadge compact trialUsed={trialUsed} onActivateTrial={onActivateTrial} onSubscribe={onSubscribe} />}
             </div>
             <div className="flex items-center gap-2">
               {isPremium && showAnalytics && analyticsData && (

@@ -15,6 +15,7 @@ type Props = {
   isPremium?: boolean;
   trialUsed?: boolean;
   onActivateTrial?: () => Promise<void>;
+  onSubscribe?: () => void;
 };
 
 const TASK_EMOJIS = ["📋", "🧹", "📚", "🦷", "🗑️", "📖", "🌸", "🐕", "🍽️", "🛁", "🧺", "🏃", "🎨", "🎵"];
@@ -62,7 +63,7 @@ function getDeadlineDate(option: typeof DEADLINE_OPTIONS[number]): string | null
   return new Date(now.getTime() + hours * 60 * 60 * 1000).toISOString();
 }
 
-export function AddTaskForm({ children, onAddTask, onClose, isPremium, trialUsed, onActivateTrial }: Props) {
+export function AddTaskForm({ children, onAddTask, onClose, isPremium, trialUsed, onActivateTrial, onSubscribe }: Props) {
   const connectedChildren = children.filter(c => c.connected);
   const [selectedDeadlineIdx, setSelectedDeadlineIdx] = useState(0);
   const [newTask, setNewTask] = useState<NewTask>({
@@ -202,7 +203,7 @@ export function AddTaskForm({ children, onAddTask, onClose, isPremium, trialUsed
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <p className={`text-sm font-black ${!isPremium ? "text-gray-400" : newTask.requirePhoto ? "text-purple-700" : "text-gray-600"}`}>Требовать фото</p>
-                {!isPremium && <PremiumBadge compact trialUsed={trialUsed} onActivateTrial={onActivateTrial} />}
+                {!isPremium && <PremiumBadge compact trialUsed={trialUsed} onActivateTrial={onActivateTrial} onSubscribe={onSubscribe} />}
               </div>
               <p className="text-xs text-gray-400">Ребёнок прикладывает фотоотчёт</p>
             </div>

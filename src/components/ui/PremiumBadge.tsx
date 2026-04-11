@@ -5,9 +5,10 @@ type Props = {
   compact?: boolean;
   trialUsed?: boolean;
   onActivateTrial?: () => Promise<void>;
+  onSubscribe?: () => void;
 };
 
-export function PremiumBadge({ compact, trialUsed, onActivateTrial }: Props) {
+export function PremiumBadge({ compact, trialUsed, onActivateTrial, onSubscribe }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [activating, setActivating] = useState(false);
 
@@ -69,7 +70,12 @@ export function PremiumBadge({ compact, trialUsed, onActivateTrial }: Props) {
                 </button>
               )}
               {trialUsed && (
-                <p className="text-center text-xs text-gray-400">Скоро! Подписка появится в ближайшем обновлении</p>
+                <button
+                  onClick={() => { setShowModal(false); onSubscribe?.(); }}
+                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-black text-sm shadow-lg active:scale-95 transition-transform"
+                >
+                  Оформить подписку — 299 ₽/мес
+                </button>
               )}
               <button
                 onClick={() => setShowModal(false)}

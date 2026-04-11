@@ -325,6 +325,7 @@ export default function ParentMiniApp() {
             isPremium={data.is_premium}
             trialUsed={data.trial_used}
             onActivateTrial={activateTrial}
+            onSubscribe={() => setShowPremium(true)}
             onGoToProfile={() => setTab("profile")}
           />
         )}
@@ -368,6 +369,7 @@ export default function ParentMiniApp() {
             isPremium={data.is_premium}
             trialUsed={data.trial_used}
             onActivateTrial={activateTrial}
+            onSubscribe={() => setShowPremium(true)}
             notificationsEnabled={data.notifications_enabled}
             notificationSettings={data.notification_settings}
             onToggleNotifications={async (enabled: boolean, settings?: { tips: boolean; activity: boolean }) => {
