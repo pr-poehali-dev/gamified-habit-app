@@ -68,22 +68,22 @@ def handler(event: dict, context) -> dict:
     if signature_value != expected_signature:
         return {'statusCode': 400, 'headers': HEADERS, 'body': 'Invalid signature', 'isBase64Encoded': False}
 
-    # Обновление статуса заказа
+    schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
+
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("""
-        UPDATE orders
+    cur.execute(f"""
+        UPDATE {schema}.orders
         SET status = 'paid', paid_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
         WHERE robokassa_inv_id = %s AND status = 'pending'
-        RETURNING id, order_number, user_email
+        RETURNING id, order_number, user_email, parent_telegram_id
     """, (int(inv_id),))
 
     result = cur.fetchone()
 
     if not result:
-        # Проверяем, может уже оплачен
-        cur.execute("SELECT status FROM orders WHERE robokassa_inv_id = %s", (int(inv_id),))
+        cur.execute(f"SELECT status FROM {schema}.orders WHERE robokassa_inv_id = %s", (int(inv_id),))
         existing = cur.fetchone()
         conn.close()
 
@@ -91,11 +91,43 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 200, 'headers': HEADERS, 'body': f'OK{inv_id}', 'isBase64Encoded': False}
         return {'statusCode': 404, 'headers': HEADERS, 'body': 'Order not found', 'isBase64Encoded': False}
 
+    order_id, order_number, user_email, parent_telegram_id = result
+
+    # Активируем Premium у родителя в БД
+    if parent_telegram_id:
+        import datetime
+        premium_until = datetime.datetime.now() + datetime.timedelta(days=30)
+        cur.execute(f"""
+            UPDATE {schema}.parents
+            SET is_premium_paid = TRUE, premium_until = %s
+            WHERE telegram_id = %s
+        """, (premium_until, parent_telegram_id))
+
     conn.commit()
     cur.close()
     conn.close()
 
-    # TODO: Отправить уведомление (email, telegram) после успешной оплаты
-    # order_id, order_number, user_email = result
+    # Уведомление родителю в Telegram
+    if parent_telegram_id:
+        import urllib.request
+        bot_token = os.environ.get('PARENT_BOT_TOKEN', '')
+        if bot_token:
+            text = (
+                f"👑 *Premium активирован!*\n\n"
+                f"Ваша подписка СтарКидс активна на 30 дней.\n"
+                f"Заказ: `{order_number}`\n\n"
+                f"Откройте приложение и пользуйтесь всеми возможностями Premium!"
+            )
+            payload = json.dumps({
+                'chat_id': parent_telegram_id,
+                'text': text,
+                'parse_mode': 'Markdown'
+            }).encode()
+            req = urllib.request.Request(
+                f'https://api.telegram.org/bot{bot_token}/sendMessage',
+                data=payload,
+                headers={'Content-Type': 'application/json'}
+            )
+            urllib.request.urlopen(req, timeout=5)
 
     return {'statusCode': 200, 'headers': HEADERS, 'body': f'OK{inv_id}', 'isBase64Encoded': False}

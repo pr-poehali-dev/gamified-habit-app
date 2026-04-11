@@ -1,0 +1,19 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Missing credentials check",
+      "method": "POST",
+      "path": "/",
+      "body": {"amount": 299, "user_name": "Test", "user_email": "test@test.ru"},
+      "expectedStatus": 500,
+      "expectedBody": {"error": "Robokassa credentials not configured"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

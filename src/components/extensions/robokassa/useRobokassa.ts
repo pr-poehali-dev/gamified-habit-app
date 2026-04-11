@@ -26,6 +26,7 @@ export interface PaymentPayload {
   cartItems: CartItem[];
   successUrl?: string;
   failUrl?: string;
+  parent_telegram_id?: number;
 }
 
 export interface PaymentResponse {
@@ -86,6 +87,7 @@ export function useRobokassa(options: UseRobokassaOptions): UseRobokassaReturn {
             cart_items: payload.cartItems,
             success_url: payload.successUrl,
             fail_url: payload.failUrl,
+            parent_telegram_id: payload.parent_telegram_id,
           }),
         });
 

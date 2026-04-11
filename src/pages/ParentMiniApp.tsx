@@ -279,6 +279,8 @@ export default function ParentMiniApp() {
         trialDaysLeft={data.trial_days_left}
         trialUsed={data.trial_used}
         onActivateTrial={activateTrial}
+        parentName={data.name}
+        parentTelegramId={data.telegram_id}
       />
 
       <div className="px-4 pt-5 pb-4">

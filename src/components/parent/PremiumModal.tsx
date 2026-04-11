@@ -1,5 +1,10 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
+import { useRobokassa, openPaymentPage, isValidEmail } from "@/components/extensions/robokassa/useRobokassa";
+import func2url from "../../../backend/func2url.json";
+
+const ROBOKASSA_URL = func2url["robokassa-robokassa"];
+const SUBSCRIPTION_PRICE = 299;
 
 type Props = {
   open: boolean;
@@ -10,10 +15,20 @@ type Props = {
   trialDaysLeft: number;
   trialUsed: boolean;
   onActivateTrial: () => Promise<void>;
+  parentName: string;
+  parentTelegramId?: number;
 };
 
-export function PremiumModal({ open, onClose, isPremium, isPremiumPaid, trialActive, trialDaysLeft, trialUsed, onActivateTrial }: Props) {
+export function PremiumModal({ open, onClose, isPremium, isPremiumPaid, trialActive, trialDaysLeft, trialUsed, onActivateTrial, parentName, parentTelegramId }: Props) {
   const [activating, setActivating] = useState(false);
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [showEmailForm, setShowEmailForm] = useState(false);
+
+  const { createPayment, isLoading } = useRobokassa({
+    apiUrl: ROBOKASSA_URL,
+    onError: () => setEmailError("Ошибка создания платежа. Попробуйте снова."),
+  });
 
   if (!open) return null;
 
@@ -23,11 +38,87 @@ export function PremiumModal({ open, onClose, isPremium, isPremiumPaid, trialAct
     setActivating(false);
   };
 
+  const handleSubscribeClick = () => {
+    setShowEmailForm(true);
+    setEmailError("");
+  };
+
+  const handlePayment = async () => {
+    if (!isValidEmail(email)) {
+      setEmailError("Введите корректный email");
+      return;
+    }
+    setEmailError("");
+
+    const data = await createPayment({
+      amount: SUBSCRIPTION_PRICE,
+      userName: parentName,
+      userEmail: email,
+      userPhone: "",
+      orderComment: "Premium-подписка СтарКидс на 1 месяц",
+      cartItems: [
+        {
+          id: "premium_monthly",
+          name: "Premium-подписка СтарКидс (1 месяц)",
+          price: SUBSCRIPTION_PRICE,
+          quantity: 1,
+        },
+      ],
+      ...(parentTelegramId ? { parent_telegram_id: parentTelegramId } : {}),
+      successUrl: "https://tasks4kids.ru/parent",
+      failUrl: "https://tasks4kids.ru/parent",
+    });
+
+    if (data?.payment_url) {
+      openPaymentPage(data.payment_url);
+      onClose();
+    }
+  };
+
   const features = [
     { emoji: "📸", title: "Фото-задачи", desc: "Требуйте фотоотчёт о выполнении" },
     { emoji: "👨‍👩‍👧‍👦", title: "Несколько детей", desc: "Добавляйте больше одного ребёнка" },
     { emoji: "📊", title: "Аналитика", desc: "Детальная статистика по каждому ребёнку" },
   ];
+
+  const SubscribeBlock = () => (
+    <div className="space-y-3">
+      {!showEmailForm ? (
+        <button
+          onClick={handleSubscribeClick}
+          className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-black text-sm shadow-lg active:scale-95 transition-transform"
+        >
+          Оформить подписку — {SUBSCRIPTION_PRICE} ₽/мес
+        </button>
+      ) : (
+        <div className="space-y-2">
+          <p className="text-xs text-gray-500 text-center">Введите email для чека об оплате</p>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setEmailError(""); }}
+            placeholder="example@mail.ru"
+            className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:border-[#6B7BFF] transition-colors"
+            autoFocus
+          />
+          {emailError && <p className="text-xs text-red-500 text-center">{emailError}</p>}
+          <button
+            onClick={handlePayment}
+            disabled={isLoading}
+            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-black text-sm shadow-lg active:scale-95 transition-transform disabled:opacity-50"
+          >
+            {isLoading ? "Создаём платёж..." : `Оплатить ${SUBSCRIPTION_PRICE} ₽`}
+          </button>
+          <button onClick={() => setShowEmailForm(false)} className="w-full py-2 text-gray-400 text-xs">
+            Назад
+          </button>
+        </div>
+      )}
+      <p className="text-[10px] text-gray-400 text-center">
+        Оплата через Robokassa · Возврат в течение 3 дней
+      </p>
+    </div>
+  );
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={onClose} style={{ animation: "fadeIn 0.2s ease" }}>
@@ -67,12 +158,17 @@ export function PremiumModal({ open, onClose, isPremium, isPremiumPaid, trialAct
           </div>
 
           {!isPremium && !trialUsed && (
-            <button
-              onClick={handleActivate}
-              disabled={activating}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-black text-sm shadow-lg active:scale-95 transition-transform disabled:opacity-50">
-              {activating ? "Активация..." : "🎁 Попробовать 7 дней бесплатно"}
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={handleActivate}
+                disabled={activating}
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-black text-sm shadow-lg active:scale-95 transition-transform disabled:opacity-50">
+                {activating ? "Активация..." : "🎁 Попробовать 7 дней бесплатно"}
+              </button>
+              <p className="text-[10px] text-gray-400 text-center">
+                После пробного периода — {SUBSCRIPTION_PRICE} ₽/мес
+              </p>
+            </div>
           )}
 
           {!isPremium && trialUsed && (
@@ -81,10 +177,7 @@ export function PremiumModal({ open, onClose, isPremium, isPremiumPaid, trialAct
                 <p className="text-amber-700 font-bold text-sm">Пробный период завершён</p>
                 <p className="text-amber-600 text-xs mt-1">Оформите подписку для доступа к Premium-функциям</p>
               </div>
-              <button disabled className="w-full py-3.5 rounded-2xl bg-gray-200 text-gray-500 font-black text-sm relative overflow-hidden">
-                Оформить подписку
-                <span className="absolute top-1 right-2 bg-orange-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full">в разработке</span>
-              </button>
+              <SubscribeBlock />
             </div>
           )}
 
@@ -94,10 +187,7 @@ export function PremiumModal({ open, onClose, isPremium, isPremiumPaid, trialAct
                 <p className="text-blue-700 font-bold text-sm">Пробный период истекает через {trialDaysLeft} {trialDaysLeft === 1 ? "день" : trialDaysLeft < 5 ? "дня" : "дней"}</p>
                 <p className="text-blue-600 text-xs mt-1">Оформите подписку, чтобы не потерять доступ</p>
               </div>
-              <button disabled className="w-full py-3.5 rounded-2xl bg-gray-200 text-gray-500 font-black text-sm relative overflow-hidden">
-                Оформить подписку
-                <span className="absolute top-1 right-2 bg-orange-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full">в разработке</span>
-              </button>
+              <SubscribeBlock />
             </div>
           )}
 
