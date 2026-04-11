@@ -23,7 +23,14 @@ export function PremiumBadge({ compact, trialUsed, onActivateTrial, onSubscribe 
   return (
     <>
       <button
-        onClick={(e) => { e.stopPropagation(); setShowModal(true); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (trialUsed && onSubscribe) {
+            onSubscribe();
+          } else {
+            setShowModal(true);
+          }
+        }}
         className={`inline-flex items-center gap-1 bg-gradient-to-r from-amber-400 to-orange-400 text-white font-black rounded-full shadow-sm active:scale-95 transition-transform ${
           compact ? "text-[10px] px-2 py-0.5" : "text-xs px-3 py-1"
         }`}
