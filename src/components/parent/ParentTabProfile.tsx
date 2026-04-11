@@ -233,7 +233,7 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-[#1E1B4B]">Мои дети</h2>
         <div className="flex items-center gap-2">
-          {!isPremium && children.length >= 1 && <PremiumBadge compact trialUsed={trialUsed} onActivateTrial={onActivateTrial} />}
+          {!isPremium && children.length >= 1 && <PremiumBadge compact trialUsed={trialUsed} onActivateTrial={onActivateTrial} onSubscribe={onSubscribe} />}
           <button
             onClick={() => {
               if (!isPremium && children.length >= 1) return;
