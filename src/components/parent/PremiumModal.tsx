@@ -65,7 +65,7 @@ export function PremiumModal({ open, onClose, isPremium, isPremiumPaid, trialAct
         },
       ],
       ...(parentTelegramId ? { parent_telegram_id: parentTelegramId } : {}),
-      successUrl: "https://tasks4kids.ru/parent",
+      successUrl: "https://tasks4kids.ru/payment-success",
       failUrl: "https://tasks4kids.ru/parent",
     });
 
