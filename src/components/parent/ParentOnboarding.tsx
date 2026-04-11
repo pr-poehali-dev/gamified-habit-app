@@ -57,6 +57,23 @@ export function ParentOnboarding({ name, onDone }: Props) {
             Пропустить
           </button>
         )}
+
+        {step === 0 && (
+          <p className="mt-5 text-[11px] text-gray-400 text-center leading-relaxed px-2">
+            Регистрируясь в сервисе, вы соглашаетесь с{" "}
+            <a href="/legal?tab=terms" target="_blank" rel="noopener noreferrer" className="underline text-[#6B7BFF]">
+              условиями использования
+            </a>
+            ,{" "}
+            <a href="/legal?tab=about" target="_blank" rel="noopener noreferrer" className="underline text-[#6B7BFF]">
+              публичной офертой
+            </a>{" "}
+            и{" "}
+            <a href="/legal?tab=consent" target="_blank" rel="noopener noreferrer" className="underline text-[#6B7BFF]">
+              согласием на обработку персональных данных
+            </a>
+          </p>
+        )}
       </div>
 
       <style>{`

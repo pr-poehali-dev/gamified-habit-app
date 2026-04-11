@@ -482,7 +482,7 @@ export default function Index() {
           <a href="/legal?tab=consent">Согласие на ПДн</a>
         </div>
         <p className="footer-tagline" style={{ marginTop: 12, fontSize: 12, opacity: 0.6 }}>
-          © 2026 СтарКидс · 0+ · Обработка данных в соответствии с 152-ФЗ
+          © 2026 СтарКидс · 0+ · Самозанятый Кругов М.Г. · ИНН 772379179900
         </p>
       </footer>
     </div>

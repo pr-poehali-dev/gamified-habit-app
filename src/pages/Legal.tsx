@@ -12,7 +12,8 @@ const TABS: { key: TabKey; label: string; icon: string }[] = [
 ];
 
 const CONTACT_EMAIL = "support@tasks4kids.ru";
-const OPERATOR_NAME = "Оператор сервиса СтарКидс";
+const OPERATOR_NAME = "Самозанятый Кругов Максим Геннадьевич, ИНН 772379179900";
+const OPERATOR_SHORT = "Кругов М.Г.";
 const SITE = "tasks4kids.ru";
 const UPDATED_AT = "12 апреля 2026 г.";
 
@@ -67,10 +68,16 @@ export default function Legal() {
         {tab === "terms" && <TermsSection />}
         {tab === "consent" && <ConsentSection />}
 
-        <div className="mt-8 pb-10 text-center text-[11px] text-gray-400">
-          Последнее обновление: {UPDATED_AT}
-          <br />
-          Контакты: {CONTACT_EMAIL}
+        <div className="mt-8 pb-10 text-center text-[11px] text-gray-400 space-y-1">
+          <p>Последнее обновление: {UPDATED_AT}</p>
+          <p>{OPERATOR_NAME}</p>
+          <p>
+            Контакты:{" "}
+            <a href={`mailto:${CONTACT_EMAIL}`} className="underline text-[#6B7BFF]">
+              {CONTACT_EMAIL}
+            </a>
+          </p>
+          <p>© 2026 СтарКидс · 0+</p>
         </div>
       </div>
     </div>
@@ -93,7 +100,32 @@ function AboutSection() {
         <div className="text-5xl mb-2">⭐</div>
         <h1 className="text-2xl font-black text-[#2D1B69] mb-1">СтарКидс</h1>
         <p className="text-sm text-gray-500">Система задач и наград для детей и родителей</p>
+        <p className="text-xs text-gray-400 mt-2">Самозанятый Кругов М.Г. · ИНН 772379179900</p>
       </div>
+
+      <Section title="Оператор сервиса">
+        <p>
+          <b>Наименование:</b> Самозанятый Кругов Максим Геннадьевич
+        </p>
+        <p>
+          <b>ИНН:</b> 772379179900
+        </p>
+        <p>
+          <b>Электронная почта:</b>{" "}
+          <a href={`mailto:${CONTACT_EMAIL}`} className="text-[#6B7BFF] underline">
+            {CONTACT_EMAIL}
+          </a>
+        </p>
+        <p>
+          <b>Сайт:</b>{" "}
+          <a href={`https://${SITE}`} className="text-[#6B7BFF] underline" target="_blank" rel="noopener noreferrer">
+            {SITE}
+          </a>
+        </p>
+        <p>
+          <b>Telegram-боты:</b> @parenttask_bot (для родителей), @task4kids_bot (для детей)
+        </p>
+      </Section>
 
       <Section title="О проекте">
         <p>

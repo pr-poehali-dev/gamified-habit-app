@@ -455,7 +455,7 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
           </a>
         </div>
         <p className="text-[10px] text-gray-400 text-center mt-3">
-          © 2026 СтарКидс · 0+ · Работает в соответствии с 152-ФЗ
+          © 2026 СтарКидс · 0+ · Самозанятый Кругов М.Г. · ИНН 772379179900
         </p>
       </div>
     </div>
