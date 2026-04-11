@@ -48,7 +48,8 @@ def handler(event: dict, context) -> dict:
 
     try:
         merchant_login = os.environ.get('ROBOKASSA_MERCHANT_LOGIN')
-        password_1 = os.environ.get('ROBOKASSA_PASSWORD_1')
+        is_test = os.environ.get('ROBOKASSA_TEST_MODE', 'false').lower() == 'true'
+        password_1 = os.environ.get('ROBOKASSA_TEST_PASSWORD_1') if is_test else os.environ.get('ROBOKASSA_PASSWORD_1')
 
         if not merchant_login or not password_1:
             return {'statusCode': 500, 'headers': HEADERS, 'body': json.dumps({'error': 'Robokassa credentials not configured'}), 'isBase64Encoded': False}
@@ -122,6 +123,9 @@ def handler(event: dict, context) -> dict:
             'Culture': 'ru',
             'Description': f'Заказ {order_number}'
         }
+
+        if is_test:
+            query_params['IsTest'] = 1
 
         if success_url:
             query_params['SuccessUrl2'] = success_url

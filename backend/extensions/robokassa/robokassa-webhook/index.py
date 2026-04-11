@@ -38,7 +38,8 @@ def handler(event: dict, context) -> dict:
     if method == 'OPTIONS':
         return {'statusCode': 200, 'headers': HEADERS, 'body': '', 'isBase64Encoded': False}
 
-    password_2 = os.environ.get('ROBOKASSA_PASSWORD_2')
+    is_test = os.environ.get('ROBOKASSA_TEST_MODE', 'false').lower() == 'true'
+    password_2 = os.environ.get('ROBOKASSA_TEST_PASSWORD_2') if is_test else os.environ.get('ROBOKASSA_PASSWORD_2')
     if not password_2:
         return {'statusCode': 500, 'headers': HEADERS, 'body': 'Configuration error', 'isBase64Encoded': False}
 
