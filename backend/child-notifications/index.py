@@ -8,6 +8,17 @@ from datetime import datetime, timezone, timedelta
 SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "t_p84704826_gamified_habit_app")
 MINI_APP_URL = os.environ.get("MINI_APP_URL", "https://tasks4kids.ru").rstrip("/") + "/child"
 
+# Московское время UTC+3
+MSK = timezone(timedelta(hours=3))
+QUIET_HOUR_START = 20  # 20:00 — начало тихих часов
+QUIET_HOUR_END = 9     # 09:00 — конец тихих часов
+
+
+def is_quiet_time() -> bool:
+    """Проверяет тихие часы по московскому времени (20:00–09:00)."""
+    hour = datetime.now(MSK).hour
+    return hour >= QUIET_HOUR_START or hour < QUIET_HOUR_END
+
 MOTIVATIONS = [
     "🚀 Ты на верном пути! Каждая звезда приближает тебя к новой награде.",
     "💪 Чемпионы не сдаются — покажи, на что ты способен!",
@@ -309,6 +320,13 @@ def handler(event: dict, context) -> dict:
                 "Access-Control-Max-Age": "86400",
             },
             "body": "",
+        }
+
+    if is_quiet_time():
+        return {
+            "statusCode": 200,
+            "headers": {"Access-Control-Allow-Origin": "*"},
+            "body": json.dumps({"ok": True, "skipped": "quiet_hours"}),
         }
 
     token = os.environ.get("CHILD_BOT_TOKEN", "")

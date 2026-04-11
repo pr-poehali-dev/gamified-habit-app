@@ -9,6 +9,14 @@ from math import ceil
 SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "t_p84704826_gamified_habit_app")
 MINI_APP_URL = os.environ.get("MINI_APP_URL", "https://tasks4kids.ru").rstrip("/") + "/parent"
 
+MSK = timezone(timedelta(hours=3))
+
+
+def is_quiet_time() -> bool:
+    """Проверяет тихие часы по московскому времени (20:00–09:00)."""
+    hour = datetime.now(MSK).hour
+    return hour >= 20 or hour < 9
+
 
 def tg(token, chat_id, text, reply_markup=None):
     url = f"https://api.telegram.org/bot{token}/sendMessage"
@@ -35,6 +43,13 @@ def handler(event: dict, context) -> dict:
                 "Access-Control-Max-Age": "86400",
             },
             "body": "",
+        }
+
+    if is_quiet_time():
+        return {
+            "statusCode": 200,
+            "headers": {"Access-Control-Allow-Origin": "*"},
+            "body": json.dumps({"ok": True, "skipped": "quiet_hours"}),
         }
 
     token = os.environ.get("PARENT_BOT_TOKEN", "")

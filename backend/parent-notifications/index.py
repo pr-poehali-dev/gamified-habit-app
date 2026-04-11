@@ -8,6 +8,17 @@ from datetime import datetime, timezone, timedelta
 SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "t_p84704826_gamified_habit_app")
 MINI_APP_URL = os.environ.get("MINI_APP_URL", "https://tasks4kids.ru").rstrip("/") + "/parent"
 
+# Московское время UTC+3
+MSK = timezone(timedelta(hours=3))
+QUIET_HOUR_START = 20  # 20:00 — начало тихих часов
+QUIET_HOUR_END = 9     # 09:00 — конец тихих часов
+
+
+def is_quiet_time() -> bool:
+    """Проверяет тихие часы по московскому времени (20:00–09:00)."""
+    hour = datetime.now(MSK).hour
+    return hour >= QUIET_HOUR_START or hour < QUIET_HOUR_END
+
 TIPS = [
     "💡 Совет: добавляйте задания с дедлайном — это учит ребёнка планировать время.",
     "💡 Совет: чередуйте простые и сложные задания, чтобы поддерживать мотивацию.",
@@ -83,8 +94,8 @@ def check_no_children(conn, cur, token, parent_id, tg_id, name):
 
 
 def check_no_tasks_today(conn, cur, token, parent_id, tg_id, name):
-    """Триггер 2: ни одного задания за день (проверяем вечером)."""
-    now = datetime.now(timezone.utc)
+    """Триггер 2: ни одного задания за день (проверяем вечером, 17:00–20:00 МСК)."""
+    now = datetime.now(MSK)
     if now.hour < 17:
         return False
     if was_sent_recently(cur, parent_id, "no_tasks_today", hours=20):
@@ -175,8 +186,8 @@ def check_all_tasks_done(conn, cur, token, parent_id, tg_id, name):
 
 
 def check_streak_warning(conn, cur, token, parent_id, tg_id, name):
-    """Триггер 5: стрик может сгореть (не заходил сегодня)."""
-    now = datetime.now(timezone.utc)
+    """Триггер 5: стрик может сгореть (не заходил сегодня, 18:00–20:00 МСК)."""
+    now = datetime.now(MSK)
     if now.hour < 18:
         return False
     if was_sent_recently(cur, parent_id, "streak_warning", hours=20):
@@ -312,6 +323,13 @@ def handler(event: dict, context) -> dict:
                 "Access-Control-Max-Age": "86400",
             },
             "body": "",
+        }
+
+    if is_quiet_time():
+        return {
+            "statusCode": 200,
+            "headers": {"Access-Control-Allow-Origin": "*"},
+            "body": json.dumps({"ok": True, "skipped": "quiet_hours"}),
         }
 
     token = os.environ.get("PARENT_BOT_TOKEN", "")
