@@ -8,6 +8,7 @@ import ParentMiniApp from "./pages/ParentMiniApp";
 import ChildMiniApp from "./pages/ChildMiniApp";
 import AppEntry from "./pages/AppEntry";
 import Index from "./pages/Index";
+import Legal from "./pages/Legal";
 import NotFound from "./pages/NotFound";
 
 declare global {
@@ -43,6 +44,10 @@ const App = () => (
           <Route path="/child" element={<ChildMiniApp />} />
           <Route path="/parent/*" element={<ParentMiniApp />} />
           <Route path="/child/*" element={<ChildMiniApp />} />
+          <Route path="/legal" element={<Legal />} />
+          <Route path="/privacy" element={<Legal />} />
+          <Route path="/terms" element={<Legal />} />
+          <Route path="/consent" element={<Legal />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

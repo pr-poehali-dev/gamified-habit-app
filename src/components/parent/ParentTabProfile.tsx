@@ -426,6 +426,38 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
           </div>
         )}
       </div>
+
+      {/* Legal */}
+      <div className="bg-white/90 rounded-3xl p-4 shadow-sm">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="text-2xl">📄</span>
+          <div>
+            <p className="font-bold text-[#1E1B4B] text-sm">Документы</p>
+            <p className="text-xs text-gray-400">Политика, условия, согласие на ПДн</p>
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <a href="/legal?tab=privacy" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-xl active:scale-[0.98] transition-transform">
+            <span className="text-xs font-bold text-[#1E1B4B]">🔒 Политика конфиденциальности</span>
+            <span className="text-gray-300 text-xs">→</span>
+          </a>
+          <a href="/legal?tab=terms" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-xl active:scale-[0.98] transition-transform">
+            <span className="text-xs font-bold text-[#1E1B4B]">📋 Условия использования</span>
+            <span className="text-gray-300 text-xs">→</span>
+          </a>
+          <a href="/legal?tab=consent" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-xl active:scale-[0.98] transition-transform">
+            <span className="text-xs font-bold text-[#1E1B4B]">✅ Согласие на обработку ПДн</span>
+            <span className="text-gray-300 text-xs">→</span>
+          </a>
+          <a href="/legal?tab=about" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-xl active:scale-[0.98] transition-transform">
+            <span className="text-xs font-bold text-[#1E1B4B]">ℹ️ О проекте</span>
+            <span className="text-gray-300 text-xs">→</span>
+          </a>
+        </div>
+        <p className="text-[10px] text-gray-400 text-center mt-3">
+          © 2026 СтарКидс · 0+ · Работает в соответствии с 152-ФЗ
+        </p>
+      </div>
     </div>
   );
 }

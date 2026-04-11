@@ -474,6 +474,16 @@ export default function Index() {
           <span>·</span>
           <a href={CHILD_BOT_URL} target="_blank" rel="noopener noreferrer">@task4kids_bot</a>
         </div>
+        <div className="footer-links" style={{ marginTop: 12, fontSize: 13 }}>
+          <a href="/legal?tab=privacy">Политика конфиденциальности</a>
+          <span>·</span>
+          <a href="/legal?tab=terms">Условия использования</a>
+          <span>·</span>
+          <a href="/legal?tab=consent">Согласие на ПДн</a>
+        </div>
+        <p className="footer-tagline" style={{ marginTop: 12, fontSize: 12, opacity: 0.6 }}>
+          © 2026 СтарКидс · 0+ · Обработка данных в соответствии с 152-ФЗ
+        </p>
       </footer>
     </div>
   );
