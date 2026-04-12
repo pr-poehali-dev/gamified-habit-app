@@ -161,10 +161,26 @@ def verify_otp(phone_raw: str, otp_input: str, full_name: str = "") -> dict:
 
     parent_id, stored_otp, expires_at, phone_verified, db_name, existing_token = row
 
-    if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if phone_verified and existing_token and stored_otp is None:
+        token = existing_token
+        name_to_save = full_name.strip() if full_name.strip() else (db_name or "")
+        cur.execute(
+            f"UPDATE {SCHEMA}.parents SET full_name = %s WHERE id = %s",
+            (name_to_save, parent_id)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+        return ok({
+            "status": "ok",
+            "role": "parent",
+            "session_token": token,
+            "parent_id": parent_id,
+            "full_name": name_to_save,
+            "is_new": False,
+        })
 
-    if datetime.now(timezone.utc) > expires_at:
+    if expires_at is None or (expires_at.tzinfo is None and datetime.now(timezone.utc) > expires_at.replace(tzinfo=timezone.utc)) or (expires_at.tzinfo and datetime.now(timezone.utc) > expires_at):
         cur.close()
         conn.close()
         return err("Код истёк. Запросите новый.")
@@ -175,7 +191,6 @@ def verify_otp(phone_raw: str, otp_input: str, full_name: str = "") -> dict:
         return err("Неверный код.")
 
     token = existing_token if existing_token else generate_token()
-    token_expires = datetime.now(timezone.utc) + timedelta(days=SESSION_TTL_DAYS)
 
     name_to_save = full_name.strip() if full_name.strip() else (db_name or "")
 
