@@ -10,6 +10,7 @@ import { usePwaSession } from "@/components/pwa/usePwaSession";
 import PwaParentAuth from "@/components/pwa/PwaParentAuth";
 import PwaChildAuth from "@/components/pwa/PwaChildAuth";
 import PwaSetPin from "@/components/pwa/PwaSetPin";
+import InstallPwaGuide from "@/components/pwa/InstallPwaGuide";
 import ParentMiniApp from "./ParentMiniApp";
 import ChildMiniApp from "./ChildMiniApp";
 
@@ -37,6 +38,7 @@ export default function AppEntry() {
   const [pwaMode, setPwaMode] = useState<AuthMode>(null);
   const [ready, setReady] = useState(false);
   const [needsPin, setNeedsPin] = useState(false);
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
   const pwaSession = usePwaSession();
 
   useEffect(() => {
@@ -57,6 +59,10 @@ export default function AppEntry() {
         setRole(pwaSession.role);
         setReady(true);
       } else {
+        const standalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+        if (!standalone && !inTelegram && pwaSession.role === "parent" && !localStorage.getItem("pwa_install_guide_shown")) {
+          setShowInstallGuide(true);
+        }
         setRole(pwaSession.role);
         setReady(true);
       }
@@ -97,8 +103,31 @@ export default function AppEntry() {
 
   if (!ready || pwaSession === "loading") return <Spinner />;
 
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+
   if (needsPin && pwaSession && pwaSession.token) {
-    return <PwaSetPin sessionToken={pwaSession.token} onComplete={() => setNeedsPin(false)} />;
+    return (
+      <PwaSetPin
+        sessionToken={pwaSession.token}
+        onComplete={() => {
+          setNeedsPin(false);
+          if (!isStandalone && !localStorage.getItem("pwa_install_guide_shown")) {
+            setShowInstallGuide(true);
+          }
+        }}
+      />
+    );
+  }
+
+  if (showInstallGuide) {
+    return (
+      <InstallPwaGuide
+        onDone={() => {
+          localStorage.setItem("pwa_install_guide_shown", "1");
+          setShowInstallGuide(false);
+        }}
+      />
+    );
   }
 
   if (!role) {
