@@ -32,17 +32,14 @@ export function usePwaSession() {
 
   useEffect(() => {
     const raw = getPwaSessionRaw();
-    console.log("[usePwaSession] raw:", raw ? `token=${raw.token.slice(0,8)}... role=${raw.role}` : "null");
     if (!raw) {
       setSession(null);
       return;
     }
     verifySession(raw.token, raw.role).then((profile) => {
-      console.log("[usePwaSession] verifySession response:", JSON.stringify(profile).slice(0, 200));
       if (profile.status === "ok") {
         setSession({ token: raw.token, role: raw.role, profile });
       } else {
-        console.log("[usePwaSession] session invalid, clearing");
         clearPwaSession();
         setSession(null);
       }
