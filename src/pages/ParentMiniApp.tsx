@@ -98,11 +98,13 @@ export default function ParentMiniApp() {
     const webapp = tg();
     const tgId = webapp?.initDataUnsafe?.user?.id;
     const firstName = webapp?.initDataUnsafe?.user?.first_name || "";
-    const initDataLen = webapp?.initData?.length ?? 0;
+
+    if (!silent) console.log("[ParentMiniApp] load: tgId:", tgId, "pwaToken:", localStorage.getItem("pwa_session_token") ? "exists" : "missing");
 
     const res = await apiCall("parent/auth", {
       ...(tgId ? { telegram_id: tgId, first_name: firstName } : {}),
     });
+    if (!silent) console.log("[ParentMiniApp] parent/auth response:", JSON.stringify(res).slice(0, 300));
     if (res.role === "parent") {
       const d = res as unknown as ParentData;
       if (!silent && !localStorage.getItem("ym_parent_auth")) {

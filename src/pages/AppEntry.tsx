@@ -38,11 +38,15 @@ export default function AppEntry() {
   const pwaSession = usePwaSession();
 
   useEffect(() => {
+    console.log("[AppEntry] pwaSession:", pwaSession === "loading" ? "loading" : pwaSession ? `role=${pwaSession.role}` : "null");
     if (pwaSession === "loading") return;
 
     const urlParams = new URLSearchParams(window.location.search);
     const hasInvite = urlParams.has("invite") || urlParams.has("code");
     const inTelegram = isTelegramEnv();
+    const initData = window.Telegram?.WebApp?.initData;
+    console.log("[AppEntry] inTelegram:", inTelegram, "initData length:", initData?.length, "hasInvite:", hasInvite);
+    console.log("[AppEntry] localStorage token:", localStorage.getItem("pwa_session_token") ? "exists" : "missing");
 
     if (inTelegram) {
       const webapp = tg();
@@ -50,6 +54,7 @@ export default function AppEntry() {
     }
 
     if (pwaSession) {
+      console.log("[AppEntry] Using pwaSession, role:", pwaSession.role);
       setRole(pwaSession.role);
       setReady(true);
       return;
@@ -61,17 +66,21 @@ export default function AppEntry() {
         try {
           const tgId = webapp?.initDataUnsafe?.user?.id;
           const firstName = webapp?.initDataUnsafe?.user?.first_name || "";
+          console.log("[AppEntry] Telegram detect: tgId:", tgId, "firstName:", firstName);
 
           const parentRes = await apiCall("parent/auth", {
             ...(tgId ? { telegram_id: tgId, first_name: firstName } : {}),
           });
+          console.log("[AppEntry] parent/auth response:", JSON.stringify(parentRes).slice(0, 200));
           if (parentRes.role === "parent") { setRole("parent"); setReady(true); return; }
 
           const childRes = await apiCall("child/auth", tgId ? { telegram_id: tgId } : {});
+          console.log("[AppEntry] child/auth response:", JSON.stringify(childRes).slice(0, 200));
           if (childRes.role === "child") { setRole("child"); setReady(true); return; }
         } catch (e) {
           console.error("[AppEntry] Telegram auth failed, falling back to PWA", e);
         }
+        console.log("[AppEntry] Telegram auth: no role found, showing PWA form");
         setPwaMode(hasInvite ? "child_invite" : "parent");
         setReady(true);
       };
@@ -79,6 +88,7 @@ export default function AppEntry() {
       return;
     }
 
+    console.log("[AppEntry] PWA mode, no session, showing auth form");
     setPwaMode(hasInvite ? "child_invite" : "parent");
     setReady(true);
   }, [pwaSession]);
