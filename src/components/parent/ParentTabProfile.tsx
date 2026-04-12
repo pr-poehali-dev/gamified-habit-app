@@ -41,11 +41,12 @@ type ProfileProps = {
   notificationsEnabled?: boolean;
   notificationSettings?: { tips: boolean; activity: boolean };
   onToggleNotifications?: (enabled: boolean, settings?: { tips: boolean; activity: boolean }) => void;
+  onLogout?: () => void;
 };
 
 const CHILD_AVATARS = ["👦", "👧", "🧒", "👶", "🐱", "🦊", "🐼", "🦁", "🐸", "🐧", "🦋", "🌟"];
 
-export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, streak, streakReward, onAddChild, onRemoveChild, onRefreshInvite, isPremium, trialUsed, onActivateTrial, onSubscribe, notificationsEnabled = true, notificationSettings, onToggleNotifications }: ProfileProps) {
+export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, streak, streakReward, onAddChild, onRemoveChild, onRefreshInvite, isPremium, trialUsed, onActivateTrial, onSubscribe, notificationsEnabled = true, notificationSettings, onToggleNotifications, onLogout }: ProfileProps) {
   const { level } = getParentLevelInfo(parent_xp);
   const tier = getParentLevelTier(level);
 
@@ -55,6 +56,7 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
   const [avatar, setAvatar] = useState("👧");
   const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
   // Аналитика
   const [analyticsData, setAnalyticsData] = useState<ChildAnalytics[] | null>(null);
@@ -479,6 +481,39 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
           © 2026 СтарКидс · 0+ · Самозанятый Кругов М.Г. · ИНН 772379179900
         </p>
       </div>
+
+      {/* Выход — только в PWA */}
+      {isPwaMode() && onLogout && (
+        <div className="pb-4">
+          {!confirmLogout ? (
+            <button
+              onClick={() => setConfirmLogout(true)}
+              className="w-full py-3 rounded-2xl bg-gray-100 text-gray-400 font-bold text-sm active:scale-95 transition-transform"
+            >
+              Выйти из аккаунта
+            </button>
+          ) : (
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-red-100 space-y-3">
+              <p className="text-sm font-bold text-center text-[#1E1B4B]">Выйти из аккаунта?</p>
+              <p className="text-xs text-gray-400 text-center">Для входа потребуется SMS-подтверждение</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmLogout(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-500 font-bold text-sm"
+                >
+                  Отмена
+                </button>
+                <button
+                  onClick={onLogout}
+                  className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-bold text-sm active:scale-95 transition-transform"
+                >
+                  Выйти
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

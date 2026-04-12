@@ -426,6 +426,36 @@ def verify_session(session_token: str, role: str) -> dict:
         })
 
 
+def logout(session_token: str, role: str) -> dict:
+    """Сбросить сессионный токен (выход из аккаунта)."""
+    if not session_token or role not in ("parent", "child"):
+        return err("Неверные параметры.", 400)
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    if role == "parent":
+        cur.execute(
+            f"UPDATE {SCHEMA}.parents SET pwa_session_token = NULL, pin_code = NULL WHERE pwa_session_token = %s RETURNING id",
+            (session_token,)
+        )
+    else:
+        cur.execute(
+            f"UPDATE {SCHEMA}.children SET pwa_session_token = NULL WHERE pwa_session_token = %s RETURNING id",
+            (session_token,)
+        )
+
+    row = cur.fetchone()
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    if not row:
+        return err("Сессия не найдена.", 404)
+
+    return ok({"status": "ok"})
+
+
 def handler(event: dict, context) -> dict:
     """PWA-авторизация: OTP для родителя, инвайт-код для ребёнка, проверка сессии."""
     if event.get("httpMethod") == "OPTIONS":
@@ -465,5 +495,8 @@ def handler(event: dict, context) -> dict:
             body.get("session_token", ""),
             body.get("role", ""),
         )
+
+    if action == "logout":
+        return logout(body.get("session_token", ""), body.get("role", ""))
 
     return err("Неизвестное действие.")

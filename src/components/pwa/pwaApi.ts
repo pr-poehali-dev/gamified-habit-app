@@ -60,3 +60,10 @@ export async function verifySession(
 ): Promise<Record<string, unknown>> {
   return call({ action: "verify_session", session_token: sessionToken, role });
 }
+
+export async function logoutPwa(
+  sessionToken: string,
+  role: "parent" | "child"
+): Promise<Record<string, unknown>> {
+  return call({ action: "logout", session_token: sessionToken, role });
+}

@@ -11,6 +11,8 @@ import { ParentTabGrades, ParentTabBonuses, ParentTabProfile, ParentTabPartners 
 import { ParentBottomNav, type ParentTab } from "@/components/parent/ParentBottomNav";
 import { ParentOnboarding } from "@/components/parent/ParentOnboarding";
 import { PremiumModal } from "@/components/parent/PremiumModal";
+import { logoutPwa } from "@/components/pwa/pwaApi";
+import { clearPwaSession, getPwaSessionRaw } from "@/components/pwa/usePwaSession";
 import ymGoal from "@/lib/ym";
 
 const POLL_INTERVAL = 10_000; // 10 секунд
@@ -228,6 +230,15 @@ export default function ParentMiniApp() {
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, []);
 
+  const handleLogout = useCallback(async () => {
+    const raw = getPwaSessionRaw();
+    if (raw) {
+      await logoutPwa(raw.token, raw.role).catch(() => {});
+    }
+    clearPwaSession();
+    window.location.href = "/app";
+  }, []);
+
   const activateTrial = useCallback(async () => {
     const res = await apiCall("parent/trial/activate", {});
     if (res.ok) { ymGoal("trial_activated"); showToast("🎉 Пробный период активирован на 7 дней!"); setShowPremium(false); load(true); }
@@ -378,6 +389,7 @@ export default function ParentMiniApp() {
               await apiCall("parent/notifications/toggle", { enabled, settings });
               load(true);
             }}
+            onLogout={handleLogout}
           />
         )}
       </div>
