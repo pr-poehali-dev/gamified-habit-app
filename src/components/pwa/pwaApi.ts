@@ -47,12 +47,9 @@ export async function loginPin(
 }
 
 export async function registerChild(
-  inviteCode: string,
-  childName: string,
-  childAge: number,
-  phone?: string
+  inviteCode: string
 ): Promise<{ status?: string; role?: string; session_token?: string; child_id?: number; parent_id?: number; child_name?: string; error?: string }> {
-  return call({ action: "register_child", invite_code: inviteCode, child_name: childName, child_age: childAge, phone: phone || "" }) as Promise<{
+  return call({ action: "register_child", invite_code: inviteCode }) as Promise<{
     status?: string; role?: string; session_token?: string; child_id?: number; parent_id?: number; child_name?: string; error?: string;
   }>;
 }

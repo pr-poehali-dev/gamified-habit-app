@@ -322,15 +322,15 @@ def login_pin(phone_raw: str, pin: str) -> dict:
     })
 
 
-def register_child(invite_code: str, child_name: str, child_age: int, phone_raw: str = "") -> dict:
-    if not invite_code or not child_name:
-        return err("Укажите инвайт-код и имя ребёнка.")
+def register_child(invite_code: str) -> dict:
+    if not invite_code:
+        return err("Укажите код приглашения.")
 
     conn = get_conn()
     cur = conn.cursor()
 
     cur.execute(
-        f"SELECT id, parent_id FROM {SCHEMA}.children WHERE invite_code = %s",
+        f"SELECT id, parent_id, name FROM {SCHEMA}.children WHERE invite_code = %s",
         (invite_code.strip().upper(),)
     )
     child_row = cur.fetchone()
@@ -338,24 +338,15 @@ def register_child(invite_code: str, child_name: str, child_age: int, phone_raw:
     if not child_row:
         cur.close()
         conn.close()
-        return err("Инвайт-код не найден. Попросите родителя проверить ссылку.")
+        return err("Код не найден. Попросите родителя проверить ссылку.")
 
-    child_id, parent_id = child_row
-
-    phone = None
-    if phone_raw:
-        try:
-            phone = normalize_phone(phone_raw)
-        except ValueError:
-            phone = None
+    child_id, parent_id, child_name = child_row
 
     token = generate_token()
 
     cur.execute(
-        f"""UPDATE {SCHEMA}.children
-            SET name = %s, age = %s, phone_number = %s, pwa_session_token = %s
-            WHERE id = %s""",
-        (child_name.strip(), child_age, phone, token, child_id)
+        f"UPDATE {SCHEMA}.children SET pwa_session_token = %s WHERE id = %s",
+        (token, child_id)
     )
     conn.commit()
     cur.close()
@@ -367,7 +358,7 @@ def register_child(invite_code: str, child_name: str, child_age: int, phone_raw:
         "session_token": token,
         "child_id": child_id,
         "parent_id": parent_id,
-        "child_name": child_name.strip(),
+        "child_name": child_name or "",
     })
 
 
@@ -454,12 +445,7 @@ def handler(event: dict, context) -> dict:
         return login_pin(body.get("phone", ""), body.get("pin", ""))
 
     if action == "register_child":
-        return register_child(
-            body.get("invite_code", ""),
-            body.get("child_name", ""),
-            int(body.get("child_age", 10)),
-            body.get("phone", ""),
-        )
+        return register_child(body.get("invite_code", ""))
 
     if action == "verify_session":
         return verify_session(

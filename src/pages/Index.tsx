@@ -184,15 +184,8 @@ export default function Index() {
               href="/app"
               className="hero-btn hero-btn--primary"
             >
-              <span>👨‍👩‍👧 Я родитель</span>
-              <span className="hero-btn-sub">Создать задания</span>
-            </a>
-            <a
-              href="/app"
-              className="hero-btn hero-btn--secondary"
-            >
-              <span>🧒 Я ребёнок</span>
-              <span className="hero-btn-sub">Зарабатывать звёзды</span>
+              <span>👨‍👩‍👧 Начать бесплатно</span>
+              <span className="hero-btn-sub">Для родителей</span>
             </a>
           </div>
 

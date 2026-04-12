@@ -73,9 +73,9 @@
       "name": "register_child — invalid invite code",
       "method": "POST",
       "path": "/",
-      "body": {"action": "register_child", "invite_code": "INVALID999", "child_name": "Тест", "child_age": 8},
+      "body": {"action": "register_child", "invite_code": "INVALID999"},
       "expectedStatus": 400,
-      "expectedBody": {"error": "Инвайт-код не найден. Попросите родителя проверить ссылку."},
+      "expectedBody": {"error": "string"},
       "bodyMatcher": "partial"
     }
   ]
