@@ -133,7 +133,7 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
             {c.connected ? (
               <div className="flex items-center gap-2 mb-3 bg-green-50 border border-green-100 rounded-xl px-3 py-2">
                 <span className="text-green-500 text-sm">✅</span>
-                <p className="text-xs font-bold text-green-600 flex-1">Telegram подключён</p>
+                <p className="text-xs font-bold text-green-600 flex-1">{isPwaMode() ? "Ребёнок подключён" : "Telegram подключён"}</p>
                 <button onClick={() => onRefreshInvite(c.id)} className="text-[10px] font-bold text-gray-400 underline">сбросить</button>
               </div>
             ) : (
