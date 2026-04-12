@@ -15,7 +15,10 @@ import ChildMiniApp from "./ChildMiniApp";
 type Role = "parent" | "child" | null;
 type AuthMode = "child_invite" | "parent" | null;
 
-const isTelegramEnv = () => !!(window.Telegram?.WebApp?.initData);
+const isTelegramEnv = () => {
+  const initData = window.Telegram?.WebApp?.initData;
+  return typeof initData === "string" && initData.length > 0;
+};
 
 function Spinner() {
   return (
@@ -35,9 +38,13 @@ export default function AppEntry() {
   const pwaSession = usePwaSession();
 
   useEffect(() => {
+    // Ждём пока usePwaSession проверит localStorage
+    if (pwaSession === "loading") return;
+
     const urlParams = new URLSearchParams(window.location.search);
     const hasInvite = urlParams.has("invite") || urlParams.has("code");
 
+    // Telegram Mini App — только если есть реальный initData
     if (isTelegramEnv()) {
       const webapp = tg();
       if (webapp) { webapp.ready(); webapp.expand(); }
@@ -61,14 +68,14 @@ export default function AppEntry() {
       return;
     }
 
-    if (pwaSession === "loading") return;
-
+    // PWA — есть сохранённая сессия
     if (pwaSession) {
       setRole(pwaSession.role);
       setReady(true);
       return;
     }
 
+    // PWA — нет сессии, показываем форму входа
     if (hasInvite) {
       setPwaMode("child_invite");
     } else {
