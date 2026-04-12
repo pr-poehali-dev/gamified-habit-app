@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Legal from "./pages/Legal";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
+import PwaInstallPrompt from "./components/pwa/PwaInstallPrompt";
 
 declare global {
   interface Window {
@@ -35,6 +36,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <PwaInstallPrompt />
       <BrowserRouter>
         <YandexMetrikaHit />
         <Routes>

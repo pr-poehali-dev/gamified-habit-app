@@ -1,0 +1,26 @@
+{
+  "name": "СтарКидс — задания и награды",
+  "short_name": "СтарКидс",
+  "description": "Мотивируйте детей выполнять задания и развивать полезные привычки. Ребёнок зарабатывает звёзды и обменивает их на призы.",
+  "start_url": "/app",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#6B7BFF",
+  "theme_color": "#6B7BFF",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn.poehali.dev/projects/646a8e3a-c6c3-4005-9a70-b35e18c651d5/files/46b8102a-22eb-4723-a402-9421874f41d3.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["education", "kids", "productivity"]
+}
