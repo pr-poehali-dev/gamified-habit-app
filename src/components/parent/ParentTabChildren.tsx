@@ -19,11 +19,15 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
   const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
+  const getPwaInviteUrl = (code: string) =>
+    `${window.location.origin}/invite?code=${code}`;
+
   const shareCode = async (id: number, code: string, childName: string) => {
-    const text = `Привет! Я жду тебя в приложении СтарКидс 🌟\n\n1️⃣ Открой Telegram → найди @task4kids_bot\n2️⃣ Нажми кнопку «Открыть СтарКидс»\n3️⃣ Введи код: ${code}\n\nИли перейди по ссылке: https://t.me/task4kids_bot?start=${code}`;
+    const pwaUrl = getPwaInviteUrl(code);
+    const text = `Привет, ${childName}! Я жду тебя в приложении СтарКидс 🌟\n\nПерейди по ссылке и введи своё имя:\n👉 ${pwaUrl}\n\nИли через Telegram: https://t.me/task4kids_bot?start=${code}`;
     if (navigator.share) {
       try {
-        await navigator.share({ text });
+        await navigator.share({ title: "СтарКидс — приглашение", text, url: pwaUrl });
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2000);
       } catch {
@@ -34,6 +38,12 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 2000);
     }
+  };
+
+  const copyPwaLink = async (id: number, code: string) => {
+    await navigator.clipboard.writeText(getPwaInviteUrl(code));
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleAdd = () => {
@@ -129,20 +139,33 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
 
                 {c.inviteCode ? (
                   <>
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs text-gray-500 flex-1">Код для ребёнка:</p>
-                      <button
-                        onClick={() => shareCode(c.id, c.inviteCode!, c.name)}
-                        className="font-black text-base tracking-widest text-[#1E1B4B] bg-white border border-amber-200 rounded-lg px-2 py-0.5 active:scale-95 transition-all"
-                      >
-                        {copiedId === c.id ? <span className="text-green-500 text-xs">✅ Отправлено!</span> : <>{c.inviteCode} 📤</>}
-                      </button>
+                    {/* PWA-ссылка — главный способ */}
+                    <div className="bg-white rounded-xl px-3 py-2.5 space-y-2">
+                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-wide">Ссылка-приглашение (PWA)</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-[#6B7BFF] truncate flex-1 font-medium">{getPwaInviteUrl(c.inviteCode)}</p>
+                        <button
+                          onClick={() => copyPwaLink(c.id, c.inviteCode!)}
+                          className="shrink-0 bg-[#6B7BFF] text-white text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all"
+                        >
+                          {copiedId === c.id ? "✅" : "Копировать"}
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Поделиться полным сообщением */}
+                    <button
+                      onClick={() => shareCode(c.id, c.inviteCode!, c.name)}
+                      className="w-full flex items-center justify-center gap-2 py-2 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 font-bold text-xs active:scale-95 transition-all"
+                    >
+                      📤 Отправить приглашение {c.name}
+                    </button>
+
+                    {/* Через Telegram — дополнительно */}
                     <div className="bg-white/70 rounded-xl px-3 py-2 space-y-1">
-                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-wide">Инструкция для {c.name}:</p>
-                      <p className="text-xs text-gray-600">1️⃣ Открыть Telegram → найти <b>@task4kids_bot</b></p>
-                      <p className="text-xs text-gray-600">2️⃣ Нажать кнопку <b>«Открыть СтарКидс»</b></p>
-                      <p className="text-xs text-gray-600">3️⃣ Ввести код <b>{c.inviteCode}</b></p>
+                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-wide">Также через Telegram:</p>
+                      <p className="text-xs text-gray-600">1️⃣ Найти <b>@task4kids_bot</b></p>
+                      <p className="text-xs text-gray-600">2️⃣ Ввести код <b>{c.inviteCode}</b></p>
                     </div>
                   </>
                 ) : (
