@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { PremiumBadge } from "@/components/ui/PremiumBadge";
 
+const isTelegramMiniApp = () => {
+  const initData = window.Telegram?.WebApp?.initData;
+  return typeof initData === "string" && initData.length > 0;
+};
+
 type Child = { id: number; name: string; stars: number; avatar: string; age: number; inviteCode?: string | null; connected?: boolean };
 type NewTask = {
   title: string; stars: number; emoji: string; childId: number;
@@ -91,7 +96,7 @@ export function AddTaskForm({ children, onAddTask, onClose, isPremium, trialUsed
         <div className="p-6 text-center">
           <div className="text-3xl mb-2">⏳</div>
           <p className="font-bold text-[#1E1B4B] mb-1">Нет подключённых детей</p>
-          <p className="text-sm text-gray-500">Ребёнок должен подключить Telegram, чтобы получать задачи</p>
+          <p className="text-sm text-gray-500">{isTelegramMiniApp() ? "Ребёнок должен подключить Telegram, чтобы получать задачи" : "Отправьте ребёнку ссылку-приглашение из раздела «Дети»"}</p>
         </div>
       </div>
     );
