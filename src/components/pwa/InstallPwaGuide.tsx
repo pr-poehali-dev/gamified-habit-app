@@ -5,7 +5,18 @@ interface Props {
   onDone: () => void;
 }
 
-const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+const ua = () => navigator.userAgent;
+const isIos = () => /iphone|ipad|ipod/i.test(ua());
+const isAndroid = () => /android/i.test(ua());
+
+// Встроенный браузер Telegram (iOS и Android)
+const isTelegramBrowser = () => /telegram/i.test(ua());
+
+// iOS, но не Safari (Chrome на iOS, Firefox на iOS, встроенный в Telegram)
+const isIosNotSafari = () => isIos() && !/safari/i.test(ua());
+
+// Нужно перенаправить пользователя в нужный браузер
+const needsBrowserSwitch = () => isTelegramBrowser() || isIosNotSafari();
 
 // ─── Иллюстрации ──────────────────────────────────────────────────────────────
 
@@ -254,11 +265,108 @@ const ANDROID_STEPS = [
   },
 ];
 
+// ─── Экран "открой в другом браузере" ─────────────────────────────────────────
+
+function BrowserSwitchScreen({ onDone }: { onDone: () => void }) {
+  const inTg = isTelegramBrowser();
+  const ios = isIos();
+  const currentUrl = window.location.href;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-gradient-to-br from-[#F0F4FF] via-[#F8F9FF] to-[#F4F0FF] flex flex-col" style={{ fontFamily: "Golos Text, sans-serif" }}>
+      <div className="flex justify-end px-5 pt-8">
+        <button onClick={onDone} className="text-sm text-gray-400 font-medium px-3 py-1 rounded-full hover:bg-gray-100 transition">
+          Пропустить
+        </button>
+      </div>
+
+      <div className="flex-1 flex flex-col items-center justify-center px-6 gap-6 text-center">
+        <div className="text-6xl">{inTg ? "✈️" : "🌐"}</div>
+
+        <div className="space-y-3 max-w-xs">
+          <h2 className="text-xl font-black text-[#1E1B4B]">
+            {inTg ? "Откройте в браузере" : "Откройте в Safari"}
+          </h2>
+          <p className="text-gray-500 text-sm leading-relaxed">
+            {inTg && ios && "Встроенный браузер Telegram не поддерживает добавление на экран «Домой». Откройте ссылку в Safari."}
+            {inTg && !ios && "Встроенный браузер Telegram не поддерживает добавление на главный экран. Откройте ссылку в Chrome."}
+            {!inTg && ios && "Chrome и Firefox на iPhone не поддерживают добавление на экран «Домой». Используйте Safari."}
+          </p>
+        </div>
+
+        {/* Визуальная инструкция */}
+        <div className="w-full max-w-xs bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-3">
+          {inTg ? (
+            <>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-[#6B7BFF]/10 rounded-full flex items-center justify-center text-sm font-bold text-[#6B7BFF]">1</div>
+                <p className="text-sm text-gray-700 text-left">
+                  Нажмите <strong>«···»</strong> или <strong>⋮</strong> в правом верхнем углу
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-[#6B7BFF]/10 rounded-full flex items-center justify-center text-sm font-bold text-[#6B7BFF]">2</div>
+                <p className="text-sm text-gray-700 text-left">
+                  Выберите <strong>«Открыть в {ios ? "Safari" : "Chrome"}»</strong>
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-[#6B7BFF]/10 rounded-full flex items-center justify-center text-sm font-bold text-[#6B7BFF]">3</div>
+                <p className="text-sm text-gray-700 text-left">
+                  Следуйте инструкции по добавлению на экран
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-[#6B7BFF]/10 rounded-full flex items-center justify-center text-sm font-bold text-[#6B7BFF]">1</div>
+                <p className="text-sm text-gray-700 text-left">Скопируйте адрес сайта</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-[#6B7BFF]/10 rounded-full flex items-center justify-center text-sm font-bold text-[#6B7BFF]">2</div>
+                <p className="text-sm text-gray-700 text-left">Откройте <strong>Safari</strong> и вставьте адрес</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-[#6B7BFF]/10 rounded-full flex items-center justify-center text-sm font-bold text-[#6B7BFF]">3</div>
+                <p className="text-sm text-gray-700 text-left">Добавьте на экран «Домой» через кнопку «Поделиться»</p>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="px-5 pb-8 space-y-2">
+        {!inTg && (
+          <Button
+            className="w-full h-12 text-base bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] hover:opacity-90 text-white font-bold rounded-2xl shadow-lg"
+            onClick={() => {
+              navigator.clipboard?.writeText(currentUrl).catch(() => {});
+              onDone();
+            }}
+          >
+            Скопировать адрес сайта
+          </Button>
+        )}
+        <button onClick={onDone} className="w-full text-sm text-gray-400 text-center py-2">
+          Продолжить без установки
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Компонент ────────────────────────────────────────────────────────────────
 
 export default function InstallPwaGuide({ onDone }: Props) {
   const ios = isIos();
   const [step, setStep] = useState(0);
+
+  // Если браузер не поддерживает установку — показываем инструкцию переключиться
+  if (needsBrowserSwitch()) {
+    return <BrowserSwitchScreen onDone={onDone} />;
+  }
+
   const steps = ios ? IOS_STEPS : ANDROID_STEPS;
   const current = steps[step];
   const isLast = step === steps.length - 1;
