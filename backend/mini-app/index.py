@@ -113,20 +113,18 @@ def resolve_telegram_id(body: dict, bot_token: str):
     return None
 
 
-def resolve_parent_id_by_session(body: dict):
+def resolve_parent_id_by_session(conn, body: dict):
     """Возвращает (parent_id, telegram_id) по pwa_session_token."""
     token = body.get("pwa_session_token", "")
     if not token:
         return None, None
     try:
-        conn = get_conn()
         with conn.cursor() as cur:
             cur.execute(
                 f"SELECT id, telegram_id FROM {SCHEMA}.parents WHERE pwa_session_token = %s",
                 (token,)
             )
             row = cur.fetchone()
-        conn.close()
         if row:
             return row[0], row[1]
     except Exception as e:
@@ -490,7 +488,7 @@ def resolve_parent(conn, body):
     if tid:
         parent = get_parent_by_tg(conn, tid)
     if not parent:
-        pid, session_tid = resolve_parent_id_by_session(body)
+        pid, session_tid = resolve_parent_id_by_session(conn, body)
         if pid:
             parent = get_parent_by_id(conn, pid)
             if parent and not tid:
