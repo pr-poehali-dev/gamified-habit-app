@@ -1,24 +1,7 @@
 import { useState } from "react";
-import { getLevelTier } from "@/lib/gameTypes";
+import { getLevelTier, ACHIEVEMENTS_MAP } from "@/lib/gameTypes";
 
-const ACHIEVEMENTS: Record<string, { emoji: string; title: string }> = {
-  first_task:  { emoji: "🎯", title: "Первый шаг" },
-  tasks_5:     { emoji: "📋", title: "5 заданий" },
-  tasks_10:    { emoji: "🏅", title: "10 заданий" },
-  tasks_25:    { emoji: "🏆", title: "25 заданий" },
-  stars_10:    { emoji: "⭐", title: "10 звёзд" },
-  stars_50:    { emoji: "🌟", title: "50 звёзд" },
-  stars_100:   { emoji: "💫", title: "100 звёзд" },
-  level_3:     { emoji: "🥉", title: "Уровень 3" },
-  level_5:     { emoji: "🥈", title: "Уровень 5" },
-  level_10:    { emoji: "🥇", title: "Уровень 10" },
-  spend_10:    { emoji: "🛍️", title: "Покупатель" },
-  spend_30:    { emoji: "💎", title: "Транжира" },
-  reward_1:    { emoji: "🎁", title: "1-я награда" },
-  reward_3:    { emoji: "🎀", title: "Коллекционер" },
-  streak_3:    { emoji: "🔥", title: "3 дня" },
-  streak_7:    { emoji: "💪", title: "Неделя!" },
-};
+const ACHIEVEMENTS = ACHIEVEMENTS_MAP;
 
 const GRADE_COLORS: Record<string, string> = {
   "5": "bg-emerald-500",

@@ -1,26 +1,34 @@
 import { useState } from "react";
-import type { AchievementId } from "@/lib/gameTypes";
+import { type AchievementId, ACHIEVEMENTS_MAP } from "@/lib/gameTypes";
 
 const CDN = "https://cdn.poehali.dev/projects/646a8e3a-c6c3-4005-9a70-b35e18c651d5/files";
 
-const ACHIEVEMENTS: Record<AchievementId, { emoji: string; title: string; desc: string; detail: string; img: string }> = {
-  first_task:  { emoji: "🎯", title: "Первый шаг",     desc: "Выполни первое задание",  detail: "Каждое путешествие начинается с первого шага! Ты взялся за дело — молодец, так держать!", img: `${CDN}/bcb835ca-9119-433d-b409-83efc6f7aa40.jpg` },
-  tasks_5:     { emoji: "📋", title: "5 заданий",       desc: "Выполни 5 заданий",       detail: "Настоящий герой не останавливается! Пять заданий позади — впереди новые подвиги.", img: `${CDN}/cbdcdd6d-3ea4-456a-a226-9c9fda423900.jpg` },
-  tasks_10:    { emoji: "🏅", title: "10 заданий",      desc: "Выполни 10 заданий",      detail: "Ты как ниндзя — быстро и чётко! 10 заданий — это серьёзный результат.", img: `${CDN}/17bc04a9-d2b6-41a3-89fa-0ba066336c22.jpg` },
-  tasks_25:    { emoji: "🏆", title: "25 заданий",      desc: "Выполни 25 заданий",      detail: "Легендарный рыцарь! 25 заданий выполнено — ты настоящий чемпион.", img: `${CDN}/573825d6-5428-4b84-b778-0d2218b0c80f.jpg` },
-  stars_10:    { emoji: "⭐", title: "10 звёзд",        desc: "Набери 10 звёзд",         detail: "Первые 10 звёзд сверкают в твоей коллекции! Магия только начинается.", img: `${CDN}/043dcca0-7db8-4ef6-b533-77c92d525341.jpg` },
-  stars_50:    { emoji: "🌟", title: "50 звёзд",        desc: "Набери 50 звёзд",         detail: "50 звёзд — ты покоряешь галактику! Космический исследователь.", img: `${CDN}/73c0e705-d2dd-4207-a527-4263c9a83228.jpg` },
-  stars_100:   { emoji: "💫", title: "100 звёзд",       desc: "Набери 100 звёзд",        detail: "100 звёзд! Ты стал повелителем звёздного неба. Легенда!", img: `${CDN}/a1e040f2-a609-4dc4-9885-02dc7bb7a685.jpg` },
-  level_3:     { emoji: "🥉", title: "Уровень 3",       desc: "Достигни 3 уровня",       detail: "Бронзовый атлет! Третий уровень покорён — путь наверх открыт.", img: `${CDN}/d1d124a7-244b-4f6c-9635-c73b1feb7f99.jpg` },
-  level_5:     { emoji: "🥈", title: "Уровень 5",       desc: "Достигни 5 уровня",       detail: "Серебряный чемпион! Пятый уровень — ты в элите.", img: `${CDN}/fabeba60-8eb8-4302-b928-a951c07e2c44.jpg` },
-  level_10:    { emoji: "🥇", title: "Уровень 10",      desc: "Достигни 10 уровня",      detail: "Золотой император! Десятый уровень — ты на вершине мира!", img: `${CDN}/f759223f-27b0-455d-bfe0-c3ea31fc6129.jpg` },
-  spend_10:    { emoji: "🛍️", title: "Покупатель",      desc: "Потрать 10 звёзд",        detail: "Первые покупки сделаны! Умеешь не только зарабатывать, но и тратить с умом.", img: `${CDN}/058724d8-184b-4073-b348-97f7b4e20991.jpg` },
-  spend_30:    { emoji: "💎", title: "Транжира",        desc: "Потрать 30 звёзд",        detail: "Пиратский клад! 30 звёзд потрачено — ты знаешь толк в сокровищах.", img: `${CDN}/d6679c93-24ce-4b0f-9b43-27201448e133.jpg` },
-  reward_1:    { emoji: "🎁", title: "Первая награда",  desc: "Купи первую награду",     detail: "Первый подарок самому себе! Ты заслужил эту награду честным трудом.", img: `${CDN}/44f07e19-bacb-4aac-8e9c-dfc27b927afb.jpg` },
-  reward_3:    { emoji: "🎀", title: "Коллекционер",   desc: "Купи 3 награды",          detail: "Три награды в коллекции! Настоящий ценитель и коллекционер.", img: `${CDN}/07752691-adc8-4dca-aef3-58821504048d.jpg` },
-  streak_3:    { emoji: "🔥", title: "3 дня подряд",   desc: "Стрик 3 дня",             detail: "Три дня без перерыва! Огонь горит — не останавливайся!", img: `${CDN}/bf49eb43-bf1e-4ade-8b50-242d0eed3649.jpg` },
-  streak_7:    { emoji: "💪", title: "Неделя!",         desc: "Стрик 7 дней",            detail: "Целая неделя подряд! Невероятная сила воли — ты супергерой!", img: `${CDN}/58299370-04a1-42aa-a634-32fb0e35bc8f.jpg` },
+const ACHIEVEMENT_DETAILS: Record<AchievementId, { detail: string; img: string }> = {
+  first_task:  { detail: "Каждое путешествие начинается с первого шага! Ты взялся за дело — молодец, так держать!", img: `${CDN}/bcb835ca-9119-433d-b409-83efc6f7aa40.jpg` },
+  tasks_5:     { detail: "Настоящий герой не останавливается! Пять заданий позади — впереди новые подвиги.", img: `${CDN}/cbdcdd6d-3ea4-456a-a226-9c9fda423900.jpg` },
+  tasks_10:    { detail: "Ты как ниндзя — быстро и чётко! 10 заданий — это серьёзный результат.", img: `${CDN}/17bc04a9-d2b6-41a3-89fa-0ba066336c22.jpg` },
+  tasks_25:    { detail: "Легендарный рыцарь! 25 заданий выполнено — ты настоящий чемпион.", img: `${CDN}/573825d6-5428-4b84-b778-0d2218b0c80f.jpg` },
+  stars_10:    { detail: "Первые 10 звёзд сверкают в твоей коллекции! Магия только начинается.", img: `${CDN}/043dcca0-7db8-4ef6-b533-77c92d525341.jpg` },
+  stars_50:    { detail: "50 звёзд — ты покоряешь галактику! Космический исследователь.", img: `${CDN}/73c0e705-d2dd-4207-a527-4263c9a83228.jpg` },
+  stars_100:   { detail: "100 звёзд! Ты стал повелителем звёздного неба. Легенда!", img: `${CDN}/a1e040f2-a609-4dc4-9885-02dc7bb7a685.jpg` },
+  level_3:     { detail: "Бронзовый атлет! Третий уровень покорён — путь наверх открыт.", img: `${CDN}/d1d124a7-244b-4f6c-9635-c73b1feb7f99.jpg` },
+  level_5:     { detail: "Серебряный чемпион! Пятый уровень — ты в элите.", img: `${CDN}/fabeba60-8eb8-4302-b928-a951c07e2c44.jpg` },
+  level_10:    { detail: "Золотой император! Десятый уровень — ты на вершине мира!", img: `${CDN}/f759223f-27b0-455d-bfe0-c3ea31fc6129.jpg` },
+  spend_10:    { detail: "Первые покупки сделаны! Умеешь не только зарабатывать, но и тратить с умом.", img: `${CDN}/058724d8-184b-4073-b348-97f7b4e20991.jpg` },
+  spend_30:    { detail: "Пиратский клад! 30 звёзд потрачено — ты знаешь толк в сокровищах.", img: `${CDN}/d6679c93-24ce-4b0f-9b43-27201448e133.jpg` },
+  reward_1:    { detail: "Первый подарок самому себе! Ты заслужил эту награду честным трудом.", img: `${CDN}/44f07e19-bacb-4aac-8e9c-dfc27b927afb.jpg` },
+  reward_3:    { detail: "Три награды в коллекции! Настоящий ценитель и коллекционер.", img: `${CDN}/07752691-adc8-4dca-aef3-58821504048d.jpg` },
+  streak_3:    { detail: "Три дня без перерыва! Огонь горит — не останавливайся!", img: `${CDN}/bf49eb43-bf1e-4ade-8b50-242d0eed3649.jpg` },
+  streak_7:    { detail: "Целая неделя подряд! Невероятная сила воли — ты супергерой!", img: `${CDN}/58299370-04a1-42aa-a634-32fb0e35bc8f.jpg` },
 };
+
+// Объединяем базовые данные с деталями для отображения у ребёнка
+const ACHIEVEMENTS = Object.fromEntries(
+  Object.entries(ACHIEVEMENTS_MAP).map(([id, base]) => [
+    id,
+    { ...base, ...ACHIEVEMENT_DETAILS[id as AchievementId] },
+  ])
+) as Record<AchievementId, { emoji: string; title: string; desc: string; detail: string; img: string }>;
 
 const ALL_IDS = Object.keys(ACHIEVEMENTS) as AchievementId[];
 

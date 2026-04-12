@@ -38,6 +38,25 @@ export type AchievementId =
   | "reward_1" | "reward_3"
   | "streak_3" | "streak_7";
 
+export const ACHIEVEMENTS_MAP: Record<AchievementId, { emoji: string; title: string; desc: string }> = {
+  first_task:  { emoji: "🎯", title: "Первый шаг",     desc: "Выполни первое задание" },
+  tasks_5:     { emoji: "📋", title: "5 заданий",       desc: "Выполни 5 заданий" },
+  tasks_10:    { emoji: "🏅", title: "10 заданий",      desc: "Выполни 10 заданий" },
+  tasks_25:    { emoji: "🏆", title: "25 заданий",      desc: "Выполни 25 заданий" },
+  stars_10:    { emoji: "⭐", title: "10 звёзд",        desc: "Набери 10 звёзд" },
+  stars_50:    { emoji: "🌟", title: "50 звёзд",        desc: "Набери 50 звёзд" },
+  stars_100:   { emoji: "💫", title: "100 звёзд",       desc: "Набери 100 звёзд" },
+  level_3:     { emoji: "🥉", title: "Уровень 3",       desc: "Достигни 3 уровня" },
+  level_5:     { emoji: "🥈", title: "Уровень 5",       desc: "Достигни 5 уровня" },
+  level_10:    { emoji: "🥇", title: "Уровень 10",      desc: "Достигни 10 уровня" },
+  spend_10:    { emoji: "🛍️", title: "Покупатель",      desc: "Потрать 10 звёзд" },
+  spend_30:    { emoji: "💎", title: "Транжира",        desc: "Потрать 30 звёзд" },
+  reward_1:    { emoji: "🎁", title: "Первая награда",  desc: "Купи первую награду" },
+  reward_3:    { emoji: "🎀", title: "Коллекционер",   desc: "Купи 3 награды" },
+  streak_3:    { emoji: "🔥", title: "3 дня подряд",   desc: "Стрик 3 дня" },
+  streak_7:    { emoji: "💪", title: "Неделя!",         desc: "Стрик 7 дней" },
+};
+
 export function getSubjectsByAge(age: number): string[] {
   if (age <= 6)  return ["Чтение", "Математика", "Рисование", "Лепка", "Музыка", "Физкультура"];
   if (age <= 9)  return ["Математика", "Русский", "Чтение", "Окр. мир", "Рисование", "Физкультура", "Музыка", "Английский"];
