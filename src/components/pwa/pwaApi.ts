@@ -1,4 +1,4 @@
-import func2url from "@/../func2url.json";
+import func2url from "../../../backend/func2url.json";
 
 const PWA_AUTH_URL = (func2url as Record<string, string>)["pwa-auth"];
 
