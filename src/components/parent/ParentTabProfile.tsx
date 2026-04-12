@@ -1,4 +1,11 @@
 import { useState } from "react";
+
+const isTelegramMiniApp = () => {
+  const initData = window.Telegram?.WebApp?.initData;
+  return typeof initData === "string" && initData.length > 0;
+};
+const isPwaMode = () => !isTelegramMiniApp();
+const getPwaInviteUrl = (code: string) => `${window.location.origin}/invite?code=${code}`;
 import { getParentLevelInfo, getParentLevelTier, type StreakState } from "@/lib/gameTypes";
 import { ChildAnalyticsCard, type ChildAnalytics } from "./ChildAnalyticsCard";
 import { apiCall } from "@/components/miniapp/useApi";
@@ -95,10 +102,13 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
   };
 
   const shareCode = async (id: number, code: string, cName: string) => {
-    const text = `Привет! Я жду тебя в приложении СтарКидс 🌟\n\n1️⃣ Открой Telegram → найди @task4kids_bot\n2️⃣ Нажми кнопку «Открыть СтарКидс»\n3️⃣ Введи код: ${code}\n\nИли перейди по ссылке: https://t.me/task4kids_bot?start=${code}`;
+    const pwaUrl = getPwaInviteUrl(code);
+    const text = isPwaMode()
+      ? `Привет, ${cName}! Я жду тебя в СтарКидс 🌟\n\nПерейди по ссылке и введи своё имя:\n👉 ${pwaUrl}`
+      : `Привет! Я жду тебя в приложении СтарКидс 🌟\n\n1️⃣ Открой Telegram → найди @task4kids_bot\n2️⃣ Нажми кнопку «Открыть СтарКидс»\n3️⃣ Введи код: ${code}\n\nИли перейди по ссылке: https://t.me/task4kids_bot?start=${code}`;
     if (navigator.share) {
       try {
-        await navigator.share({ text });
+        await navigator.share({ title: "СтарКидс — приглашение", text, url: pwaUrl });
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2000);
       } catch {
@@ -345,11 +355,21 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
                       </button>
                     </div>
                     <div className="bg-white/70 rounded-xl px-3 py-2 space-y-1">
-                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-wide">Инструкция для {c.name}:</p>
-                      <p className="text-xs text-gray-600">👆 <b>Нажми на код выше и перешли его ребёнку</b></p>
-                      <p className="text-xs text-gray-600">1️⃣ Ребёнок открывает Telegram → находит <b>@task4kids_bot</b></p>
-                      <p className="text-xs text-gray-600">2️⃣ Нажимает <b>«Открыть СтарКидс»</b></p>
-                      <p className="text-xs text-gray-600">3️⃣ Вводит код <b>{c.inviteCode}</b></p>
+                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-wide">Как подключить {c.name}:</p>
+                      {isPwaMode() ? (
+                        <>
+                          <p className="text-xs text-gray-600">👆 <b>Нажми кнопку выше и отправь приглашение</b></p>
+                          <p className="text-xs text-gray-600">1️⃣ Ребёнок открывает ссылку</p>
+                          <p className="text-xs text-gray-600">2️⃣ Вводит своё имя и готово ✅</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-xs text-gray-600">👆 <b>Нажми на код выше и перешли его ребёнку</b></p>
+                          <p className="text-xs text-gray-600">1️⃣ Ребёнок открывает Telegram → находит <b>@task4kids_bot</b></p>
+                          <p className="text-xs text-gray-600">2️⃣ Нажимает <b>«Открыть СтарКидс»</b></p>
+                          <p className="text-xs text-gray-600">3️⃣ Вводит код <b>{c.inviteCode}</b></p>
+                        </>
+                      )}
                     </div>
                   </>
                 ) : (

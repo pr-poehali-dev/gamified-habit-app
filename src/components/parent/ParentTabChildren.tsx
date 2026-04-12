@@ -1,5 +1,11 @@
 import { useState } from "react";
 
+const isTelegramMiniApp = () => {
+  const initData = window.Telegram?.WebApp?.initData;
+  return typeof initData === "string" && initData.length > 0;
+};
+const isPwaMode = () => !isTelegramMiniApp();
+
 type Child = { id: number; name: string; stars: number; avatar: string; age: number; inviteCode: string | null; connected: boolean };
 
 type ChildrenProps = {
@@ -161,12 +167,14 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
                       📤 Отправить приглашение {c.name}
                     </button>
 
-                    {/* Через Telegram — дополнительно */}
-                    <div className="bg-white/70 rounded-xl px-3 py-2 space-y-1">
-                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-wide">Также через Telegram:</p>
-                      <p className="text-xs text-gray-600">1️⃣ Найти <b>@task4kids_bot</b></p>
-                      <p className="text-xs text-gray-600">2️⃣ Ввести код <b>{c.inviteCode}</b></p>
-                    </div>
+                    {/* Через Telegram — только не в PWA */}
+                    {!isPwaMode() && (
+                      <div className="bg-white/70 rounded-xl px-3 py-2 space-y-1">
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-wide">Также через Telegram:</p>
+                        <p className="text-xs text-gray-600">1️⃣ Найти <b>@task4kids_bot</b></p>
+                        <p className="text-xs text-gray-600">2️⃣ Ввести код <b>{c.inviteCode}</b></p>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <button onClick={() => onRefreshInvite(c.id)} className="text-xs font-bold text-[#6B7BFF]">Создать код →</button>
