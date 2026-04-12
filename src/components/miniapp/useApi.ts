@@ -5,7 +5,8 @@ export const API_URL = "https://functions.poehali.dev/3a2e1162-786c-43ae-a6b7-78
 export async function apiCall(action: string, body: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
   const webapp = tg();
   const initData = webapp?.initData || "";
-  const payload = { action, initData, ...body };
+  const pwaToken = localStorage.getItem("pwa_session_token") || "";
+  const payload = { action, initData, ...body, ...(pwaToken ? { pwa_session_token: pwaToken } : {}) };
   try {
     const res = await fetch(API_URL, {
       method: "POST",

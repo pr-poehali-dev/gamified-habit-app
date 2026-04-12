@@ -87,18 +87,16 @@ def validate_tg_init_data(init_data: str, bot_token: str) -> dict | None:
 
 
 def resolve_telegram_id(body: dict, bot_token: str):
-    """Возвращает telegram_id из initData или напрямую."""
+    """Возвращает telegram_id из initData, напрямую или по pwa_session_token."""
     init_data = body.get("initData", "")
     print(f"[DEBUG] initData present: {bool(init_data)}, length: {len(init_data)}")
     print(f"[DEBUG] telegram_id in body: {body.get('telegram_id')}")
 
     if init_data:
-        # Строгая валидация
         user = validate_tg_init_data(init_data, bot_token)
         print(f"[DEBUG] strict validation result: {user}")
         if user:
             return user["id"]
-        # Fallback: user.id без проверки подписи
         try:
             parsed = parse_qs(init_data)
             print(f"[DEBUG] parsed keys: {list(parsed.keys())}")
@@ -110,7 +108,30 @@ def resolve_telegram_id(body: dict, bot_token: str):
             print(f"[DEBUG] fallback error: {e}")
         return None
     tid = body.get("telegram_id")
-    return int(tid) if tid else None
+    if tid:
+        return int(tid)
+    return None
+
+
+def resolve_parent_id_by_session(body: dict):
+    """Возвращает (parent_id, telegram_id) по pwa_session_token."""
+    token = body.get("pwa_session_token", "")
+    if not token:
+        return None, None
+    try:
+        conn = get_conn()
+        with conn.cursor() as cur:
+            cur.execute(
+                f"SELECT id, telegram_id FROM {SCHEMA}.parents WHERE pwa_session_token = %s",
+                (token,)
+            )
+            row = cur.fetchone()
+        conn.close()
+        if row:
+            return row[0], row[1]
+    except Exception as e:
+        print(f"[DEBUG] session resolve error: {e}")
+    return None, None
 
 
 def send_tg_message(token: str, chat_id: int, text: str, parse_mode="HTML"):
@@ -420,11 +441,67 @@ def check_trial_reminder(conn, parent_id: int, telegram_id: int):
             )
 
 
-def handle_auth_parent(conn, body):
+def get_parent_by_id(conn, parent_id):
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT id, full_name, parent_xp, parent_points, streak_current, streak_last_date, streak_claimed_today, streak_longest, is_premium, trial_started_at, trial_ends_at, trial_used, notifications_enabled, notification_settings, telegram_id FROM {SCHEMA}.parents WHERE id = %s",
+            (parent_id,)
+        )
+        row = cur.fetchone()
+    if not row:
+        return None
+    from datetime import datetime, timezone
+    from math import ceil
+    is_premium_db = bool(row[8])
+    trial_ends_at = row[10]
+    trial_used = bool(row[11])
+    trial_active = False
+    trial_days_left = 0
+    if trial_ends_at and not is_premium_db:
+        now = datetime.now(timezone.utc)
+        if trial_ends_at > now:
+            trial_active = True
+            remaining = trial_ends_at - now
+            trial_days_left = max(1, ceil(remaining.total_seconds() / 86400))
+    is_premium = is_premium_db or trial_active
+    return {
+        "id": row[0], "name": row[1], "role": "parent",
+        "parent_xp": row[2] or 0, "parent_points": row[3] or 0,
+        "streak_current": row[4] or 0,
+        "streak_last_date": row[5].isoformat() if row[5] else None,
+        "streak_claimed_today": row[6] or False,
+        "streak_longest": row[7] or 0,
+        "is_premium": is_premium,
+        "is_premium_paid": is_premium_db,
+        "trial_active": trial_active,
+        "trial_days_left": trial_days_left,
+        "trial_used": trial_used,
+        "trial_ends_at": trial_ends_at.isoformat() if trial_ends_at else None,
+        "notifications_enabled": bool(row[12]) if row[12] is not None else True,
+        "notification_settings": json.loads(row[13]) if row[13] else {"tips": True, "activity": True},
+        "telegram_id": row[14],
+    }
+
+
+def resolve_parent(conn, body):
+    """Находит родителя по initData, telegram_id или pwa_session_token. Возвращает (tid, parent) или (None, None)."""
     tid = resolve_telegram_id(body, PARENT_TOKEN)
-    if not tid:
+    parent = None
+    if tid:
+        parent = get_parent_by_tg(conn, tid)
+    if not parent:
+        pid, session_tid = resolve_parent_id_by_session(body)
+        if pid:
+            parent = get_parent_by_id(conn, pid)
+            if parent and not tid:
+                tid = session_tid or 0
+    return tid, parent
+
+
+def handle_auth_parent(conn, body):
+    tid, parent = resolve_parent(conn, body)
+    if not tid and not parent:
         return json_response({"role": "unknown", "telegram_id": 0, "error": "no_tg_id"})
-    parent = get_parent_by_tg(conn, tid)
     if not parent:
         # Авторегистрация — создаём родителя при первом входе
         first_name = body.get("first_name", "")
@@ -659,14 +736,10 @@ def handle_complete_task(conn, body):
 
 def handle_confirm_task(conn, body):
     print(f"[confirm_task] body keys: {list(body.keys())}, task_id={body.get('task_id')}, confirm_action={body.get('confirm_action')}")
-    tid = resolve_telegram_id(body, PARENT_TOKEN)
-    print(f"[confirm_task] tid={tid}")
-    if not tid:
-        return error_response("Unauthorized", 401)
-    parent = get_parent_by_tg(conn, tid)
-    print(f"[confirm_task] parent={parent}")
+    tid, parent = resolve_parent(conn, body)
+    print(f"[confirm_task] tid={tid} parent={bool(parent)}")
     if not parent:
-        return error_response("Parent not found", 404)
+        return error_response("Unauthorized", 401)
     task_id = body.get("task_id")
     action = body.get("confirm_action", "approve")  # approve | reject
     print(f"[confirm_task] task_id={task_id}, action={action}, parent_id={parent['id']}")
@@ -716,12 +789,9 @@ def handle_confirm_task(conn, body):
 
 
 def handle_add_task(conn, body):
-    tid = resolve_telegram_id(body, PARENT_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    parent = get_parent_by_tg(conn, tid)
+    tid, parent = resolve_parent(conn, body)
     if not parent:
-        return error_response("Parent not found", 404)
+        return error_response("Unauthorized", 401)
     child_id = body.get("child_id")
     title = body.get("title", "").strip()
     stars = int(body.get("stars", 3))
@@ -793,12 +863,9 @@ def handle_submit_grade(conn, body):
 
 
 def handle_approve_grade(conn, body):
-    tid = resolve_telegram_id(body, PARENT_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    parent = get_parent_by_tg(conn, tid)
+    tid, parent = resolve_parent(conn, body)
     if not parent:
-        return error_response("Parent not found", 404)
+        return error_response("Unauthorized", 401)
     req_id = body.get("request_id")
     action = body.get("grade_action", body.get("action", "approve"))
     with conn.cursor() as cur:
@@ -876,12 +943,9 @@ def handle_request_extension(conn, body):
 
 def handle_task_extension(conn, body):
     """Родитель отвечает на запрос дополнительного времени."""
-    tid = resolve_telegram_id(body, PARENT_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    parent = get_parent_by_tg(conn, tid)
+    tid, parent = resolve_parent(conn, body)
     if not parent:
-        return error_response("Parent not found", 404)
+        return error_response("Unauthorized", 401)
     task_id = body.get("task_id")
     action = body.get("extension_action", "grant")  # grant | deny
     hours = int(body.get("hours", 24))
@@ -980,12 +1044,9 @@ def handle_buy_reward(conn, body):
 
 def handle_streak_claim(conn, body):
     """Бонус начисляется автоматически. Эндпоинт оставлен для совместимости."""
-    tid = resolve_telegram_id(body, PARENT_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    parent = get_parent_by_tg(conn, tid)
+    tid, parent = resolve_parent(conn, body)
     if not parent:
-        return error_response("Parent not found", 404)
+        return error_response("Unauthorized", 401)
     streak = parent["streak_current"]
     xp, points = get_streak_bonus(streak)
     return json_response({"ok": True, "xp": xp, "points": points, "streak": streak, "auto": True})
@@ -1002,12 +1063,9 @@ def gen_invite_code():
 
 def handle_add_child(conn, body):
     """Добавить ребёнка родителю (без Telegram — оффлайн профиль)."""
-    tid = resolve_telegram_id(body, PARENT_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    parent = get_parent_by_tg(conn, tid)
+    tid, parent = resolve_parent(conn, body)
     if not parent:
-        return error_response("Parent not found", 404)
+        return error_response("Unauthorized", 401)
     if not parent.get("is_premium"):
         with conn.cursor() as cur:
             cur.execute(f"SELECT COUNT(*) FROM {SCHEMA}.children WHERE parent_id = %s", (parent["id"],))
@@ -1032,12 +1090,9 @@ def handle_add_child(conn, body):
 
 def handle_child_invite(conn, body):
     """Сгенерировать новый код приглашения для ребёнка (если уже подключён — сбросить)."""
-    tid = resolve_telegram_id(body, PARENT_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    parent = get_parent_by_tg(conn, tid)
+    tid, parent = resolve_parent(conn, body)
     if not parent:
-        return error_response("Parent not found", 404)
+        return error_response("Unauthorized", 401)
     child_id = body.get("child_id")
     if not child_id:
         return error_response("child_id required", 400)
@@ -1054,12 +1109,9 @@ def handle_child_invite(conn, body):
 
 def handle_remove_child(conn, body):
     """Удалить ребёнка родителя (только если нет звёзд или родитель подтвердил)."""
-    tid = resolve_telegram_id(body, PARENT_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    parent = get_parent_by_tg(conn, tid)
+    tid, parent = resolve_parent(conn, body)
     if not parent:
-        return error_response("Parent not found", 404)
+        return error_response("Unauthorized", 401)
     child_id = body.get("child_id")
     if not child_id:
         return error_response("child_id required", 400)
@@ -1077,12 +1129,9 @@ def handle_remove_child(conn, body):
 
 def handle_add_reward(conn, body):
     """Родитель добавляет награду для конкретного ребёнка с указанием количества."""
-    tid = resolve_telegram_id(body, PARENT_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    parent = get_parent_by_tg(conn, tid)
+    tid, parent = resolve_parent(conn, body)
     if not parent:
-        return error_response("Parent not found", 404)
+        return error_response("Unauthorized", 401)
     title = (body.get("title") or "").strip()
     cost = body.get("cost", 10)
     emoji = body.get("emoji", "🎁")
@@ -1121,12 +1170,9 @@ def handle_add_reward(conn, body):
 
 def handle_remove_reward(conn, body):
     """Родитель удаляет награду."""
-    tid = resolve_telegram_id(body, PARENT_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    parent = get_parent_by_tg(conn, tid)
+    tid, parent = resolve_parent(conn, body)
     if not parent:
-        return error_response("Parent not found", 404)
+        return error_response("Unauthorized", 401)
     reward_id = body.get("reward_id")
     if not reward_id:
         return error_response("reward_id required", 400)
@@ -1142,12 +1188,9 @@ def handle_remove_reward(conn, body):
 
 def handle_activate_trial(conn, body):
     """Активация 7-дневного пробного периода Premium."""
-    tid = resolve_telegram_id(body, PARENT_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    parent = get_parent_by_tg(conn, tid)
+    tid, parent = resolve_parent(conn, body)
     if not parent:
-        return error_response("Parent not found", 404)
+        return error_response("Unauthorized", 401)
     if parent.get("is_premium_paid"):
         return error_response("already_premium", 400)
     if parent.get("trial_used"):
@@ -1166,12 +1209,9 @@ def handle_activate_trial(conn, body):
 
 def handle_delete_task(conn, body):
     """Родитель удаляет выполненное задание (статус approved/done) из истории."""
-    tid = resolve_telegram_id(body, PARENT_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    parent = get_parent_by_tg(conn, tid)
+    tid, parent = resolve_parent(conn, body)
     if not parent:
-        return error_response("Parent not found", 404)
+        return error_response("Unauthorized", 401)
     task_id = body.get("task_id")
     if not task_id:
         return error_response("task_id required", 400)
@@ -1189,12 +1229,9 @@ def handle_delete_task(conn, body):
 
 def handle_cancel_task(conn, body):
     """Родитель отменяет незавершённое задание (статус pending)."""
-    tid = resolve_telegram_id(body, PARENT_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    parent = get_parent_by_tg(conn, tid)
+    tid, parent = resolve_parent(conn, body)
     if not parent:
-        return error_response("Parent not found", 404)
+        return error_response("Unauthorized", 401)
     task_id = body.get("task_id")
     if not task_id:
         return error_response("task_id required", 400)
@@ -1319,12 +1356,9 @@ def handle_child_wish_delete(conn, body):
 
 def handle_parent_wish_dismiss(conn, body):
     """Родитель отклоняет желание ребёнка."""
-    tid = resolve_telegram_id(body, PARENT_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    parent = get_parent_by_tg(conn, tid)
+    tid, parent = resolve_parent(conn, body)
     if not parent:
-        return error_response("Parent not found", 404)
+        return error_response("Unauthorized", 401)
     wish_id = body.get("wish_id")
     if not wish_id:
         return error_response("wish_id required", 400)
@@ -1336,12 +1370,9 @@ def handle_parent_wish_dismiss(conn, body):
 
 def handle_child_analytics(conn, body):
     """Детальная аналитика по всем детям родителя."""
-    tid = resolve_telegram_id(body, PARENT_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    parent = get_parent_by_tg(conn, tid)
+    tid, parent = resolve_parent(conn, body)
     if not parent:
-        return error_response("Parent not found", 404)
+        return error_response("Unauthorized", 401)
     if not parent.get("is_premium"):
         return error_response("premium_required", 403)
 
@@ -1668,12 +1699,9 @@ def handle_friend_remove(conn, body):
 
 def handle_parent_toggle_notifications(conn, body):
     """Переключить уведомления для родителя."""
-    tid = resolve_telegram_id(body, PARENT_TOKEN)
-    if not tid:
-        return error_response("no_tg_id")
-    parent = get_parent_by_tg(conn, tid)
+    tid, parent = resolve_parent(conn, body)
     if not parent:
-        return error_response("not_found")
+        return error_response("Unauthorized", 401)
     enabled = body.get("enabled")
     settings = body.get("settings")
     with conn.cursor() as cur:
