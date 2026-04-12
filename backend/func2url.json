@@ -1,4 +1,5 @@
 {
+  "push-cron": "https://functions.poehali.dev/9bbc8e45-cc7e-4beb-9808-a3f617ea9f62",
   "push-notify": "https://functions.poehali.dev/4c6c7760-0cc8-46e1-b3d7-09f9f927cace",
   "pwa-auth": "https://functions.poehali.dev/00b5f6e2-cea1-4423-a534-309d80c4070a",
   "child-notifications": "https://functions.poehali.dev/76c5d329-89ba-4816-a710-fa7bdd8d8555",
