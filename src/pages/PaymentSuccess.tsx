@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 
-const MINI_APP_URL = "https://t.me/parenttask_bot/starkids";
+const APP_URL = "/app";
 
 export default function PaymentSuccess() {
   useEffect(() => {
     setTimeout(() => {
-      window.location.href = MINI_APP_URL;
+      window.location.href = APP_URL;
     }, 3000);
   }, []);
 
@@ -23,7 +23,7 @@ export default function PaymentSuccess() {
       </p>
 
       <a
-        href={MINI_APP_URL}
+        href={APP_URL}
         className="w-full max-w-xs py-4 rounded-2xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-black text-base shadow-lg active:scale-95 transition-transform text-center block"
       >
         Открыть СтарКидс 👑

@@ -78,7 +78,7 @@ def handler(event: dict, context) -> dict:
         UPDATE {schema}.orders
         SET status = 'paid', paid_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
         WHERE robokassa_inv_id = %s AND status = 'pending'
-        RETURNING id, order_number, user_email, parent_telegram_id
+        RETURNING id, order_number, user_email, parent_telegram_id, parent_id
     """, (int(inv_id),))
 
     result = cur.fetchone()
@@ -92,12 +92,19 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 200, 'headers': HEADERS, 'body': f'OK{inv_id}', 'isBase64Encoded': False}
         return {'statusCode': 404, 'headers': HEADERS, 'body': 'Order not found', 'isBase64Encoded': False}
 
-    order_id, order_number, user_email, parent_telegram_id = result
+    order_id, order_number, user_email, parent_telegram_id, parent_id = result
 
-    # Активируем Premium у родителя в БД
-    if parent_telegram_id:
-        import datetime
-        premium_until = datetime.datetime.now() + datetime.timedelta(days=30)
+    import datetime
+    premium_until = datetime.datetime.now() + datetime.timedelta(days=30)
+
+    # Активируем Premium: сначала по parent_id (PWA), потом по telegram_id (Telegram)
+    if parent_id:
+        cur.execute(f"""
+            UPDATE {schema}.parents
+            SET is_premium_paid = TRUE, premium_until = %s
+            WHERE id = %s
+        """, (premium_until, parent_id))
+    elif parent_telegram_id:
         cur.execute(f"""
             UPDATE {schema}.parents
             SET is_premium_paid = TRUE, premium_until = %s

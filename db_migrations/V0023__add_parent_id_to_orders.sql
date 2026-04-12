@@ -1,0 +1,1 @@
+ALTER TABLE t_p84704826_gamified_habit_app.orders ADD COLUMN parent_id bigint NULL;

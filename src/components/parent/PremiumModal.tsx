@@ -73,9 +73,10 @@ type Props = {
   onActivateTrial: () => Promise<void>;
   parentName: string;
   parentTelegramId?: number;
+  parentId?: number;
 };
 
-export function PremiumModal({ open, onClose, isPremium, isPremiumPaid, trialActive, trialDaysLeft, trialUsed, onActivateTrial, parentName, parentTelegramId }: Props) {
+export function PremiumModal({ open, onClose, isPremium, isPremiumPaid, trialActive, trialDaysLeft, trialUsed, onActivateTrial, parentName, parentTelegramId, parentId }: Props) {
   const [activating, setActivating] = useState(false);
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -128,8 +129,9 @@ export function PremiumModal({ open, onClose, isPremium, isPremiumPaid, trialAct
         },
       ],
       ...(parentTelegramId ? { parent_telegram_id: parentTelegramId } : {}),
+      ...(parentId ? { parent_id: parentId } : {}),
       successUrl: "https://tasks4kids.ru/payment-success",
-      failUrl: "https://tasks4kids.ru/parent",
+      failUrl: "https://tasks4kids.ru/app",
     });
 
     if (data?.payment_url) {

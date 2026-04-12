@@ -69,6 +69,7 @@ def handler(event: dict, context) -> dict:
         success_url = str(payload.get('success_url', ''))
         fail_url = str(payload.get('fail_url', ''))
         parent_telegram_id = payload.get('parent_telegram_id')
+        parent_id = payload.get('parent_id')
 
         if amount <= 0:
             return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Amount must be greater than 0'}), 'isBase64Encoded': False}
@@ -88,10 +89,10 @@ def handler(event: dict, context) -> dict:
         order_number = f"ORD-{datetime.now().strftime('%Y%m%d')}-{robokassa_inv_id}"
 
         cur.execute(f"""
-            INSERT INTO {schema}.orders (order_number, user_name, user_email, user_phone, amount, robokassa_inv_id, status, delivery_address, order_comment, parent_telegram_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO {schema}.orders (order_number, user_name, user_email, user_phone, amount, robokassa_inv_id, status, delivery_address, order_comment, parent_telegram_id, parent_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
-        """, (order_number, user_name, user_email, user_phone, round(amount, 2), robokassa_inv_id, 'pending', user_address, order_comment, parent_telegram_id))
+        """, (order_number, user_name, user_email, user_phone, round(amount, 2), robokassa_inv_id, 'pending', user_address, order_comment, parent_telegram_id, parent_id))
 
         order_id = cur.fetchone()[0]
 
