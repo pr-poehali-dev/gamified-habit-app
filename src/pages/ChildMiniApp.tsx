@@ -9,6 +9,7 @@ import { ChildTabTasks } from "@/components/child/ChildTabTasks";
 import { ChildTabShop, ChildTabGrades, ChildTabProfile } from "@/components/child/ChildTabContent";
 import { ChildBottomNav, type ChildTab } from "@/components/child/ChildBottomNav";
 import { ChildOnboarding } from "@/components/child/ChildOnboarding";
+import InstallPwaGuide from "@/components/pwa/InstallPwaGuide";
 import { ChildConnectScreen } from "@/components/child/ChildConnectScreen";
 import { ChildTabFriends } from "@/components/child/ChildTabFriends";
 import { AchievementUnlockModal } from "@/components/ui/AchievementBadge";
@@ -69,6 +70,11 @@ export default function ChildMiniApp() {
   const [tab, setTab] = useState<ChildTab>("tasks");
   const [toast, setToast] = useState<string | null>(null);
   const [onboardingDone, setOnboardingDone] = useState(() => !!localStorage.getItem("child_onboarding_done"));
+  const [showInstallGuide, setShowInstallGuide] = useState(() => {
+    const inTg = !!(window.Telegram?.WebApp?.initData?.length);
+    const standalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    return !inTg && !standalone && !localStorage.getItem("pwa_install_guide_shown");
+  });
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
   const [friendRequests, setFriendRequests] = useState(0);
   const [newAchievement, setNewAchievement] = useState<AchievementId | null>(null);
@@ -262,15 +268,37 @@ export default function ChildMiniApp() {
   if (error || !data) return <ErrorScreen msg={error || "Нет данных"} />;
 
   const isNewChild = data.stars === 0 && data.tasks.length === 0;
+  const inTelegram = !!(window.Telegram?.WebApp?.initData?.length);
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
 
   if (isNewChild && !onboardingDone) {
     return (
       <ChildOnboarding
         name={data.name}
-        onDone={() => { ymGoal("child_onboarding_done"); localStorage.setItem("child_onboarding_done", "1"); setOnboardingDone(true); }}
+        onDone={() => {
+          ymGoal("child_onboarding_done");
+          localStorage.setItem("child_onboarding_done", "1");
+          setOnboardingDone(true);
+          if (!isStandalone && !inTelegram && !localStorage.getItem("pwa_install_guide_shown")) {
+            setShowInstallGuide(true);
+          }
+        }}
       />
     );
   }
+
+  if (showInstallGuide) {
+    return (
+      <InstallPwaGuide
+        onDone={() => {
+          localStorage.setItem("pwa_install_guide_shown", "1");
+          setShowInstallGuide(false);
+        }}
+      />
+    );
+  }
+
+
 
   // Уровень и XP считаются от всех заработанных звёзд (не списываются при покупках)
   const { level } = getLevelInfo(data.total_stars_earned ?? data.stars);
