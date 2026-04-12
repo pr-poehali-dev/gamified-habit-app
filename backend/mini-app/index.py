@@ -552,8 +552,8 @@ def handle_auth_parent(conn, body):
         if not parent:
             return json_response({"role": "unknown", "telegram_id": tid})
     with conn.cursor() as cur:
-        cur.execute(f"SELECT id, name, stars, avatar, age, invite_code, telegram_id FROM {SCHEMA}.children WHERE parent_id = %s ORDER BY created_at", (parent["id"],))
-        children = [{"id": r[0], "name": r[1], "stars": r[2], "avatar": r[3] or "👧", "age": r[4] or 9, "inviteCode": r[5], "connected": r[6] is not None} for r in cur.fetchall()]
+        cur.execute(f"SELECT id, name, stars, avatar, age, invite_code, telegram_id, pwa_session_token FROM {SCHEMA}.children WHERE parent_id = %s ORDER BY created_at", (parent["id"],))
+        children = [{"id": r[0], "name": r[1], "stars": r[2], "avatar": r[3] or "👧", "age": r[4] or 9, "inviteCode": r[5], "connected": r[6] is not None or r[7] is not None} for r in cur.fetchall()]
         cur.execute(f"SELECT id, title, stars, emoji, status, child_id, require_photo, require_confirm, photo_status, deadline, extension_requested, extension_granted, photo_url FROM {SCHEMA}.tasks WHERE parent_id = %s ORDER BY created_at DESC LIMIT 50", (parent["id"],))
         tasks = [{"id": r[0], "title": r[1], "stars": r[2], "emoji": r[3], "status": r[4], "childId": r[5], "requirePhoto": r[6], "requireConfirm": r[7], "photoStatus": r[8], "deadline": r[9].isoformat() if r[9] else None, "extensionRequested": bool(r[10]), "extensionGranted": bool(r[11]), "photoUrl": r[12]} for r in cur.fetchall()]
         # Pending grade requests from children
