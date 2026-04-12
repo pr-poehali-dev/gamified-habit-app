@@ -381,6 +381,7 @@ export default function ParentMiniApp() {
             onRefreshInvite={refreshInvite}
             isPremium={data.is_premium}
             trialUsed={data.trial_used}
+            parentId={data.id}
             onActivateTrial={activateTrial}
             onSubscribe={() => setShowPremium(true)}
             notificationsEnabled={data.notifications_enabled}

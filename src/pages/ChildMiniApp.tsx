@@ -388,6 +388,7 @@ export default function ChildMiniApp() {
             levelEmoji={levelEmoji}
             approvedTasksCount={approvedTasks.length}
             achievements={data.achievements}
+            childId={data.id}
             notificationsEnabled={data.notifications_enabled}
             notificationSettings={data.notification_settings}
             onToggleNotifications={async (enabled: boolean, settings?: { reminders: boolean; motivation: boolean }) => {

@@ -167,6 +167,12 @@ def handler(event: dict, context) -> dict:
 
     action = body.get("action", "")
 
+    if action == "get_public_key":
+        key = os.environ.get("VAPID_PUBLIC_KEY", "")
+        if not key:
+            return err("VAPID not configured", 500)
+        return ok({"public_key": key})
+
     if action == "subscribe":
         return subscribe(body)
 

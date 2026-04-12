@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { XpBar } from "@/components/ui/XpBar";
 import { AchievementGrid } from "@/components/ui/AchievementBadge";
+import PushNotificationToggle from "@/components/pwa/PushNotificationToggle";
 import { getLevelInfo, getLevelTier, getLevelEmoji, LEVEL_TIERS, STARS_PER_LEVEL, getSubjectsByAge, GRADE_STARS, type GradeValue, type AchievementId } from "@/lib/gameTypes";
 export type { AchievementId };
 
@@ -406,16 +407,22 @@ export function ChildTabShop({ stars, rewards, rewardPurchases, wishes, onBuy, o
   );
 }
 
+const isChildPwaMode = () => {
+  const d = window.Telegram?.WebApp?.initData;
+  return !(typeof d === "string" && d.length > 0);
+};
+
 type ProfileProps = {
   name: string; avatar: string; age: number;
   stars: number; totalStarsEarned: number; level: number; levelEmoji: string;
   approvedTasksCount: number; achievements: AchievementId[];
+  childId?: number;
   notificationsEnabled?: boolean;
   notificationSettings?: { reminders: boolean; motivation: boolean };
   onToggleNotifications?: (enabled: boolean, settings?: { reminders: boolean; motivation: boolean }) => void;
 };
 
-export function ChildTabProfile({ name, avatar, age, stars, totalStarsEarned, level, levelEmoji, approvedTasksCount, achievements, notificationsEnabled = true, notificationSettings, onToggleNotifications }: ProfileProps) {
+export function ChildTabProfile({ name, avatar, age, stars, totalStarsEarned, level, levelEmoji, approvedTasksCount, achievements, childId, notificationsEnabled = true, notificationSettings, onToggleNotifications }: ProfileProps) {
   const earned = totalStarsEarned ?? stars;
   const [showAchievements, setShowAchievements] = useState(false);
   return (
@@ -466,6 +473,9 @@ export function ChildTabProfile({ name, avatar, age, stars, totalStarsEarned, le
           </div>
         )}
       </div>
+      {/* Push-уведомления — только PWA */}
+      {isChildPwaMode() && <PushNotificationToggle childId={childId} />}
+
       {/* Notifications settings */}
       <div className="bg-white/90 rounded-3xl p-4 shadow-sm space-y-3">
         <div className="flex items-center justify-between">

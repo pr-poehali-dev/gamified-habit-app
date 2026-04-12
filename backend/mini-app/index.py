@@ -15,6 +15,7 @@ from urllib.parse import parse_qs, unquote
 SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "t_p84704826_gamified_habit_app")
 PARENT_TOKEN = os.environ.get("PARENT_BOT_TOKEN", "")
 CHILD_TOKEN = os.environ.get("CHILD_BOT_TOKEN", "")
+PUSH_NOTIFY_URL = os.environ.get("PUSH_NOTIFY_URL", "")
 
 STARS_PER_LEVEL = 10
 
@@ -130,6 +131,19 @@ def resolve_parent_id_by_session(conn, body: dict):
     except Exception as e:
         print(f"[DEBUG] session resolve error: {e}")
     return None, None
+
+
+def send_push(action: str, target_id: int, payload: dict):
+    """Отправляет Web Push через push-notify функцию (fire-and-forget)."""
+    if not PUSH_NOTIFY_URL or not target_id:
+        return
+    try:
+        import urllib.request as _req
+        body = json.dumps({"action": action, action.replace("send_to_", "") + "_id": target_id, "payload": payload}).encode()
+        req = _req.Request(PUSH_NOTIFY_URL, data=body, headers={"Content-Type": "application/json"})
+        _req.urlopen(req, timeout=3)
+    except Exception as e:
+        print(f"[push] fire-and-forget error: {e}")
 
 
 def send_tg_message(token: str, chat_id: int, text: str, parse_mode="HTML"):
@@ -747,6 +761,7 @@ def handle_complete_task(conn, body):
                 p_row = cur.fetchone()
             if p_row:
                 send_tg_message(PARENT_TOKEN, p_row[0], f"🔔 <b>{child['name']}</b> выполнил «<b>{title}</b>»!\n\n💫 Начислено: {stars}⭐\n\nОткрой @parenttask_bot для подробностей.")
+        send_push("send_to_parent", parent_id, {"title": f"✅ {child['name']} выполнил задание!", "body": f"«{title}» — начислено {stars}⭐", "url": "/app", "tag": "task_done"})
         return json_response({"ok": True, "new_stars": new_stars, "stars_earned": stars, "new_achievements": new_achievements})
     else:
         # Require confirm — notify parent to approve
@@ -757,6 +772,7 @@ def handle_complete_task(conn, body):
             if p_row:
                 photo_note = "\n📸 Ребёнок прикрепил фото — проверь в приложении!" if photo_url else ""
                 send_tg_message(PARENT_TOKEN, p_row[0], f"✅ <b>{child['name']}</b> выполнил «<b>{title}</b>» — ждёт твоего подтверждения!\n\n💫 Награда: {stars}⭐{photo_note}\n\nОткрой @parenttask_bot → Задачи.")
+        send_push("send_to_parent", parent_id, {"title": f"⏳ {child['name']} выполнил задание", "body": f"«{title}» ждёт подтверждения", "url": "/app", "tag": "task_confirm"})
         return json_response({"ok": True, "pending_confirm": True})
 
 
@@ -801,6 +817,7 @@ def handle_confirm_task(conn, body):
             c_row = cur.fetchone()
         if c_row and CHILD_TOKEN:
             send_tg_message(CHILD_TOKEN, c_row[0], f"🎉 Родитель подтвердил «<b>{title}</b>»!\n\n💫 +{stars}⭐ начислено! Твой баланс: {new_stars}⭐")
+        send_push("send_to_child", child_id, {"title": "🎉 Задание подтверждено!", "body": f"«{title}» — +{stars}⭐", "url": "/app", "tag": "task_approved"})
         return json_response({"ok": True, "new_stars": new_stars})
     else:
         with conn.cursor() as cur:
@@ -811,6 +828,7 @@ def handle_confirm_task(conn, body):
             c_row = cur.fetchone()
         if c_row and CHILD_TOKEN:
             send_tg_message(CHILD_TOKEN, c_row[0], f"↩️ Родитель вернул задачу «<b>{title}</b>».\n\nПопробуй выполнить ещё раз! Открой @task4kids_bot.")
+        send_push("send_to_child", child_id, {"title": "↩️ Задание возвращено", "body": f"«{title}» — попробуй ещё раз", "url": "/app", "tag": "task_rejected"})
         return json_response({"ok": True, "rejected": True})
 
 
@@ -856,6 +874,7 @@ def handle_add_task(conn, body):
         if deadline_val:
             deadline_note = f"\n⏰ Срок: до {deadline_val.strftime('%d.%m %H:%M')}"
         send_tg_message(CHILD_TOKEN, c_row[0], f"📋 Новое задание от родителя!\n\n{emoji} <b>{title}</b>\n💫 Награда: {stars}⭐{photo_note}{confirm_note}{deadline_note}\n\nОткрой @task4kids_bot для выполнения.")
+    send_push("send_to_child", child_id, {"title": f"📋 Новое задание!", "body": f"{emoji} {title} — {stars}⭐", "url": "/app", "tag": "new_task"})
     return json_response({"ok": True, "task_id": task_id})
 
 

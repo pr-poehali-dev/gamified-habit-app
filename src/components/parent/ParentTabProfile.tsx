@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PushNotificationToggle from "@/components/pwa/PushNotificationToggle";
 
 const isTelegramMiniApp = () => {
   const initData = window.Telegram?.WebApp?.initData;
@@ -36,6 +37,7 @@ type ProfileProps = {
   onRefreshInvite: (id: number) => void;
   isPremium?: boolean;
   trialUsed?: boolean;
+  parentId?: number;
   onActivateTrial?: () => Promise<void>;
   onSubscribe?: () => void;
   notificationsEnabled?: boolean;
@@ -46,7 +48,7 @@ type ProfileProps = {
 
 const CHILD_AVATARS = ["👦", "👧", "🧒", "👶", "🐱", "🦊", "🐼", "🦁", "🐸", "🐧", "🦋", "🌟"];
 
-export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, streak, streakReward, onAddChild, onRemoveChild, onRefreshInvite, isPremium, trialUsed, onActivateTrial, onSubscribe, notificationsEnabled = true, notificationSettings, onToggleNotifications, onLogout }: ProfileProps) {
+export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, streak, streakReward, onAddChild, onRemoveChild, onRefreshInvite, isPremium, trialUsed, parentId, onActivateTrial, onSubscribe, notificationsEnabled = true, notificationSettings, onToggleNotifications, onLogout }: ProfileProps) {
   const { level } = getParentLevelInfo(parent_xp);
   const tier = getParentLevelTier(level);
 
@@ -449,6 +451,9 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
           </div>
         )}
       </div>
+
+      {/* Push-уведомления — только PWA */}
+      {isPwaMode() && <PushNotificationToggle parentId={parentId} />}
 
       {/* Legal */}
       <div className="bg-white/90 rounded-3xl p-4 shadow-sm">
