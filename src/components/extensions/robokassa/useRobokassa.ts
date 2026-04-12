@@ -131,16 +131,17 @@ export function useRobokassa(options: UseRobokassaOptions): UseRobokassaReturn {
 // ============================================================================
 
 /**
- * Открывает страницу оплаты
- * На мобильных устройствах открывает в новом окне
+ * Открывает страницу оплаты.
+ * В Telegram Mini App использует WebApp.openLink — единственный надёжный способ на iOS.
  */
 export function openPaymentPage(paymentUrl: string): void {
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-  if (isMobile) {
-    window.open(paymentUrl, "_blank");
+  const tg = (window as unknown as { Telegram?: { WebApp?: { openLink?: (url: string) => void } } }).Telegram?.WebApp;
+  if (tg?.openLink) {
+    tg.openLink(paymentUrl);
   } else {
-    window.location.href = paymentUrl;
+    if (!window.open(paymentUrl, "_blank")) {
+      window.location.href = paymentUrl;
+    }
   }
 }
 
