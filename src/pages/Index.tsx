@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const PARENT_BOT_URL = "https://t.me/parenttask_bot";
-const CHILD_BOT_URL = "https://t.me/task4kids_bot";
+const PWA_URL = "/app";
 
 // Floating star component
 const FloatingStar = ({ style }: { style: React.CSSProperties }) => (
@@ -141,7 +140,7 @@ export default function Index() {
             <span className="landing-logo__icon">⭐</span>
             <span className="landing-logo__text">СтарКидс</span>
           </div>
-          <a href={PARENT_BOT_URL} target="_blank" rel="noopener noreferrer" className="landing-nav-btn">
+          <a href={PWA_URL} className="landing-nav-btn">
             Открыть приложение
           </a>
         </div>
@@ -194,10 +193,7 @@ export default function Index() {
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 mt-2">
-            <span className="text-xs text-gray-400">✈️ Также в Telegram:</span>
-            <a href={PARENT_BOT_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-[#6B7BFF] underline underline-offset-2 whitespace-nowrap">для родителей</a>
-            <span className="text-xs text-gray-300">·</span>
-            <a href={CHILD_BOT_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-[#6B7BFF] underline underline-offset-2 whitespace-nowrap">для детей</a>
+            <span className="text-xs text-gray-400">📱 Работает в браузере · Без скачивания</span>
           </div>
         </div>
 
@@ -336,12 +332,10 @@ export default function Index() {
               <li>✅ Добавляй нескольких детей</li>
             </ul>
             <a
-              href={PARENT_BOT_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={PWA_URL}
               className="role-card__btn role-card__btn--parent"
             >
-              Открыть для родителя →
+              Начать бесплатно →
             </a>
           </div>
 
@@ -357,12 +351,10 @@ export default function Index() {
               <li>⭐ Держи серию дней и получай бонусы</li>
             </ul>
             <a
-              href={CHILD_BOT_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={PWA_URL}
               className="role-card__btn role-card__btn--child"
             >
-              Открыть для ребёнка →
+              Подключить ребёнка →
             </a>
           </div>
         </div>
@@ -375,18 +367,18 @@ export default function Index() {
         <div className="steps-grid">
           <div className="steps-col">
             <h3 className="steps-col__title">👨‍👩‍👧 Родитель</h3>
-            <StepItem num="1" text="Открой @parenttask_bot в Telegram" delay={0} />
+            <StepItem num="1" text="Открой приложение и зарегистрируйся по номеру телефона" delay={0} />
             <StepItem num="2" text="Добавь ребёнка и создай первое задание" delay={100} />
-            <StepItem num="3" text="Поделись кодом с ребёнком" delay={200} />
+            <StepItem num="3" text="Отправь ребёнку ссылку-приглашение" delay={200} />
             <StepItem num="4" text="Подтверждай выполнение и начисляй звёзды" delay={300} />
           </div>
           <div className="steps-divider" />
           <div className="steps-col">
             <h3 className="steps-col__title">🧒 Ребёнок</h3>
-            <StepItem num="1" text="Открой @task4kids_bot в Telegram" delay={0} />
-            <StepItem num="2" text="Введи код от родителя" delay={100} />
-            <StepItem num="3" text="Выполняй задания и зарабатывай звёзды" delay={200} />
-            <StepItem num="4" text="Покупай призы и прокачивай уровень!" delay={300} />
+            <StepItem num="1" text="Переходит по ссылке от родителя" delay={0} />
+            <StepItem num="2" text="Входит в приложение одним нажатием" delay={100} />
+            <StepItem num="3" text="Выполняет задания и зарабатывает звёзды" delay={200} />
+            <StepItem num="4" text="Покупает призы и прокачивает уровень!" delay={300} />
           </div>
         </div>
       </section>
@@ -427,31 +419,17 @@ export default function Index() {
           <p className="cta-subtitle">
             7 дней Premium в подарок каждому новому пользователю.
             <br />
-            В Telegram. Без установки. Без привязки карты.
+            Без установки. Без привязки карты. Прямо в браузере.
           </p>
           <div className="cta-actions">
             <a
-              href={PARENT_BOT_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={PWA_URL}
               className="cta-btn cta-btn--parent"
             >
               <span className="cta-btn-icon">👨‍👩‍👧</span>
               <span>
-                <span className="cta-btn-main">Я родитель</span>
-                <span className="cta-btn-sub">@parenttask_bot</span>
-              </span>
-            </a>
-            <a
-              href={CHILD_BOT_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="cta-btn cta-btn--child"
-            >
-              <span className="cta-btn-icon">🧒</span>
-              <span>
-                <span className="cta-btn-main">Я ребёнок</span>
-                <span className="cta-btn-sub">@task4kids_bot</span>
+                <span className="cta-btn-main">Начать бесплатно</span>
+                <span className="cta-btn-sub">Регистрация за 1 минуту</span>
               </span>
             </a>
           </div>
@@ -466,9 +444,7 @@ export default function Index() {
         </div>
         <p className="footer-tagline">Превращаем рутину в игру ⭐</p>
         <div className="footer-links">
-          <a href={PARENT_BOT_URL} target="_blank" rel="noopener noreferrer">@parenttask_bot</a>
-          <span>·</span>
-          <a href={CHILD_BOT_URL} target="_blank" rel="noopener noreferrer">@task4kids_bot</a>
+          <a href={PWA_URL}>Войти в приложение</a>
         </div>
         <div className="footer-links" style={{ marginTop: 12, fontSize: 13 }}>
           <a href="/legal?tab=privacy">Политика конфиденциальности</a>
