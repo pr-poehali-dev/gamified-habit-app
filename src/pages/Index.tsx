@@ -200,10 +200,11 @@ export default function Index() {
             ✨ 7 дней Premium бесплатно · Без установки
           </p>
 
-          <div className="flex items-center justify-center gap-4 mt-2">
-            <span className="text-xs text-gray-400">Также доступно в Telegram:</span>
-            <a href={PARENT_BOT_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-[#6B7BFF] underline underline-offset-2">для родителей</a>
-            <a href={CHILD_BOT_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-[#6B7BFF] underline underline-offset-2">для детей</a>
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 mt-2">
+            <span className="text-xs text-gray-400">✈️ Также в Telegram:</span>
+            <a href={PARENT_BOT_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-[#6B7BFF] underline underline-offset-2 whitespace-nowrap">для родителей</a>
+            <span className="text-xs text-gray-300">·</span>
+            <a href={CHILD_BOT_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-[#6B7BFF] underline underline-offset-2 whitespace-nowrap">для детей</a>
           </div>
         </div>
 
