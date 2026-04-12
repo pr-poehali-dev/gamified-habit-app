@@ -363,12 +363,7 @@ export default function PwaParentAuth({ onSuccess }: Props) {
                 {loading ? "Сохраняем..." : "Установить код-пароль"}
               </Button>
             )}
-            <button
-              className="w-full text-sm text-gray-400 text-center"
-              onClick={handleSkipPin}
-            >
-              Пропустить
-            </button>
+
           </div>
         )}
 

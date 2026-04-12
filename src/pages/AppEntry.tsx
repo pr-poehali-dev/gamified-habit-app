@@ -6,9 +6,10 @@
 import { useState, useEffect } from "react";
 import { tg } from "@/components/miniapp/types";
 import { apiCall } from "@/components/miniapp/useApi";
-import { usePwaSession, savePwaSession } from "@/components/pwa/usePwaSession";
+import { usePwaSession } from "@/components/pwa/usePwaSession";
 import PwaParentAuth from "@/components/pwa/PwaParentAuth";
 import PwaChildAuth from "@/components/pwa/PwaChildAuth";
+import PwaSetPin from "@/components/pwa/PwaSetPin";
 import ParentMiniApp from "./ParentMiniApp";
 import ChildMiniApp from "./ChildMiniApp";
 
@@ -35,6 +36,7 @@ export default function AppEntry() {
   const [role, setRole] = useState<Role>(null);
   const [pwaMode, setPwaMode] = useState<AuthMode>(null);
   const [ready, setReady] = useState(false);
+  const [needsPin, setNeedsPin] = useState(false);
   const pwaSession = usePwaSession();
 
   useEffect(() => {
@@ -50,8 +52,14 @@ export default function AppEntry() {
     }
 
     if (pwaSession) {
-      setRole(pwaSession.role);
-      setReady(true);
+      if (pwaSession.role === "parent" && !pwaSession.profile.has_pin && !inTelegram) {
+        setNeedsPin(true);
+        setRole(pwaSession.role);
+        setReady(true);
+      } else {
+        setRole(pwaSession.role);
+        setReady(true);
+      }
       return;
     }
 
@@ -88,6 +96,10 @@ export default function AppEntry() {
   };
 
   if (!ready || pwaSession === "loading") return <Spinner />;
+
+  if (needsPin && pwaSession && pwaSession.token) {
+    return <PwaSetPin sessionToken={pwaSession.token} onComplete={() => setNeedsPin(false)} />;
+  }
 
   if (!role) {
     if (pwaMode === "child_invite") {

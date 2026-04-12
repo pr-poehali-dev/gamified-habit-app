@@ -380,7 +380,7 @@ def verify_session(session_token: str, role: str) -> dict:
 
     if role == "parent":
         cur.execute(
-            f"SELECT id, full_name, phone_number, is_premium, is_premium_paid, premium_until FROM {SCHEMA}.parents WHERE pwa_session_token = %s",
+            f"SELECT id, full_name, phone_number, is_premium, is_premium_paid, premium_until, pin_code FROM {SCHEMA}.parents WHERE pwa_session_token = %s",
             (session_token,)
         )
         row = cur.fetchone()
@@ -388,7 +388,7 @@ def verify_session(session_token: str, role: str) -> dict:
         conn.close()
         if not row:
             return err("Сессия недействительна.", 401)
-        pid, name, phone, is_premium, is_premium_paid, premium_until = row
+        pid, name, phone, is_premium, is_premium_paid, premium_until, pin_code = row
         return ok({
             "status": "ok",
             "role": "parent",
@@ -397,6 +397,7 @@ def verify_session(session_token: str, role: str) -> dict:
             "phone_number": phone or "",
             "is_premium": is_premium or is_premium_paid,
             "premium_until": premium_until.isoformat() if premium_until else None,
+            "has_pin": bool(pin_code),
         })
     else:
         cur.execute(
