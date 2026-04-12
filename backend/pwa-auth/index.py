@@ -54,27 +54,36 @@ def normalize_phone(raw: str) -> str:
 
 
 def send_sms(phone: str, message: str) -> tuple[bool, str]:
+    import base64
+    import http.client
     phone_digits = phone.lstrip("+")
-    email_encoded = urllib.parse.quote(SMSAERO_EMAIL, safe="")
+    credentials = base64.b64encode(f"{SMSAERO_EMAIL}:{SMSAERO_API_KEY}".encode("utf-8")).decode("utf-8")
     params = urllib.parse.urlencode({
         "number": phone_digits,
         "text": message,
         "sign": "SMS Aero",
         "channel": "DIRECT",
     })
-    url = f"https://{email_encoded}:{SMSAERO_API_KEY}@gate.smsaero.ru/v2/sms/send?{params}"
-    req = urllib.request.Request(url, headers={"Accept": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            raw = resp.read().decode()
-            print(f"[SMSAERO] response: {raw}")
-            result = json.loads(raw)
-            if result.get("success"):
-                return True, ""
-            return False, result.get("message", "неизвестная ошибка")
+        conn = http.client.HTTPSConnection("gate.smsaero.ru", timeout=10)
+        conn.request("GET", f"/v2/sms/send?{params}", headers={
+            "Authorization": f"Basic {credentials}",
+            "Accept": "application/json",
+        })
+        resp = conn.getresponse()
+        raw = resp.read().decode("utf-8")
+        print(f"[SMSAERO] status={resp.status} response: {raw}")
+        if resp.status == 401:
+            return False, "Неверный email или API-ключ SMSAero (401)"
+        result = json.loads(raw)
+        if result.get("success"):
+            return True, ""
+        return False, result.get("message", "неизвестная ошибка")
     except Exception as e:
         print(f"[SMSAERO] exception: {e}")
         return False, str(e)
+    finally:
+        conn.close()
 
 
 def generate_otp() -> str:
