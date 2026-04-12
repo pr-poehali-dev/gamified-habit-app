@@ -38,6 +38,7 @@ type ProfileProps = {
   isPremium?: boolean;
   trialUsed?: boolean;
   parentId?: number;
+  onUpdateName?: (name: string) => Promise<void>;
   onActivateTrial?: () => Promise<void>;
   onSubscribe?: () => void;
   notificationsEnabled?: boolean;
@@ -48,7 +49,7 @@ type ProfileProps = {
 
 const CHILD_AVATARS = ["👦", "👧", "🧒", "👶", "🐱", "🦊", "🐼", "🦁", "🐸", "🐧", "🦋", "🌟"];
 
-export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, streak, streakReward, onAddChild, onRemoveChild, onRefreshInvite, isPremium, trialUsed, parentId, onActivateTrial, onSubscribe, notificationsEnabled = true, notificationSettings, onToggleNotifications, onLogout }: ProfileProps) {
+export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, streak, streakReward, onAddChild, onRemoveChild, onRefreshInvite, isPremium, trialUsed, parentId, onUpdateName, onActivateTrial, onSubscribe, notificationsEnabled = true, notificationSettings, onToggleNotifications, onLogout }: ProfileProps) {
   const { level } = getParentLevelInfo(parent_xp);
   const tier = getParentLevelTier(level);
 
@@ -59,6 +60,9 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
   const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState(name);
+  const [savingName, setSavingName] = useState(false);
 
   // Аналитика
   const [analyticsData, setAnalyticsData] = useState<ChildAnalytics[] | null>(null);
@@ -139,7 +143,55 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
       {/* Hero card */}
       <div className="bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] rounded-3xl p-6 text-center text-white shadow-lg">
         <div className="text-6xl mb-2">👨</div>
-        <h2 className="text-2xl font-black">{name}</h2>
+        {editingName ? (
+          <div className="flex items-center gap-2 justify-center mb-1">
+            <input
+              value={nameInput}
+              onChange={e => setNameInput(e.target.value)}
+              onKeyDown={async e => {
+                if (e.key === "Enter" && nameInput.trim()) {
+                  setSavingName(true);
+                  await onUpdateName?.(nameInput.trim());
+                  setSavingName(false);
+                  setEditingName(false);
+                }
+                if (e.key === "Escape") { setEditingName(false); setNameInput(name); }
+              }}
+              className="bg-white/20 text-white placeholder-white/60 font-black text-xl text-center rounded-xl px-3 py-1 outline-none border-2 border-white/40 focus:border-white w-48"
+              placeholder="Ваше имя"
+              autoFocus
+            />
+            <button
+              onClick={async () => {
+                if (!nameInput.trim()) return;
+                setSavingName(true);
+                await onUpdateName?.(nameInput.trim());
+                setSavingName(false);
+                setEditingName(false);
+              }}
+              disabled={savingName || !nameInput.trim()}
+              className="bg-white/30 hover:bg-white/40 rounded-xl px-2 py-1 text-sm font-bold disabled:opacity-50"
+            >
+              {savingName ? "..." : "✓"}
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 justify-center mb-1">
+            <h2 className="text-2xl font-black">{name || "Без имени"}</h2>
+            {isPwaMode() && (
+              <button
+                onClick={() => { setEditingName(true); setNameInput(name); }}
+                className="bg-white/20 hover:bg-white/30 rounded-lg p-1 transition-all"
+                title="Изменить имя"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
         <p className="opacity-80 font-bold">{tier.badge}</p>
         <div className="mt-3 bg-white/20 rounded-2xl px-4 py-2 inline-block">
           <p className="text-sm font-black">{parent_points.toLocaleString()} баллов</p>

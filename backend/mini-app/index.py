@@ -1719,6 +1719,23 @@ def handle_friend_remove(conn, body):
     return json_response({"ok": True})
 
 
+def handle_update_parent_profile(conn, body):
+    """Обновить имя родителя."""
+    tid, parent = resolve_parent(conn, body)
+    if not parent:
+        return error_response("Unauthorized", 401)
+    full_name = (body.get("full_name") or "").strip()
+    if not full_name:
+        return error_response("Имя не может быть пустым.", 400)
+    with conn.cursor() as cur:
+        cur.execute(
+            f"UPDATE {SCHEMA}.parents SET full_name = %s WHERE id = %s",
+            (full_name, parent["id"])
+        )
+    conn.commit()
+    return json_response({"ok": True, "full_name": full_name})
+
+
 def handle_parent_toggle_notifications(conn, body):
     """Переключить уведомления для родителя."""
     tid, parent = resolve_parent(conn, body)
@@ -1850,6 +1867,8 @@ def handler(event: dict, context) -> dict:
             return handle_parent_wish_dismiss(conn, body)
         if action == "parent/notifications/toggle":
             return handle_parent_toggle_notifications(conn, body)
+        if action == "parent/profile/update":
+            return handle_update_parent_profile(conn, body)
 
         return error_response("Not found", 404)
     finally:

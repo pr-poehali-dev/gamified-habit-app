@@ -77,6 +77,8 @@ export default function ParentMiniApp() {
   const [toast, setToast] = useState<string | null>(null);
   const [onboardingDone, setOnboardingDone] = useState(() => !!localStorage.getItem("parent_onboarding_done"));
   const [showPremium, setShowPremium] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const [savingName, setSavingName] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -250,6 +252,49 @@ export default function ParentMiniApp() {
   if (loading) return <Loading />;
   if (error || !data) return <ErrorScreen msg={error || "Нет данных"} />;
 
+  // В PWA — если имя не заполнено, показываем экран ввода
+  const inTelegram = !!(window.Telegram?.WebApp?.initData?.length);
+  if (!inTelegram && !data.name) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F0F4FF] to-[#F4F0FF] p-4">
+        <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl p-8 space-y-6 text-center">
+          <div className="text-4xl">👋</div>
+          <div>
+            <h2 className="text-xl font-black text-[#1E1B4B] mb-1">Как вас зовут?</h2>
+            <p className="text-sm text-gray-500">Ребёнок будет видеть ваше имя</p>
+          </div>
+          <input
+            className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-center text-lg font-bold text-[#1E1B4B] focus:outline-none focus:border-[#6B7BFF] transition-colors"
+            placeholder="Например: Мария"
+            value={nameInput}
+            onChange={e => setNameInput(e.target.value)}
+            onKeyDown={async e => {
+              if (e.key === "Enter" && nameInput.trim()) {
+                setSavingName(true);
+                await apiCall("parent/profile/update", { full_name: nameInput.trim() });
+                setSavingName(false);
+                load(false);
+              }
+            }}
+            autoFocus
+          />
+          <button
+            className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-black text-base disabled:opacity-50"
+            disabled={savingName || !nameInput.trim()}
+            onClick={async () => {
+              setSavingName(true);
+              await apiCall("parent/profile/update", { full_name: nameInput.trim() });
+              setSavingName(false);
+              load(false);
+            }}
+          >
+            {savingName ? "Сохраняем..." : "Продолжить →"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const streak: StreakState = {
     current: data.streak_current,
     lastActivityDate: data.streak_last_date || "",
@@ -392,6 +437,10 @@ export default function ParentMiniApp() {
               load(true);
             }}
             onLogout={handleLogout}
+            onUpdateName={async (newName: string) => {
+              await apiCall("parent/profile/update", { full_name: newName });
+              load(true);
+            }}
           />
         )}
       </div>
