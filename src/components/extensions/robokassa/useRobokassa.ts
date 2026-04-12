@@ -27,6 +27,7 @@ export interface PaymentPayload {
   successUrl?: string;
   failUrl?: string;
   parent_telegram_id?: number;
+  parent_id?: number;
 }
 
 export interface PaymentResponse {
@@ -88,12 +89,14 @@ export function useRobokassa(options: UseRobokassaOptions): UseRobokassaReturn {
             success_url: payload.successUrl,
             fail_url: payload.failUrl,
             parent_telegram_id: payload.parent_telegram_id,
+            parent_id: payload.parent_id,
           }),
         });
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.detail || "Payment creation failed");
+          console.error("[Robokassa] HTTP error:", response.status, errorData);
+          throw new Error(errorData.error || errorData.detail || `HTTP ${response.status}`);
         }
 
         const data: PaymentResponse = await response.json();

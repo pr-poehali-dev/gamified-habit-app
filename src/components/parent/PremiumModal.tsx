@@ -84,7 +84,7 @@ export function PremiumModal({ open, onClose, isPremium, isPremiumPaid, trialAct
 
   const { createPayment, isLoading } = useRobokassa({
     apiUrl: ROBOKASSA_URL,
-    onError: () => setEmailError("Ошибка создания платежа. Попробуйте снова."),
+    onError: (err) => setEmailError(`Ошибка: ${err.message}`),
   });
 
   const handleActivate = useCallback(async () => {
