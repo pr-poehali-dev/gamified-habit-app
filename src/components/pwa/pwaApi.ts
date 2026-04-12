@@ -15,6 +15,10 @@ async function call(body: Record<string, unknown>): Promise<Record<string, unkno
   }
 }
 
+export async function checkPhone(phone: string): Promise<{ registered?: boolean; has_pin?: boolean; error?: string }> {
+  return call({ action: "check_phone", phone }) as Promise<{ registered?: boolean; has_pin?: boolean; error?: string }>;
+}
+
 export async function sendOtp(phone: string): Promise<{ status?: string; error?: string }> {
   return call({ action: "send_otp", phone }) as Promise<{ status?: string; error?: string }>;
 }
@@ -23,9 +27,22 @@ export async function verifyOtp(
   phone: string,
   otp: string,
   fullName?: string
-): Promise<{ status?: string; role?: string; session_token?: string; parent_id?: number; full_name?: string; is_new?: boolean; error?: string }> {
+): Promise<{ status?: string; role?: string; session_token?: string; parent_id?: number; full_name?: string; is_new?: boolean; has_pin?: boolean; error?: string }> {
   return call({ action: "verify_otp", phone, otp, full_name: fullName || "" }) as Promise<{
-    status?: string; role?: string; session_token?: string; parent_id?: number; full_name?: string; is_new?: boolean; error?: string;
+    status?: string; role?: string; session_token?: string; parent_id?: number; full_name?: string; is_new?: boolean; has_pin?: boolean; error?: string;
+  }>;
+}
+
+export async function setPin(sessionToken: string, pin: string): Promise<{ status?: string; error?: string }> {
+  return call({ action: "set_pin", session_token: sessionToken, pin }) as Promise<{ status?: string; error?: string }>;
+}
+
+export async function loginPin(
+  phone: string,
+  pin: string
+): Promise<{ status?: string; role?: string; session_token?: string; parent_id?: number; full_name?: string; error?: string }> {
+  return call({ action: "login_pin", phone, pin }) as Promise<{
+    status?: string; role?: string; session_token?: string; parent_id?: number; full_name?: string; error?: string;
   }>;
 }
 

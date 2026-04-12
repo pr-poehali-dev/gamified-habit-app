@@ -25,6 +25,42 @@
       "bodyMatcher": "partial"
     },
     {
+      "name": "check_phone — invalid phone",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "check_phone", "phone": "123"},
+      "expectedStatus": 400,
+      "expectedBody": {"error": "Неверный формат номера телефона"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "check_phone — unknown number",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "check_phone", "phone": "+79999999999"},
+      "expectedStatus": 200,
+      "expectedBody": {"registered": false, "has_pin": false},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "login_pin — invalid pin",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "login_pin", "phone": "+79999999999", "pin": "12"},
+      "expectedStatus": 400,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "set_pin — no session",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "set_pin", "session_token": "", "pin": "1234"},
+      "expectedStatus": 401,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
       "name": "verify_session — invalid token",
       "method": "POST",
       "path": "/",

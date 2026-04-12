@@ -1,9 +1,12 @@
 """
-PWA-авторизация для СтарКидс. v2
+PWA-авторизация для СтарКидс. v3
 Действия:
   - send_otp: отправить SMS с кодом родителю
-  - verify_otp: проверить код, вернуть session_token (или создать аккаунт)
-  - register_child: зарегистрировать ребёнка по инвайт-коду родителя
+  - verify_otp: проверить код, вернуть session_token
+  - check_phone: проверить есть ли PIN у номера
+  - set_pin: установить 4-значный код-пароль
+  - login_pin: войти по номеру + PIN
+  - register_child: зарегистрировать ребёнка по инвайт-коду
   - verify_session: проверить сессионный токен, вернуть профиль
 """
 import json
@@ -149,7 +152,7 @@ def verify_otp(phone_raw: str, otp_input: str, full_name: str = "") -> dict:
     cur = conn.cursor()
 
     cur.execute(
-        f"SELECT id, otp_code, otp_expires_at, phone_verified, full_name, pwa_session_token FROM {SCHEMA}.parents WHERE phone_number = %s",
+        f"SELECT id, otp_code, otp_expires_at, phone_verified, full_name, pwa_session_token, pin_code FROM {SCHEMA}.parents WHERE phone_number = %s",
         (phone,)
     )
     row = cur.fetchone()
@@ -159,7 +162,7 @@ def verify_otp(phone_raw: str, otp_input: str, full_name: str = "") -> dict:
         conn.close()
         return err("Номер телефона не найден. Запросите код заново.")
 
-    parent_id, stored_otp, expires_at, phone_verified, db_name, existing_token = row
+    parent_id, stored_otp, expires_at, phone_verified, db_name, existing_token, pin_code = row
 
     if phone_verified and existing_token and stored_otp is None:
         token = existing_token
@@ -178,6 +181,7 @@ def verify_otp(phone_raw: str, otp_input: str, full_name: str = "") -> dict:
             "parent_id": parent_id,
             "full_name": name_to_save,
             "is_new": False,
+            "has_pin": bool(pin_code),
         })
 
     if expires_at is None or (expires_at.tzinfo is None and datetime.now(timezone.utc) > expires_at.replace(tzinfo=timezone.utc)) or (expires_at.tzinfo and datetime.now(timezone.utc) > expires_at):
@@ -212,6 +216,109 @@ def verify_otp(phone_raw: str, otp_input: str, full_name: str = "") -> dict:
         "parent_id": parent_id,
         "full_name": name_to_save,
         "is_new": not phone_verified,
+        "has_pin": bool(pin_code),
+    })
+
+
+def check_phone(phone_raw: str) -> dict:
+    """Проверяет зарегистрирован ли номер и есть ли PIN."""
+    try:
+        phone = normalize_phone(phone_raw)
+    except ValueError as e:
+        return err(str(e))
+
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        f"SELECT phone_verified, pin_code FROM {SCHEMA}.parents WHERE phone_number = %s",
+        (phone,)
+    )
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    if not row or not row[0]:
+        return ok({"registered": False, "has_pin": False})
+
+    return ok({"registered": True, "has_pin": bool(row[1])})
+
+
+def set_pin(session_token: str, pin: str) -> dict:
+    """Установить или обновить 4-значный PIN."""
+    if not session_token:
+        return err("Нет токена сессии.", 401)
+    if not pin or len(pin) != 4 or not pin.isdigit():
+        return err("PIN должен состоять из 4 цифр.")
+
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        f"UPDATE {SCHEMA}.parents SET pin_code = %s WHERE pwa_session_token = %s RETURNING id",
+        (pin, session_token)
+    )
+    row = cur.fetchone()
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    if not row:
+        return err("Сессия недействительна.", 401)
+
+    return ok({"status": "ok"})
+
+
+def login_pin(phone_raw: str, pin: str) -> dict:
+    """Войти по номеру телефона и PIN-коду."""
+    try:
+        phone = normalize_phone(phone_raw)
+    except ValueError as e:
+        return err(str(e))
+
+    if not pin or len(pin) != 4 or not pin.isdigit():
+        return err("Введите 4-значный код-пароль.")
+
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        f"SELECT id, pin_code, full_name, pwa_session_token FROM {SCHEMA}.parents WHERE phone_number = %s AND phone_verified = true",
+        (phone,)
+    )
+    row = cur.fetchone()
+
+    if not row:
+        cur.close()
+        conn.close()
+        return err("Номер не найден.")
+
+    parent_id, stored_pin, full_name, existing_token = row
+
+    if not stored_pin:
+        cur.close()
+        conn.close()
+        return err("PIN не установлен. Войдите по SMS.")
+
+    if stored_pin != pin:
+        cur.close()
+        conn.close()
+        return err("Неверный код-пароль.")
+
+    token = existing_token if existing_token else generate_token()
+    if not existing_token:
+        cur.execute(
+            f"UPDATE {SCHEMA}.parents SET pwa_session_token = %s WHERE id = %s",
+            (token, parent_id)
+        )
+        conn.commit()
+
+    cur.close()
+    conn.close()
+
+    return ok({
+        "status": "ok",
+        "role": "parent",
+        "session_token": token,
+        "parent_id": parent_id,
+        "full_name": full_name or "",
     })
 
 
@@ -329,12 +436,21 @@ def handler(event: dict, context) -> dict:
     if action == "send_otp":
         return send_otp(body.get("phone", ""))
 
+    if action == "check_phone":
+        return check_phone(body.get("phone", ""))
+
     if action == "verify_otp":
         return verify_otp(
             body.get("phone", ""),
             body.get("otp", ""),
             body.get("full_name", ""),
         )
+
+    if action == "set_pin":
+        return set_pin(body.get("session_token", ""), body.get("pin", ""))
+
+    if action == "login_pin":
+        return login_pin(body.get("phone", ""), body.get("pin", ""))
 
     if action == "register_child":
         return register_child(
