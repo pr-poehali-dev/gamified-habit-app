@@ -1,0 +1,46 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Unknown action returns error",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "unknown"},
+      "expectedStatus": 400,
+      "expectedBody": {"error": "Неизвестное действие."},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "send_otp — invalid phone",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "send_otp", "phone": "123"},
+      "expectedStatus": 400,
+      "expectedBody": {"error": "Неверный формат номера телефона"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "verify_session — invalid token",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "verify_session", "session_token": "nonexistent_token_xyz", "role": "parent"},
+      "expectedStatus": 401,
+      "expectedBody": {"error": "Сессия недействительна."},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "register_child — invalid invite code",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "register_child", "invite_code": "INVALID999", "child_name": "Тест", "child_age": 8},
+      "expectedStatus": 400,
+      "expectedBody": {"error": "Инвайт-код не найден. Попросите родителя проверить ссылку."},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

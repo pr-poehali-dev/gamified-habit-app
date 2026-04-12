@@ -1,4 +1,5 @@
 {
+  "pwa-auth": "https://functions.poehali.dev/00b5f6e2-cea1-4423-a534-309d80c4070a",
   "child-notifications": "https://functions.poehali.dev/76c5d329-89ba-4816-a710-fa7bdd8d8555",
   "parent-notifications": "https://functions.poehali.dev/560267ab-3a9d-4252-97a8-aeb8a39b9f9f",
   "robokassa-robokassa-webhook": "https://functions.poehali.dev/eb160a31-be1c-42e8-a55b-9954130251ce",

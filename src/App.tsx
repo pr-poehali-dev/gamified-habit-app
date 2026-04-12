@@ -45,6 +45,7 @@ const App = () => (
           <Route path="/child" element={<ChildMiniApp />} />
           <Route path="/parent/*" element={<ParentMiniApp />} />
           <Route path="/child/*" element={<ChildMiniApp />} />
+          <Route path="/invite" element={<AppEntry />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/legal" element={<Legal />} />
           <Route path="/privacy" element={<Legal />} />

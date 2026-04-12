@@ -1,0 +1,10 @@
+ALTER TABLE t_p84704826_gamified_habit_app.parents
+  ADD COLUMN IF NOT EXISTS phone_number TEXT UNIQUE,
+  ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS otp_code TEXT,
+  ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS pwa_session_token TEXT UNIQUE;
+
+ALTER TABLE t_p84704826_gamified_habit_app.children
+  ADD COLUMN IF NOT EXISTS phone_number TEXT,
+  ADD COLUMN IF NOT EXISTS pwa_session_token TEXT UNIQUE;
