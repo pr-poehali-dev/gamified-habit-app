@@ -1,14 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 interface Props {
   parentId?: number;
   childId?: number;
+  autoSubscribe?: boolean;
 }
 
-export default function PushNotificationToggle({ parentId, childId }: Props) {
+export default function PushNotificationToggle({ parentId, childId, autoSubscribe = false }: Props) {
   const { status, isSubscribed, isSupported, checking, subscribe, unsubscribe } = usePushNotifications({ parentId, childId });
   const [loading, setLoading] = useState(false);
+  const [autoTriggered, setAutoTriggered] = useState(false);
+
+  // Автоподписка при первом рендере если разрешение ещё не запрашивалось
+  useEffect(() => {
+    if (!autoSubscribe || autoTriggered || checking) return;
+    if (!isSupported || status === "unsupported" || status === "denied" || isSubscribed) return;
+    if (status === "default") {
+      setAutoTriggered(true);
+      setLoading(true);
+      subscribe().finally(() => setLoading(false));
+    }
+  }, [checking, status, isSubscribed]);
 
   if (!isSupported || status === "unsupported") return null;
   if (checking) return null;
@@ -35,6 +48,8 @@ export default function PushNotificationToggle({ parentId, childId }: Props) {
                 ? "Заблокированы в настройках браузера"
                 : isSubscribed
                 ? "Включены"
+                : loading
+                ? "Настраиваем..."
                 : "Получайте уведомления о заданиях"}
             </p>
           </div>

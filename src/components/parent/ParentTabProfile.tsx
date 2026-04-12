@@ -396,13 +396,13 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
         );
       })}
 
-      {/* Notifications settings */}
-      <div className="bg-white/90 rounded-3xl p-4 shadow-sm space-y-3">
+      {/* Notifications settings — только в Telegram */}
+      {!isPwaMode() && <div className="bg-white/90 rounded-3xl p-4 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🔔</span>
             <div>
-              <p className="font-bold text-[#1E1B4B] text-sm">Уведомления</p>
+              <p className="font-bold text-[#1E1B4B] text-sm">Уведомления Telegram</p>
               <p className="text-xs text-gray-400">Настройте, что получать в Telegram</p>
             </div>
           </div>
@@ -450,10 +450,10 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
             ))}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Push-уведомления — только PWA */}
-      {isPwaMode() && <PushNotificationToggle parentId={parentId} />}
+      {isPwaMode() && <PushNotificationToggle parentId={parentId} autoSubscribe />}
 
       {/* Legal */}
       <div className="bg-white/90 rounded-3xl p-4 shadow-sm">

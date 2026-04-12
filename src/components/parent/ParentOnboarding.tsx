@@ -1,29 +1,47 @@
 import { useState } from "react";
+import PushNotificationToggle from "@/components/pwa/PushNotificationToggle";
 
-type Props = { name: string; onDone: () => void };
+type Props = { name: string; parentId?: number; onDone: () => void };
 
-const STEPS = [
+const isPwa = () => {
+  const d = window.Telegram?.WebApp?.initData;
+  return !(typeof d === "string" && d.length > 0);
+};
+
+const BASE_STEPS = [
   {
     emoji: "👋",
     title: (name: string) => `Привет, ${name}!`,
     desc: "СтарКидс помогает мотивировать детей через задания и награды. Дети выполняют задания — получают звёзды ⭐, звёзды тратят на призы 🎁",
     btn: "Как это работает →",
+    pushStep: false,
   },
   {
     emoji: "👨‍👧",
     title: () => "Добавь ребёнка",
-    desc: "Перейди во вкладку «Дети» и нажми «+ Добавить». Ты получишь код приглашения — передай его ребёнку, он введёт его в @task4kids_bot.",
+    desc: "Перейди во вкладку «Дети» и нажми «+ Добавить». Отправь ребёнку ссылку-приглашение — он войдёт в приложение одним нажатием.",
     btn: "Понятно →",
+    pushStep: false,
   },
   {
     emoji: "📋",
     title: () => "Создавай задания",
-    desc: "После подключения ребёнка создавай задания во вкладке «Задачи». Можно требовать фото-отчёт или подтверждение от тебя перед начислением звёзд.",
+    desc: "После подключения ребёнка создавай задания во вкладке «Задачи». Можно требовать фото-отчёт или подтверждение перед начислением звёзд.",
+    btn: "Далее →",
+    pushStep: false,
+  },
+  {
+    emoji: "🔔",
+    title: () => "Включите уведомления",
+    desc: "Получайте мгновенные уведомления когда ребёнок выполнил задание, отправил оценку или что-то запросил — даже когда приложение закрыто.",
     btn: "Начать!",
+    pushStep: true,
   },
 ];
 
-export function ParentOnboarding({ name, onDone }: Props) {
+export function ParentOnboarding({ name, parentId, onDone }: Props) {
+  const pwa = isPwa();
+  const STEPS = pwa ? BASE_STEPS : BASE_STEPS.slice(0, 3).map((s, i) => i === 2 ? { ...s, btn: "Начать!" } : s);
   const [step, setStep] = useState(0);
   const current = STEPS[step];
   const isLast = step === STEPS.length - 1;
@@ -39,11 +57,18 @@ export function ParentOnboarding({ name, onDone }: Props) {
 
       {/* Card */}
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <div className="text-7xl mb-6" style={{ animation: "bounceIn 0.4s ease" }}>{current.emoji}</div>
           <h2 className="text-2xl font-black text-[#1E1B4B] mb-3">{current.title(name)}</h2>
           <p className="text-gray-500 text-sm leading-relaxed">{current.desc}</p>
         </div>
+
+        {/* Push-переключатель на шаге уведомлений */}
+        {current.pushStep && pwa && (
+          <div className="mb-4">
+            <PushNotificationToggle parentId={parentId} autoSubscribe />
+          </div>
+        )}
 
         <button
           onClick={() => isLast ? onDone() : setStep(s => s + 1)}

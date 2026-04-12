@@ -474,15 +474,15 @@ export function ChildTabProfile({ name, avatar, age, stars, totalStarsEarned, le
         )}
       </div>
       {/* Push-уведомления — только PWA */}
-      {isChildPwaMode() && <PushNotificationToggle childId={childId} />}
+      {isChildPwaMode() && <PushNotificationToggle childId={childId} autoSubscribe />}
 
-      {/* Notifications settings */}
-      <div className="bg-white/90 rounded-3xl p-4 shadow-sm space-y-3">
+      {/* Notifications settings — только в Telegram */}
+      {!isChildPwaMode() && <div className="bg-white/90 rounded-3xl p-4 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🔔</span>
             <div>
-              <p className="font-bold text-[#2D1B69] text-sm">Уведомления</p>
+              <p className="font-bold text-[#2D1B69] text-sm">Уведомления Telegram</p>
               <p className="text-xs text-gray-400">Что получать в Telegram</p>
             </div>
           </div>
@@ -530,7 +530,7 @@ export function ChildTabProfile({ name, avatar, age, stars, totalStarsEarned, le
             ))}
           </div>
         )}
-      </div>
+      </div>}
     </>
   );
 }

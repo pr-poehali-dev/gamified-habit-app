@@ -268,6 +268,7 @@ export default function ParentMiniApp() {
     return (
       <ParentOnboarding
         name={data.name}
+        parentId={data.id}
         onDone={() => { ymGoal("parent_onboarding_done"); localStorage.setItem("parent_onboarding_done", "1"); setOnboardingDone(true); setTab("profile"); }}
       />
     );
