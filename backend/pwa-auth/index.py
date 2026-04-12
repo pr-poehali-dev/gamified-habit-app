@@ -54,16 +54,16 @@ def normalize_phone(raw: str) -> str:
 
 
 def send_sms(phone: str, message: str) -> tuple[bool, str]:
-    import base64
     phone_digits = phone.lstrip("+")
-    credentials = base64.b64encode(f"{SMSAERO_EMAIL}:{SMSAERO_API_KEY}".encode()).decode()
+    email_encoded = urllib.parse.quote(SMSAERO_EMAIL, safe="")
     params = urllib.parse.urlencode({
         "number": phone_digits,
         "text": message,
         "sign": "SMS Aero",
+        "channel": "DIRECT",
     })
-    url = f"https://gate.smsaero.ru/v2/sms/send?{params}"
-    req = urllib.request.Request(url, headers={"Authorization": f"Basic {credentials}", "Accept": "application/json"})
+    url = f"https://{email_encoded}:{SMSAERO_API_KEY}@gate.smsaero.ru/v2/sms/send?{params}"
+    req = urllib.request.Request(url, headers={"Accept": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
             raw = resp.read().decode()
