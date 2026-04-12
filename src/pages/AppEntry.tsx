@@ -38,49 +38,48 @@ export default function AppEntry() {
   const pwaSession = usePwaSession();
 
   useEffect(() => {
-    // Ждём пока usePwaSession проверит localStorage
     if (pwaSession === "loading") return;
 
     const urlParams = new URLSearchParams(window.location.search);
     const hasInvite = urlParams.has("invite") || urlParams.has("code");
+    const inTelegram = isTelegramEnv();
 
-    // Telegram Mini App — только если есть реальный initData
-    if (isTelegramEnv()) {
+    if (inTelegram) {
       const webapp = tg();
       if (webapp) { webapp.ready(); webapp.expand(); }
-
-      const detect = async () => {
-        const tgId = webapp?.initDataUnsafe?.user?.id;
-        const firstName = webapp?.initDataUnsafe?.user?.first_name || "";
-
-        const parentRes = await apiCall("parent/auth", {
-          ...(tgId ? { telegram_id: tgId, first_name: firstName } : {}),
-        });
-        if (parentRes.role === "parent") { setRole("parent"); setReady(true); return; }
-
-        const childRes = await apiCall("child/auth", tgId ? { telegram_id: tgId } : {});
-        if (childRes.role === "child") { setRole("child"); setReady(true); return; }
-
-        setRole("parent");
-        setReady(true);
-      };
-      detect();
-      return;
     }
 
-    // PWA — есть сохранённая сессия
     if (pwaSession) {
       setRole(pwaSession.role);
       setReady(true);
       return;
     }
 
-    // PWA — нет сессии, показываем форму входа
-    if (hasInvite) {
-      setPwaMode("child_invite");
-    } else {
-      setPwaMode("parent");
+    if (inTelegram) {
+      const webapp = tg();
+      const detect = async () => {
+        try {
+          const tgId = webapp?.initDataUnsafe?.user?.id;
+          const firstName = webapp?.initDataUnsafe?.user?.first_name || "";
+
+          const parentRes = await apiCall("parent/auth", {
+            ...(tgId ? { telegram_id: tgId, first_name: firstName } : {}),
+          });
+          if (parentRes.role === "parent") { setRole("parent"); setReady(true); return; }
+
+          const childRes = await apiCall("child/auth", tgId ? { telegram_id: tgId } : {});
+          if (childRes.role === "child") { setRole("child"); setReady(true); return; }
+        } catch (e) {
+          console.error("[AppEntry] Telegram auth failed, falling back to PWA", e);
+        }
+        setPwaMode(hasInvite ? "child_invite" : "parent");
+        setReady(true);
+      };
+      detect();
+      return;
     }
+
+    setPwaMode(hasInvite ? "child_invite" : "parent");
     setReady(true);
   }, [pwaSession]);
 
@@ -91,7 +90,7 @@ export default function AppEntry() {
 
   if (!ready || pwaSession === "loading") return <Spinner />;
 
-  if (!isTelegramEnv() && !role) {
+  if (!role) {
     if (pwaMode === "child_invite") {
       return (
         <PwaChildAuth
