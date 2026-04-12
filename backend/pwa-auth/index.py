@@ -18,8 +18,8 @@ import urllib.parse
 from datetime import datetime, timezone, timedelta
 
 SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "t_p84704826_gamified_habit_app")
-SMSC_LOGIN = os.environ.get("SMSC_LOGIN", "")
-SMSC_PASSWORD = os.environ.get("SMSC_PASSWORD", "")
+SMSAERO_EMAIL = os.environ.get("SMSAERO_EMAIL", "")
+SMSAERO_API_KEY = os.environ.get("SMSAERO_API_KEY", "")
 OTP_TTL_MINUTES = 10
 SESSION_TTL_DAYS = 30
 
@@ -54,25 +54,26 @@ def normalize_phone(raw: str) -> str:
 
 
 def send_sms(phone: str, message: str) -> tuple[bool, str]:
+    import base64
+    phone_digits = phone.lstrip("+")
+    credentials = base64.b64encode(f"{SMSAERO_EMAIL}:{SMSAERO_API_KEY}".encode()).decode()
     params = urllib.parse.urlencode({
-        "login": SMSC_LOGIN,
-        "psw": SMSC_PASSWORD,
-        "phones": phone,
-        "mes": message,
-        "fmt": 3,
-        "charset": "utf-8",
+        "number": phone_digits,
+        "text": message,
+        "sign": "SMS Aero",
     })
-    url = f"https://smsc.ru/sys/send.php?{params}"
+    url = f"https://gate.smsaero.ru/v2/sms/send?{params}"
+    req = urllib.request.Request(url, headers={"Authorization": f"Basic {credentials}", "Accept": "application/json"})
     try:
-        with urllib.request.urlopen(url, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=10) as resp:
             raw = resp.read().decode()
-            print(f"[SMSC] response: {raw}")
+            print(f"[SMSAERO] response: {raw}")
             result = json.loads(raw)
-            if "error" in result:
-                return False, f"SMSC error {result.get('error_code', '')}: {result.get('error', 'неизвестная ошибка')}"
-            return True, ""
+            if result.get("success"):
+                return True, ""
+            return False, result.get("message", "неизвестная ошибка")
     except Exception as e:
-        print(f"[SMSC] exception: {e}")
+        print(f"[SMSAERO] exception: {e}")
         return False, str(e)
 
 
