@@ -145,6 +145,14 @@ def send_tg_message(token: str, chat_id: int, text: str, parse_mode="HTML"):
 
 # ─── Child helpers ────────────────────────────────────────────────────────────
 
+def _child_row_to_dict(row):
+    return {"id": row[0], "name": row[1], "stars": row[2], "parent_id": row[3],
+            "avatar": row[4] or "👧", "age": row[5] or 9, "role": "child",
+            "total_stars_earned": row[6] or 0,
+            "notifications_enabled": bool(row[7]) if row[7] is not None else True,
+            "notification_settings": json.loads(row[8]) if row[8] else {"reminders": True, "motivation": True}}
+
+
 def get_child_by_tg(conn, telegram_id):
     with conn.cursor() as cur:
         cur.execute(
@@ -154,11 +162,24 @@ def get_child_by_tg(conn, telegram_id):
         row = cur.fetchone()
     if not row:
         return None
-    return {"id": row[0], "name": row[1], "stars": row[2], "parent_id": row[3],
-            "avatar": row[4] or "👧", "age": row[5] or 9, "role": "child",
-            "total_stars_earned": row[6] or 0,
-            "notifications_enabled": bool(row[7]) if row[7] is not None else True,
-            "notification_settings": json.loads(row[8]) if row[8] else {"reminders": True, "motivation": True}}
+    return _child_row_to_dict(row)
+
+
+def get_child_by_session(conn, body: dict):
+    """Возвращает (child, telegram_id) по pwa_session_token."""
+    token = body.get("pwa_session_token", "")
+    if not token:
+        return None, None
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT id, name, stars, parent_id, avatar, age, total_stars_earned, notifications_enabled, notification_settings, telegram_id FROM {SCHEMA}.children WHERE pwa_session_token = %s",
+            (token,)
+        )
+        row = cur.fetchone()
+    if not row:
+        return None, None
+    child = _child_row_to_dict(row[:9])
+    return child, row[9]
 
 
 def compute_level(stars: int):
@@ -368,11 +389,13 @@ def handle_connect_child(conn, body):
 
 def handle_auth_child(conn, body):
     tid = resolve_telegram_id(body, CHILD_TOKEN)
-    if not tid:
-        return json_response({"role": "unknown", "telegram_id": 0, "error": "no_tg_id"})
-    child = get_child_by_tg(conn, tid)
+    child = get_child_by_tg(conn, tid) if tid else None
     if not child:
-        return json_response({"role": "unknown", "telegram_id": tid})
+        child, session_tid = get_child_by_session(conn, body)
+        if child and not tid:
+            tid = session_tid or 0
+    if not child:
+        return json_response({"role": "unknown", "telegram_id": tid or 0, "error": "no_tg_id"})
     # Уровень и XP считаются от всех заработанных звёзд (не от баланса)
     level, xp_in = compute_level(child["total_stars_earned"])
     with conn.cursor() as cur:

@@ -247,7 +247,8 @@ export default function ChildMiniApp() {
 
   if (loading) return <Loading />;
   if (error === "not_connected") {
-    const wasConnected = !!localStorage.getItem("child_was_connected");
+    const inTelegram = !!(window.Telegram?.WebApp?.initData?.length);
+    const wasConnected = inTelegram && !!localStorage.getItem("child_was_connected");
     return (
       <ChildConnectScreen
         onConnected={() => {
