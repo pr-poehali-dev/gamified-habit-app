@@ -197,14 +197,27 @@ def verify_otp(phone_raw: str, otp_input: str, full_name: str = "") -> dict:
     token = existing_token if existing_token else generate_token()
 
     name_to_save = full_name.strip() if full_name.strip() else (db_name or "")
+    is_new = not phone_verified
 
-    cur.execute(
-        f"""UPDATE {SCHEMA}.parents
-            SET phone_verified = true, otp_code = NULL, otp_expires_at = NULL,
-                pwa_session_token = %s, full_name = %s
-            WHERE id = %s""",
-        (token, name_to_save, parent_id)
-    )
+    if is_new:
+        trial_start = datetime.now(timezone.utc)
+        trial_end = trial_start + timedelta(days=7)
+        cur.execute(
+            f"""UPDATE {SCHEMA}.parents
+                SET phone_verified = true, otp_code = NULL, otp_expires_at = NULL,
+                    pwa_session_token = %s, full_name = %s,
+                    trial_started_at = %s, trial_ends_at = %s, trial_used = true
+                WHERE id = %s""",
+            (token, name_to_save, trial_start, trial_end, parent_id)
+        )
+    else:
+        cur.execute(
+            f"""UPDATE {SCHEMA}.parents
+                SET phone_verified = true, otp_code = NULL, otp_expires_at = NULL,
+                    pwa_session_token = %s, full_name = %s
+                WHERE id = %s""",
+            (token, name_to_save, parent_id)
+        )
     conn.commit()
     cur.close()
     conn.close()
@@ -215,7 +228,7 @@ def verify_otp(phone_raw: str, otp_input: str, full_name: str = "") -> dict:
         "session_token": token,
         "parent_id": parent_id,
         "full_name": name_to_save,
-        "is_new": not phone_verified,
+        "is_new": is_new,
         "has_pin": bool(pin_code),
     })
 

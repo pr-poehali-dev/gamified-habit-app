@@ -182,6 +182,17 @@ def get_child_by_session(conn, body: dict):
     return child, row[9]
 
 
+def resolve_child(conn, body: dict):
+    """Находит ребёнка по telegram_id или pwa_session_token. Возвращает (tid, child) или (None, None)."""
+    tid = resolve_telegram_id(body, CHILD_TOKEN)
+    child = get_child_by_tg(conn, tid) if tid else None
+    if not child:
+        child, session_tid = get_child_by_session(conn, body)
+        if child and not tid:
+            tid = session_tid or 0
+    return tid, child
+
+
 def compute_level(stars: int):
     level = stars // STARS_PER_LEVEL + 1
     xp_in = stars % STARS_PER_LEVEL
@@ -654,12 +665,9 @@ def delete_photo_from_s3(photo_url: str):
 
 def handle_upload_photo(conn, body):
     """Загружает фото задачи в S3 и возвращает URL. Вызывается отдельно перед child/complete."""
-    tid = resolve_telegram_id(body, CHILD_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    child = get_child_by_tg(conn, tid)
+    tid, child = resolve_child(conn, body)
     if not child:
-        return error_response("Child not found", 404)
+        return error_response("Unauthorized", 401)
     task_id = body.get("task_id")
     photo_base64 = body.get("photo_base64")
     if not task_id or not photo_base64:
@@ -678,12 +686,9 @@ def handle_upload_photo(conn, body):
 
 
 def handle_complete_task(conn, body):
-    tid = resolve_telegram_id(body, CHILD_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    child = get_child_by_tg(conn, tid)
+    tid, child = resolve_child(conn, body)
     if not child:
-        return error_response("Child not found", 404)
+        return error_response("Unauthorized", 401)
     task_id = body.get("task_id")
     if not task_id:
         return error_response("task_id required")
@@ -855,12 +860,9 @@ def handle_add_task(conn, body):
 
 
 def handle_submit_grade(conn, body):
-    tid = resolve_telegram_id(body, CHILD_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    child = get_child_by_tg(conn, tid)
+    tid, child = resolve_child(conn, body)
     if not child:
-        return error_response("Child not found", 404)
+        return error_response("Unauthorized", 401)
     subject = body.get("subject", "").strip()
     grade = int(body.get("grade", 0))
     date_str = body.get("date", str(date.today()))
@@ -920,12 +922,9 @@ def handle_approve_grade(conn, body):
 
 def handle_request_extension(conn, body):
     """Ребёнок запрашивает дополнительное время для задачи."""
-    tid = resolve_telegram_id(body, CHILD_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    child = get_child_by_tg(conn, tid)
+    tid, child = resolve_child(conn, body)
     if not child:
-        return error_response("Child not found", 404)
+        return error_response("Unauthorized", 401)
     task_id = body.get("task_id")
     if not task_id:
         return error_response("task_id required")
@@ -1021,12 +1020,9 @@ def handle_task_extension(conn, body):
 
 
 def handle_buy_reward(conn, body):
-    tid = resolve_telegram_id(body, CHILD_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    child = get_child_by_tg(conn, tid)
+    tid, child = resolve_child(conn, body)
     if not child:
-        return error_response("Child not found", 404)
+        return error_response("Unauthorized", 401)
     reward_id = body.get("reward_id")
     with conn.cursor() as cur:
         cur.execute(f"SELECT id, title, cost, parent_id, child_id, quantity FROM {SCHEMA}.rewards WHERE id = %s AND parent_id = %s", (reward_id, child["parent_id"]))
@@ -1278,15 +1274,10 @@ def handle_cancel_task(conn, body):
 
 def handle_child_delete_task(conn, body):
     """Ребёнок удаляет выполненное задание (статус approved/done) из своей истории."""
-    tid = resolve_telegram_id(body, CHILD_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    with conn.cursor() as cur:
-        cur.execute(f"SELECT id FROM {SCHEMA}.children WHERE telegram_id = %s", (tid,))
-        child = cur.fetchone()
+    tid, child = resolve_child(conn, body)
     if not child:
-        return error_response("Child not found", 404)
-    child_id = child[0]
+        return error_response("Unauthorized", 401)
+    child_id = child["id"]
     task_id = body.get("task_id")
     if not task_id:
         return error_response("task_id required", 400)
@@ -1304,12 +1295,9 @@ def handle_child_delete_task(conn, body):
 
 def handle_child_purchases(conn, body):
     """История покупок наград ребёнка из PostgreSQL."""
-    tid = resolve_telegram_id(body, CHILD_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    child = get_child_by_tg(conn, tid)
+    tid, child = resolve_child(conn, body)
     if not child:
-        return error_response("Child not found", 404)
+        return error_response("Unauthorized", 401)
     with conn.cursor() as cur:
         cur.execute(
             f"""SELECT rp.id, rp.reward_id, r.title, r.emoji, r.cost, rp.status, rp.purchased_at
@@ -1328,12 +1316,9 @@ def handle_child_purchases(conn, body):
 
 def handle_child_wish_add(conn, body):
     """Ребёнок запрашивает желаемую награду."""
-    tid = resolve_telegram_id(body, CHILD_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    child = get_child_by_tg(conn, tid)
+    tid, child = resolve_child(conn, body)
     if not child:
-        return error_response("Child not found", 404)
+        return error_response("Unauthorized", 401)
     title = (body.get("title") or "").strip()
     emoji = body.get("emoji", "🎁")
     if not title:
@@ -1360,12 +1345,9 @@ def handle_child_wish_add(conn, body):
 
 def handle_child_wish_delete(conn, body):
     """Ребёнок удаляет свой запрос на награду."""
-    tid = resolve_telegram_id(body, CHILD_TOKEN)
-    if not tid:
-        return error_response("Unauthorized", 401)
-    child = get_child_by_tg(conn, tid)
+    tid, child = resolve_child(conn, body)
     if not child:
-        return error_response("Child not found", 404)
+        return error_response("Unauthorized", 401)
     wish_id = body.get("wish_id")
     if not wish_id:
         return error_response("wish_id required", 400)
@@ -1742,12 +1724,9 @@ def handle_parent_toggle_notifications(conn, body):
 
 def handle_child_toggle_notifications(conn, body):
     """Переключить уведомления для ребёнка."""
-    tid = resolve_telegram_id(body, CHILD_TOKEN)
-    if not tid:
-        return error_response("no_tg_id")
-    child = get_child_by_tg(conn, tid)
+    tid, child = resolve_child(conn, body)
     if not child:
-        return error_response("not_found")
+        return error_response("Unauthorized", 401)
     enabled = body.get("enabled")
     settings = body.get("settings")
     with conn.cursor() as cur:
