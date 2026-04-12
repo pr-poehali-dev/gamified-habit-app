@@ -40,6 +40,7 @@ type ParentData = {
   gradeRequests: GradeRequest[];
   rewards: Reward[];
   rewardWishes: { id: number; childId: number; childName: string; title: string; emoji: string; createdAt: string }[];
+  phone_number?: string;
   notifications_enabled: boolean;
   notification_settings: { tips: boolean; activity: boolean };
 };
@@ -279,6 +280,7 @@ export default function ParentMiniApp() {
         trialUsed={data.trial_used}
         onActivateTrial={activateTrial}
         parentName={data.name}
+        parentPhone={data.phone_number}
         parentTelegramId={data.telegram_id}
         parentId={data.id}
       />

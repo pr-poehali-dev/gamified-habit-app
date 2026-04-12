@@ -72,11 +72,12 @@ type Props = {
   trialUsed: boolean;
   onActivateTrial: () => Promise<void>;
   parentName: string;
+  parentPhone?: string;
   parentTelegramId?: number;
   parentId?: number;
 };
 
-export function PremiumModal({ open, onClose, isPremium, isPremiumPaid, trialActive, trialDaysLeft, trialUsed, onActivateTrial, parentName, parentTelegramId, parentId }: Props) {
+export function PremiumModal({ open, onClose, isPremium, isPremiumPaid, trialActive, trialDaysLeft, trialUsed, onActivateTrial, parentName, parentPhone, parentTelegramId, parentId }: Props) {
   const [activating, setActivating] = useState(false);
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -116,9 +117,9 @@ export function PremiumModal({ open, onClose, isPremium, isPremiumPaid, trialAct
 
     const data = await createPayment({
       amount: SUBSCRIPTION_PRICE,
-      userName: parentName,
+      userName: parentName || parentPhone || "Родитель",
       userEmail: email,
-      userPhone: "",
+      userPhone: parentPhone || "",
       orderComment: "Premium-подписка СтарКидс на 1 месяц",
       cartItems: [
         {
