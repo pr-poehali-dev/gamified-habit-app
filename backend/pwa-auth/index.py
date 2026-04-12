@@ -53,7 +53,7 @@ def normalize_phone(raw: str) -> str:
     return "+" + digits
 
 
-def send_sms(phone: str, message: str) -> bool:
+def send_sms(phone: str, message: str) -> tuple[bool, str]:
     params = urllib.parse.urlencode({
         "login": SMSC_LOGIN,
         "psw": SMSC_PASSWORD,
@@ -65,10 +65,15 @@ def send_sms(phone: str, message: str) -> bool:
     url = f"https://smsc.ru/sys/send.php?{params}"
     try:
         with urllib.request.urlopen(url, timeout=10) as resp:
-            result = json.loads(resp.read().decode())
-            return "error" not in result
-    except Exception:
-        return False
+            raw = resp.read().decode()
+            print(f"[SMSC] response: {raw}")
+            result = json.loads(raw)
+            if "error" in result:
+                return False, f"SMSC error {result.get('error_code', '')}: {result.get('error', 'неизвестная ошибка')}"
+            return True, ""
+    except Exception as e:
+        print(f"[SMSC] exception: {e}")
+        return False, str(e)
 
 
 def generate_otp() -> str:
@@ -115,10 +120,11 @@ def send_otp(phone_raw: str) -> dict:
     conn.close()
 
     message = f"СтарКидс: ваш код подтверждения {otp}. Действителен {OTP_TTL_MINUTES} минут."
-    sent = send_sms(phone, message)
+    sent, sms_error = send_sms(phone, message)
 
     if not sent:
-        return err("Не удалось отправить SMS. Проверьте номер телефона.")
+        print(f"[send_otp] SMS failed for {phone}: {sms_error}")
+        return err(f"Не удалось отправить SMS: {sms_error}")
 
     return ok({"status": "sent", "phone": phone})
 
