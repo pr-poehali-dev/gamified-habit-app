@@ -181,18 +181,14 @@ export default function Index() {
 
           <div className="hero-actions">
             <a
-              href={PARENT_BOT_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/app"
               className="hero-btn hero-btn--primary"
             >
               <span>👨‍👩‍👧 Я родитель</span>
               <span className="hero-btn-sub">Создать задания</span>
             </a>
             <a
-              href={CHILD_BOT_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/app"
               className="hero-btn hero-btn--secondary"
             >
               <span>🧒 Я ребёнок</span>
@@ -201,8 +197,14 @@ export default function Index() {
           </div>
 
           <p className="hero-hint">
-            ✨ 7 дней Premium бесплатно · Работает в Telegram · Без установки
+            ✨ 7 дней Premium бесплатно · Без установки
           </p>
+
+          <div className="flex items-center justify-center gap-4 mt-2">
+            <span className="text-xs text-gray-400">Также доступно в Telegram:</span>
+            <a href={PARENT_BOT_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-[#6B7BFF] underline underline-offset-2">для родителей</a>
+            <a href={CHILD_BOT_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-[#6B7BFF] underline underline-offset-2">для детей</a>
+          </div>
         </div>
 
         {/* Phone mockup */}
