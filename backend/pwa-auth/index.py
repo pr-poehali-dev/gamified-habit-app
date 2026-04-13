@@ -434,8 +434,9 @@ def verify_session(session_token: str, role: str) -> dict:
 
 
 def merge_accounts(pwa_session_token: str, phone_raw: str) -> dict:
-    """Объединить PWA-аккаунт (по телефону) с Telegram-аккаунтом.
-    PWA-аккаунт удаляется, все данные переносятся на Telegram-аккаунт.
+    """Объединить два аккаунта (PWA по телефону + Telegram).
+    Основным становится тот, кто зарегистрировался раньше (меньший created_at).
+    Все данные переносятся на основной, второй удаляется.
     """
     if not pwa_session_token:
         return err("Нет токена сессии.", 401)
@@ -447,24 +448,24 @@ def merge_accounts(pwa_session_token: str, phone_raw: str) -> dict:
     conn = get_conn()
     cur = conn.cursor()
 
-    # Находим PWA-аккаунт (по телефону, telegram_id < 0)
+    # Находим аккаунт по телефону (PWA-аккаунт, telegram_id < 0)
     cur.execute(
-        f"SELECT id, telegram_id, full_name FROM {SCHEMA}.parents WHERE phone_number = %s AND phone_verified = true",
+        f"SELECT id, telegram_id, full_name, created_at FROM {SCHEMA}.parents WHERE phone_number = %s AND phone_verified = true",
         (phone,)
     )
-    pwa_row = cur.fetchone()
-    if not pwa_row:
+    phone_row = cur.fetchone()
+    if not phone_row:
         cur.close(); conn.close()
         return err("PWA-аккаунт с этим номером не найден.")
 
-    pwa_id, pwa_tg_id, pwa_name = pwa_row
-    if pwa_tg_id and pwa_tg_id > 0:
+    phone_id, phone_tg_id, phone_name, phone_created = phone_row
+    if phone_tg_id and phone_tg_id > 0:
         cur.close(); conn.close()
         return err("Этот номер уже принадлежит Telegram-аккаунту. Используйте вход через Telegram.")
 
-    # Находим Telegram-аккаунт по токену сессии
+    # Находим аккаунт по текущей сессии (Telegram-аккаунт)
     cur.execute(
-        f"SELECT id, telegram_id, full_name FROM {SCHEMA}.parents WHERE pwa_session_token = %s",
+        f"SELECT id, telegram_id, full_name, created_at, pwa_session_token, pin_code FROM {SCHEMA}.parents WHERE pwa_session_token = %s",
         (pwa_session_token,)
     )
     tg_row = cur.fetchone()
@@ -472,39 +473,54 @@ def merge_accounts(pwa_session_token: str, phone_raw: str) -> dict:
         cur.close(); conn.close()
         return err("Сессия не найдена.", 401)
 
-    tg_parent_id, tg_id, tg_name = tg_row
-    if not tg_id or tg_id <= 0:
+    tg_id_val, tg_tg_id, tg_name, tg_created, tg_token, tg_pin = tg_row
+    if not tg_tg_id or tg_tg_id <= 0:
         cur.close(); conn.close()
         return err("Текущий аккаунт не является Telegram-аккаунтом.")
 
-    if tg_parent_id == pwa_id:
+    if tg_id_val == phone_id:
         cur.close(); conn.close()
         return err("Это один и тот же аккаунт.")
 
-    # Переносим детей с PWA-аккаунта на Telegram-аккаунт
-    cur.execute(
-        f"UPDATE {SCHEMA}.children SET parent_id = %s WHERE parent_id = %s",
-        (tg_parent_id, pwa_id)
-    )
-    # Переносим задания
-    cur.execute(
-        f"UPDATE {SCHEMA}.tasks SET parent_id = %s WHERE parent_id = %s",
-        (tg_parent_id, pwa_id)
-    )
-    # Переносим награды
-    cur.execute(
-        f"UPDATE {SCHEMA}.rewards SET parent_id = %s WHERE parent_id = %s",
-        (tg_parent_id, pwa_id)
-    )
-    # Привязываем телефон к Telegram-аккаунту
-    cur.execute(
-        f"""UPDATE {SCHEMA}.parents
-            SET phone_number = %s, phone_verified = true
-            WHERE id = %s""",
-        (phone, tg_parent_id)
-    )
-    # Удаляем PWA-аккаунт
-    cur.execute(f"DELETE FROM {SCHEMA}.parents WHERE id = %s", (pwa_id,))
+    # Определяем основной аккаунт по дате регистрации
+    p_created = phone_created if phone_created else datetime.now(timezone.utc)
+    t_created = tg_created if tg_created else datetime.now(timezone.utc)
+    p_dt = p_created if p_created.tzinfo else p_created.replace(tzinfo=timezone.utc)
+    t_dt = t_created if t_created.tzinfo else t_created.replace(tzinfo=timezone.utc)
+
+    if p_dt <= t_dt:
+        # PWA-аккаунт старше — он становится основным
+        primary_id, primary_name = phone_id, phone_name
+        secondary_id = tg_id_val
+        # Переносим telegram_id, имя и сессию на PWA-аккаунт
+        cur.execute(
+            f"""UPDATE {SCHEMA}.parents
+                SET telegram_id = %s, full_name = COALESCE(NULLIF(full_name,''), %s),
+                    pwa_session_token = %s, pin_code = COALESCE(pin_code, %s)
+                WHERE id = %s""",
+            (tg_tg_id, tg_name, tg_token, tg_pin, primary_id)
+        )
+    else:
+        # Telegram-аккаунт старше — он остаётся основным
+        primary_id, primary_name = tg_id_val, tg_name
+        secondary_id = phone_id
+        # Привязываем телефон к Telegram-аккаунту
+        cur.execute(
+            f"""UPDATE {SCHEMA}.parents
+                SET phone_number = %s, phone_verified = true
+                WHERE id = %s""",
+            (phone, primary_id)
+        )
+
+    # Переносим всех детей, задания и награды со вторичного на основной
+    for table, col in [("children", "parent_id"), ("tasks", "parent_id"), ("rewards", "parent_id")]:
+        cur.execute(
+            f"UPDATE {SCHEMA}.{table} SET {col} = %s WHERE {col} = %s",
+            (primary_id, secondary_id)
+        )
+
+    # Удаляем вторичный аккаунт
+    cur.execute(f"DELETE FROM {SCHEMA}.parents WHERE id = %s", (secondary_id,))
 
     conn.commit()
     cur.close()
@@ -512,8 +528,8 @@ def merge_accounts(pwa_session_token: str, phone_raw: str) -> dict:
 
     return ok({
         "status": "merged",
-        "parent_id": tg_parent_id,
-        "full_name": tg_name or pwa_name or "",
+        "parent_id": primary_id,
+        "full_name": primary_name or "",
     })
 
 
