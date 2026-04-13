@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { checkPhone, sendOtp, verifyOtp, loginPin, setPin } from "./pwaApi";
 import { savePwaSession } from "./usePwaSession";
+import MergeAccountModal from "./MergeAccountModal";
 
 interface Props {
   onSuccess: () => void;
@@ -23,6 +24,7 @@ export default function PwaParentAuth({ onSuccess }: Props) {
   const [error, setError] = useState("");
   const [resendCountdown, setResendCountdown] = useState(0);
   const [sessionToken, setSessionToken] = useState("");
+  const [showMerge, setShowMerge] = useState(false);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const pinRefs = useRef<(HTMLInputElement | null)[]>([]);
   const newPinRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -139,13 +141,15 @@ export default function PwaParentAuth({ onSuccess }: Props) {
       return;
     }
     setSessionToken(res.session_token || "");
+    savePwaSession(res.session_token!, "parent");
     if (res.is_new) {
       setStep("name");
+    } else if (res.has_telegram_account) {
+      // Аккаунт уже привязан к Telegram — предложить объединение
+      setShowMerge(true);
     } else if (!res.has_pin) {
-      savePwaSession(res.session_token!, "parent");
       setStep("set_pin");
     } else {
-      savePwaSession(res.session_token!, "parent");
       onSuccess();
     }
   };
@@ -227,6 +231,7 @@ export default function PwaParentAuth({ onSuccess }: Props) {
   );
 
   return (
+    <>
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F0F4FF] to-[#F4F0FF] p-4">
       <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl p-8 space-y-6">
 
@@ -369,5 +374,21 @@ export default function PwaParentAuth({ onSuccess }: Props) {
 
       </div>
     </div>
+
+    {showMerge && (
+      <MergeAccountModal
+        phone={phone}
+        sessionToken={sessionToken}
+        onMerged={() => {
+          setShowMerge(false);
+          onSuccess();
+        }}
+        onSkip={() => {
+          setShowMerge(false);
+          onSuccess();
+        }}
+      />
+    )}
+    </>
   );
 }

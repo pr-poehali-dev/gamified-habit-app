@@ -27,9 +27,9 @@ export async function verifyOtp(
   phone: string,
   otp: string,
   fullName?: string
-): Promise<{ status?: string; role?: string; session_token?: string; parent_id?: number; full_name?: string; is_new?: boolean; has_pin?: boolean; error?: string }> {
+): Promise<{ status?: string; role?: string; session_token?: string; parent_id?: number; full_name?: string; is_new?: boolean; has_pin?: boolean; has_telegram_account?: boolean; error?: string }> {
   return call({ action: "verify_otp", phone, otp, full_name: fullName || "" }) as Promise<{
-    status?: string; role?: string; session_token?: string; parent_id?: number; full_name?: string; is_new?: boolean; has_pin?: boolean; error?: string;
+    status?: string; role?: string; session_token?: string; parent_id?: number; full_name?: string; is_new?: boolean; has_pin?: boolean; has_telegram_account?: boolean; error?: string;
   }>;
 }
 

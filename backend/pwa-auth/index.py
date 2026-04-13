@@ -155,7 +155,7 @@ def verify_otp(phone_raw: str, otp_input: str, full_name: str = "") -> dict:
     cur = conn.cursor()
 
     cur.execute(
-        f"SELECT id, otp_code, otp_expires_at, phone_verified, full_name, pwa_session_token, pin_code FROM {SCHEMA}.parents WHERE phone_number = %s",
+        f"SELECT id, otp_code, otp_expires_at, phone_verified, full_name, pwa_session_token, pin_code, telegram_id FROM {SCHEMA}.parents WHERE phone_number = %s",
         (phone,)
     )
     row = cur.fetchone()
@@ -165,7 +165,9 @@ def verify_otp(phone_raw: str, otp_input: str, full_name: str = "") -> dict:
         conn.close()
         return err("Номер телефона не найден. Запросите код заново.")
 
-    parent_id, stored_otp, expires_at, phone_verified, db_name, existing_token, pin_code = row
+    parent_id, stored_otp, expires_at, phone_verified, db_name, existing_token, pin_code, tg_id = row
+    # Реальный Telegram-аккаунт — telegram_id > 0 (отрицательные значения — временные PWA-id)
+    has_telegram_account = bool(tg_id and tg_id > 0)
 
     if phone_verified and existing_token and stored_otp is None:
         token = existing_token
@@ -185,6 +187,7 @@ def verify_otp(phone_raw: str, otp_input: str, full_name: str = "") -> dict:
             "full_name": name_to_save,
             "is_new": False,
             "has_pin": bool(pin_code),
+            "has_telegram_account": has_telegram_account,
         })
 
     if expires_at is None or (expires_at.tzinfo is None and datetime.now(timezone.utc) > expires_at.replace(tzinfo=timezone.utc)) or (expires_at.tzinfo and datetime.now(timezone.utc) > expires_at):
@@ -233,6 +236,7 @@ def verify_otp(phone_raw: str, otp_input: str, full_name: str = "") -> dict:
         "full_name": name_to_save,
         "is_new": is_new,
         "has_pin": bool(pin_code),
+        "has_telegram_account": has_telegram_account,
     })
 
 
@@ -429,6 +433,90 @@ def verify_session(session_token: str, role: str) -> dict:
         })
 
 
+def merge_accounts(pwa_session_token: str, phone_raw: str) -> dict:
+    """Объединить PWA-аккаунт (по телефону) с Telegram-аккаунтом.
+    PWA-аккаунт удаляется, все данные переносятся на Telegram-аккаунт.
+    """
+    if not pwa_session_token:
+        return err("Нет токена сессии.", 401)
+    try:
+        phone = normalize_phone(phone_raw)
+    except ValueError as e:
+        return err(str(e))
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    # Находим PWA-аккаунт (по телефону, telegram_id < 0)
+    cur.execute(
+        f"SELECT id, telegram_id, full_name FROM {SCHEMA}.parents WHERE phone_number = %s AND phone_verified = true",
+        (phone,)
+    )
+    pwa_row = cur.fetchone()
+    if not pwa_row:
+        cur.close(); conn.close()
+        return err("PWA-аккаунт с этим номером не найден.")
+
+    pwa_id, pwa_tg_id, pwa_name = pwa_row
+    if pwa_tg_id and pwa_tg_id > 0:
+        cur.close(); conn.close()
+        return err("Этот номер уже принадлежит Telegram-аккаунту. Используйте вход через Telegram.")
+
+    # Находим Telegram-аккаунт по токену сессии
+    cur.execute(
+        f"SELECT id, telegram_id, full_name FROM {SCHEMA}.parents WHERE pwa_session_token = %s",
+        (pwa_session_token,)
+    )
+    tg_row = cur.fetchone()
+    if not tg_row:
+        cur.close(); conn.close()
+        return err("Сессия не найдена.", 401)
+
+    tg_parent_id, tg_id, tg_name = tg_row
+    if not tg_id or tg_id <= 0:
+        cur.close(); conn.close()
+        return err("Текущий аккаунт не является Telegram-аккаунтом.")
+
+    if tg_parent_id == pwa_id:
+        cur.close(); conn.close()
+        return err("Это один и тот же аккаунт.")
+
+    # Переносим детей с PWA-аккаунта на Telegram-аккаунт
+    cur.execute(
+        f"UPDATE {SCHEMA}.children SET parent_id = %s WHERE parent_id = %s",
+        (tg_parent_id, pwa_id)
+    )
+    # Переносим задания
+    cur.execute(
+        f"UPDATE {SCHEMA}.tasks SET parent_id = %s WHERE parent_id = %s",
+        (tg_parent_id, pwa_id)
+    )
+    # Переносим награды
+    cur.execute(
+        f"UPDATE {SCHEMA}.rewards SET parent_id = %s WHERE parent_id = %s",
+        (tg_parent_id, pwa_id)
+    )
+    # Привязываем телефон к Telegram-аккаунту
+    cur.execute(
+        f"""UPDATE {SCHEMA}.parents
+            SET phone_number = %s, phone_verified = true
+            WHERE id = %s""",
+        (phone, tg_parent_id)
+    )
+    # Удаляем PWA-аккаунт
+    cur.execute(f"DELETE FROM {SCHEMA}.parents WHERE id = %s", (pwa_id,))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return ok({
+        "status": "merged",
+        "parent_id": tg_parent_id,
+        "full_name": tg_name or pwa_name or "",
+    })
+
+
 def link_phone_request(telegram_id: int, phone_raw: str) -> dict:
     """Запросить привязку телефона к Telegram-аккаунту — отправить SMS с кодом."""
     if not telegram_id:
@@ -597,6 +685,9 @@ def handler(event: dict, context) -> dict:
 
     if action == "logout":
         return logout(body.get("session_token", ""), body.get("role", ""))
+
+    if action == "merge_accounts":
+        return merge_accounts(body.get("session_token", ""), body.get("phone", ""))
 
     if action == "link_phone_request":
         return link_phone_request(body.get("telegram_id", 0), body.get("phone", ""))
