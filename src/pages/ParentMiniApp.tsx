@@ -441,6 +441,8 @@ export default function ParentMiniApp() {
               await apiCall("parent/profile/update", { full_name: newName });
               load(true);
             }}
+            telegramId={data.telegram_id}
+            linkedPhone={data.phone_number}
           />
         )}
       </div>

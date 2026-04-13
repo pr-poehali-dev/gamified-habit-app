@@ -429,6 +429,102 @@ def verify_session(session_token: str, role: str) -> dict:
         })
 
 
+def link_phone_request(telegram_id: int, phone_raw: str) -> dict:
+    """Запросить привязку телефона к Telegram-аккаунту — отправить SMS с кодом."""
+    if not telegram_id:
+        return err("telegram_id обязателен.")
+    try:
+        phone = normalize_phone(phone_raw)
+    except ValueError as e:
+        return err(str(e))
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    # Проверяем что Telegram-аккаунт существует
+    cur.execute(f"SELECT id FROM {SCHEMA}.parents WHERE telegram_id = %s", (telegram_id,))
+    parent = cur.fetchone()
+    if not parent:
+        cur.close(); conn.close()
+        return err("Telegram-аккаунт не найден.")
+
+    # Проверяем что телефон не занят другим аккаунтом
+    cur.execute(f"SELECT id FROM {SCHEMA}.parents WHERE phone_number = %s AND telegram_id != %s", (phone, telegram_id))
+    conflict = cur.fetchone()
+    if conflict:
+        cur.close(); conn.close()
+        return err("Этот номер уже привязан к другому аккаунту.")
+
+    otp = generate_otp()
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=OTP_TTL_MINUTES)
+
+    cur.execute(
+        f"UPDATE {SCHEMA}.parents SET otp_code = %s, otp_expires_at = %s WHERE telegram_id = %s",
+        (otp, expires_at, telegram_id)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    message = f"СтарКидс: ваш код для привязки номера {otp}. Действителен {OTP_TTL_MINUTES} минут."
+    sent, sms_error = send_sms(phone, message)
+    if not sent:
+        print(f"[link_phone_request] SMS failed for {phone}: {sms_error}")
+        return err(f"Не удалось отправить SMS: {sms_error}")
+
+    return ok({"status": "sent", "phone": phone})
+
+
+def link_phone_confirm(telegram_id: int, phone_raw: str, otp_input: str) -> dict:
+    """Подтвердить привязку телефона к Telegram-аккаунту по SMS-коду."""
+    if not telegram_id:
+        return err("telegram_id обязателен.")
+    try:
+        phone = normalize_phone(phone_raw)
+    except ValueError as e:
+        return err(str(e))
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute(
+        f"SELECT id, otp_code, otp_expires_at FROM {SCHEMA}.parents WHERE telegram_id = %s",
+        (telegram_id,)
+    )
+    row = cur.fetchone()
+    if not row:
+        cur.close(); conn.close()
+        return err("Telegram-аккаунт не найден.")
+
+    parent_id, stored_otp, expires_at = row
+
+    if not stored_otp or not expires_at:
+        cur.close(); conn.close()
+        return err("Код не был запрошен. Запросите новый.")
+
+    now = datetime.now(timezone.utc)
+    exp = expires_at if expires_at.tzinfo else expires_at.replace(tzinfo=timezone.utc)
+    if now > exp:
+        cur.close(); conn.close()
+        return err("Код истёк. Запросите новый.")
+
+    if stored_otp != otp_input.strip():
+        cur.close(); conn.close()
+        return err("Неверный код.")
+
+    cur.execute(
+        f"""UPDATE {SCHEMA}.parents
+            SET phone_number = %s, phone_verified = true, otp_code = NULL, otp_expires_at = NULL
+            WHERE id = %s""",
+        (phone, parent_id)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return ok({"status": "ok", "phone": phone})
+
+
 def logout(session_token: str, role: str) -> dict:
     """Сбросить сессионный токен (выход из аккаунта)."""
     if not session_token or role not in ("parent", "child"):
@@ -501,5 +597,11 @@ def handler(event: dict, context) -> dict:
 
     if action == "logout":
         return logout(body.get("session_token", ""), body.get("role", ""))
+
+    if action == "link_phone_request":
+        return link_phone_request(body.get("telegram_id", 0), body.get("phone", ""))
+
+    if action == "link_phone_confirm":
+        return link_phone_confirm(body.get("telegram_id", 0), body.get("phone", ""), body.get("otp", ""))
 
     return err("Неизвестное действие.")

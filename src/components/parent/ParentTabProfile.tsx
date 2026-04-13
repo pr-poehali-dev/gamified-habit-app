@@ -1,5 +1,6 @@
 import { useState } from "react";
 import PushNotificationToggle from "@/components/pwa/PushNotificationToggle";
+import LinkPhoneModal from "@/components/pwa/LinkPhoneModal";
 
 const isTelegramMiniApp = () => {
   const initData = window.Telegram?.WebApp?.initData;
@@ -45,11 +46,13 @@ type ProfileProps = {
   notificationSettings?: { tips: boolean; activity: boolean };
   onToggleNotifications?: (enabled: boolean, settings?: { tips: boolean; activity: boolean }) => void;
   onLogout?: () => void;
+  telegramId?: number;
+  linkedPhone?: string | null;
 };
 
 const CHILD_AVATARS = ["👦", "👧", "🧒", "👶", "🐱", "🦊", "🐼", "🦁", "🐸", "🐧", "🦋", "🌟"];
 
-export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, streak, streakReward, onAddChild, onRemoveChild, onRefreshInvite, isPremium, trialUsed, parentId, onUpdateName, onActivateTrial, onSubscribe, notificationsEnabled = true, notificationSettings, onToggleNotifications, onLogout }: ProfileProps) {
+export function ParentTabProfile({ name, parent_points, parent_xp, children, tasks_count, streak_current, streak, streakReward, onAddChild, onRemoveChild, onRefreshInvite, isPremium, trialUsed, parentId, onUpdateName, onActivateTrial, onSubscribe, notificationsEnabled = true, notificationSettings, onToggleNotifications, onLogout, telegramId, linkedPhone }: ProfileProps) {
   const { level } = getParentLevelInfo(parent_xp);
   const tier = getParentLevelTier(level);
 
@@ -63,6 +66,10 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(name);
   const [savingName, setSavingName] = useState(false);
+
+  // Привязка телефона
+  const [showLinkPhone, setShowLinkPhone] = useState(false);
+  const [currentLinkedPhone, setCurrentLinkedPhone] = useState<string | null>(linkedPhone ?? null);
 
   // Аналитика
   const [analyticsData, setAnalyticsData] = useState<ChildAnalytics[] | null>(null);
@@ -448,6 +455,34 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
         );
       })}
 
+      {/* Привязка телефона — только в Telegram */}
+      {!isPwaMode() && telegramId && (
+        <div className="bg-white/90 rounded-3xl p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">📱</span>
+              <div>
+                <p className="font-bold text-[#1E1B4B] text-sm">Телефон для PWA</p>
+                <p className="text-xs text-gray-400">
+                  {currentLinkedPhone ? currentLinkedPhone : "Не привязан"}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowLinkPhone(true)}
+              className="text-xs font-bold text-[#6B7BFF] bg-[#6B7BFF]/10 px-3 py-1.5 rounded-xl active:scale-95 transition-transform"
+            >
+              {currentLinkedPhone ? "Изменить" : "Привязать"}
+            </button>
+          </div>
+          {!currentLinkedPhone && (
+            <p className="text-[11px] text-gray-400 mt-2 leading-relaxed">
+              Привяжите телефон, чтобы входить в приложение без Telegram
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Notifications settings — только в Telegram */}
       {!isPwaMode() && <div className="bg-white/90 rounded-3xl p-4 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
@@ -538,6 +573,18 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
           © 2026 СтарКидс · 0+ · Самозанятый Кругов М.Г. · ИНН 772379179900
         </p>
       </div>
+
+      {/* Модалка привязки телефона */}
+      {showLinkPhone && telegramId && (
+        <LinkPhoneModal
+          telegramId={telegramId}
+          onSuccess={(phone) => {
+            setCurrentLinkedPhone(phone);
+            setShowLinkPhone(false);
+          }}
+          onClose={() => setShowLinkPhone(false)}
+        />
+      )}
 
       {/* Выход — только в PWA */}
       {isPwaMode() && onLogout && (
