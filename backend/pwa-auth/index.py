@@ -121,11 +121,14 @@ def send_otp(phone_raw: str) -> dict:
             (otp, expires_at, phone)
         )
     else:
+        # telegram_id для PWA-пользователей: уникальное отрицательное число
+        cur.execute("SELECT -ABS(EXTRACT(EPOCH FROM NOW())::bigint * 1000 + (random() * 999)::int)")
+        pwa_tg_id = int(cur.fetchone()[0])
         cur.execute(
             f"""INSERT INTO {SCHEMA}.parents (telegram_id, phone_number, otp_code, otp_expires_at, full_name)
-                VALUES (0, %s, %s, %s, '')
+                VALUES (%s, %s, %s, %s, '')
                 ON CONFLICT (phone_number) DO UPDATE SET otp_code = EXCLUDED.otp_code, otp_expires_at = EXCLUDED.otp_expires_at""",
-            (phone, otp, expires_at)
+            (pwa_tg_id, phone, otp, expires_at)
         )
 
     conn.commit()
