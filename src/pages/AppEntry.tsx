@@ -11,6 +11,7 @@ import PwaParentAuth from "@/components/pwa/PwaParentAuth";
 import PwaChildAuth from "@/components/pwa/PwaChildAuth";
 import PwaSetPin from "@/components/pwa/PwaSetPin";
 import InstallPwaGuide from "@/components/pwa/InstallPwaGuide";
+import PwaInstallPrompt from "@/components/pwa/PwaInstallPrompt";
 import ParentMiniApp from "./ParentMiniApp";
 import ChildMiniApp from "./ChildMiniApp";
 
@@ -146,6 +147,6 @@ export default function AppEntry() {
     );
   }
 
-  if (role === "child") return <ChildMiniApp />;
-  return <ParentMiniApp />;
+  if (role === "child") return <><PwaInstallPrompt /><ChildMiniApp /></>;
+  return <><PwaInstallPrompt /><ParentMiniApp /></>;
 }
