@@ -4,7 +4,7 @@ import { useRobokassa, openPaymentPage, isValidEmail } from "@/components/extens
 import func2url from "../../../backend/func2url.json";
 
 const ROBOKASSA_URL = func2url["robokassa-robokassa"];
-const SUBSCRIPTION_PRICE = 299;
+const SUBSCRIPTION_PRICE = 99;
 
 type SubscribeBlockProps = {
   email: string;
