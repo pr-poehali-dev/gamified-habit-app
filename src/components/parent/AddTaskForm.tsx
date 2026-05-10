@@ -164,14 +164,40 @@ export function AddTaskForm({ children, onAddTask, onClose, isPremium, trialUsed
             className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-gray-50 font-semibold focus:outline-none focus:ring-2 focus:ring-[#6B7BFF]/40" />
         </div>
         <div>
-          <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-2">Награда</label>
-          <div className="flex gap-2">
-            {[1, 2, 3, 4, 5].map(s => (
+          <label className="text-xs font-black text-gray-500 uppercase tracking-wide block mb-2">Награда ⭐</label>
+          {/* Быстрые значения */}
+          <div className="flex gap-2 mb-2">
+            {[1, 2, 3, 5, 10].map(s => (
               <button key={s} onClick={() => setNewTask(t => ({ ...t, stars: s }))}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-black transition-all ${newTask.stars === s ? "bg-gradient-to-br from-amber-400 to-orange-500 text-white scale-105" : "bg-gray-50 text-gray-600"}`}>
-                {s}⭐
+                className={`flex-1 py-2 rounded-xl text-sm font-black transition-all ${newTask.stars === s ? "bg-gradient-to-br from-amber-400 to-orange-500 text-white scale-105" : "bg-gray-50 text-gray-600"}`}>
+                {s}
               </button>
             ))}
+          </div>
+          {/* Произвольное число */}
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+            <button
+              onClick={() => setNewTask(t => ({ ...t, stars: Math.max(1, t.stars - 1) }))}
+              className="w-7 h-7 rounded-lg bg-white border border-gray-200 text-gray-600 font-black text-lg flex items-center justify-center active:scale-95 transition-transform shadow-sm"
+            >−</button>
+            <div className="flex-1 flex items-center justify-center gap-1.5">
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={newTask.stars}
+                onChange={e => {
+                  const v = Math.max(1, Math.min(100, parseInt(e.target.value) || 1));
+                  setNewTask(t => ({ ...t, stars: v }));
+                }}
+                className="w-14 text-center text-xl font-black text-[#1E1B4B] bg-transparent outline-none border-none"
+              />
+              <span className="text-xl">⭐</span>
+            </div>
+            <button
+              onClick={() => setNewTask(t => ({ ...t, stars: Math.min(100, t.stars + 1) }))}
+              className="w-7 h-7 rounded-lg bg-white border border-gray-200 text-gray-600 font-black text-lg flex items-center justify-center active:scale-95 transition-transform shadow-sm"
+            >+</button>
           </div>
         </div>
 
