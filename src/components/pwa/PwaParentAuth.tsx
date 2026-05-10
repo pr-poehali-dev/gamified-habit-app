@@ -4,6 +4,9 @@ import { Input } from "@/components/ui/input";
 import { checkPhone, sendOtp, verifyOtp, loginPin, setPin } from "./pwaApi";
 import { savePwaSession } from "./usePwaSession";
 import MergeAccountModal from "./MergeAccountModal";
+import func2url from "../../../backend/func2url.json";
+
+const SUPPORT_URL = func2url["support-email"];
 
 interface Props {
   onSuccess: () => void;
@@ -25,6 +28,12 @@ export default function PwaParentAuth({ onSuccess }: Props) {
   const [resendCountdown, setResendCountdown] = useState(0);
   const [sessionToken, setSessionToken] = useState("");
   const [showMerge, setShowMerge] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreePersonalData, setAgreePersonalData] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
+  const [supportForm, setSupportForm] = useState({ name: "", email: "", message: "" });
+  const [supportSending, setSupportSending] = useState(false);
+  const [supportSent, setSupportSent] = useState(false);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const pinRefs = useRef<(HTMLInputElement | null)[]>([]);
   const newPinRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -206,6 +215,21 @@ export default function PwaParentAuth({ onSuccess }: Props) {
     setTimeout(() => otpRefs.current[0]?.focus(), 100);
   };
 
+  const handleSupportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSupportSending(true);
+    try {
+      await fetch(SUPPORT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(supportForm),
+      });
+    } catch { /* игнорируем */ }
+    setSupportSending(false);
+    setSupportSent(true);
+    setTimeout(() => { setShowSupport(false); setSupportSent(false); setSupportForm({ name: "", email: "", message: "" }); }, 3000);
+  };
+
   const digitInputs = (
     arr: string[],
     setArr: React.Dispatch<React.SetStateAction<string[]>>,
@@ -232,46 +256,118 @@ export default function PwaParentAuth({ onSuccess }: Props) {
 
   return (
     <>
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F0F4FF] to-[#F4F0FF] p-4">
-      <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl p-8 space-y-6">
-
-        <div className="text-center space-y-2">
-          <div className="text-4xl">⭐</div>
-          <h1 className="text-xl font-bold text-gray-900">СтарКидс</h1>
-          <p className="text-sm text-gray-500">
-            {step === "phone" && "Введите номер телефона для входа"}
-            {step === "pin" && "Введите код-пароль"}
-            {step === "otp" && `Код отправлен на ${phone}`}
-            {step === "name" && "Как вас зовут?"}
-            {step === "set_pin" && (pinStep === "enter" ? "Придумайте код-пароль для быстрого входа" : "Повторите код-пароль")}
-          </p>
+    {/* Модалка поддержки */}
+    {showSupport && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)" }}>
+        <div className="bg-white rounded-3xl p-7 w-full max-w-sm shadow-2xl relative">
+          <button onClick={() => setShowSupport(false)} className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 text-sm font-bold">✕</button>
+          {supportSent ? (
+            <div className="text-center py-6 space-y-3">
+              <div className="text-5xl">✅</div>
+              <p className="font-black text-[#1E1B4B] text-lg">Отправлено!</p>
+              <p className="text-sm text-gray-400">Ответим в течение рабочего дня</p>
+            </div>
+          ) : (
+            <>
+              <h2 className="text-lg font-black text-[#1E1B4B] mb-1">💬 Техническая поддержка</h2>
+              <p className="text-sm text-gray-400 mb-5">Отвечаем в течение рабочего дня</p>
+              <form onSubmit={handleSupportSubmit} className="space-y-3">
+                <div>
+                  <label className="text-xs font-bold text-gray-500 block mb-1">Ваше имя</label>
+                  <input required value={supportForm.name} onChange={e => setSupportForm(f => ({ ...f, name: e.target.value }))} placeholder="Мария" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#6B7BFF]" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 block mb-1">Email для ответа</label>
+                  <input required type="email" value={supportForm.email} onChange={e => setSupportForm(f => ({ ...f, email: e.target.value }))} placeholder="mail@example.com" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#6B7BFF]" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 block mb-1">Опишите проблему</label>
+                  <textarea required value={supportForm.message} onChange={e => setSupportForm(f => ({ ...f, message: e.target.value }))} placeholder="Что случилось?" rows={3} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#6B7BFF] resize-none" />
+                </div>
+                <button type="submit" disabled={supportSending} className="w-full py-3 rounded-xl bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white font-black text-sm disabled:opacity-60">
+                  {supportSending ? "Отправляем..." : "Отправить →"}
+                </button>
+              </form>
+            </>
+          )}
         </div>
+      </div>
+    )}
 
-        {step === "phone" && (
-          <div className="space-y-4">
-            <Input
-              type="tel"
-              placeholder="+7 (999) 000-00-00"
-              value={phone}
-              onChange={(e) => handlePhoneChange(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handlePhoneSubmit()}
-              className="text-center text-lg tracking-wide h-12"
-              autoFocus
-            />
-            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-            <Button
-              className="w-full h-12 text-base bg-[#6B7BFF] hover:bg-[#5A6AEE] text-white"
-              onClick={handlePhoneSubmit}
-              disabled={loading || phone.replace(/\D/g, "").length < 11}
-            >
-              {loading ? "Проверяем..." : "Продолжить"}
-            </Button>
-            <p className="text-xs text-gray-400 text-center">
-              Нажимая кнопку, вы соглашаетесь с{" "}
-              <a href="/terms" className="underline">условиями использования</a>
-            </p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F0F4FF] to-[#F4F0FF] p-4">
+      <div className="w-full max-w-sm space-y-4">
+
+        {/* Карточка входа */}
+        <div className="bg-white rounded-3xl shadow-xl p-8 space-y-6">
+
+          <div className="text-center space-y-2">
+            <div className="text-4xl">⭐</div>
+            <h1 className="text-xl font-black text-[#1E1B4B]">СтарКидс</h1>
+            {step === "phone" && (
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-[#6B7BFF]">Вход и регистрация для родителей</p>
+                <p className="text-xs text-gray-400">Введите номер телефона — пришлём SMS-код</p>
+              </div>
+            )}
+            {step === "pin" && <p className="text-sm text-gray-500">Введите код-пароль</p>}
+            {step === "otp" && <p className="text-sm text-gray-500">Код отправлен на {phone}</p>}
+            {step === "name" && <p className="text-sm text-gray-500">Как вас зовут?</p>}
+            {step === "set_pin" && <p className="text-sm text-gray-500">{pinStep === "enter" ? "Придумайте код-пароль для быстрого входа" : "Повторите код-пароль"}</p>}
           </div>
-        )}
+
+          {step === "phone" && (
+            <div className="space-y-4">
+              <Input
+                type="tel"
+                placeholder="+7 (999) 000-00-00"
+                value={phone}
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && agreeTerms && agreePersonalData && handlePhoneSubmit()}
+                className="text-center text-lg tracking-wide h-12"
+                autoFocus
+              />
+
+              {/* Чекбоксы согласий */}
+              <div className="space-y-2.5">
+                <label className="flex items-start gap-2.5 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={agreeTerms}
+                    onChange={e => setAgreeTerms(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded accent-[#6B7BFF] flex-shrink-0 cursor-pointer"
+                  />
+                  <span className="text-xs text-gray-500 leading-relaxed">
+                    Я принимаю{" "}
+                    <a href="/legal?tab=terms" target="_blank" className="text-[#6B7BFF] underline font-semibold">пользовательское соглашение</a>
+                    {" "}и{" "}
+                    <a href="/legal?tab=privacy" target="_blank" className="text-[#6B7BFF] underline font-semibold">политику конфиденциальности</a>
+                  </span>
+                </label>
+                <label className="flex items-start gap-2.5 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={agreePersonalData}
+                    onChange={e => setAgreePersonalData(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded accent-[#6B7BFF] flex-shrink-0 cursor-pointer"
+                  />
+                  <span className="text-xs text-gray-500 leading-relaxed">
+                    Я даю{" "}
+                    <a href="/legal?tab=consent" target="_blank" className="text-[#6B7BFF] underline font-semibold">согласие на обработку персональных данных</a>
+                    {" "}в соответствии с 152-ФЗ
+                  </span>
+                </label>
+              </div>
+
+              {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+              <Button
+                className="w-full h-12 text-base bg-[#6B7BFF] hover:bg-[#5A6AEE] text-white"
+                onClick={handlePhoneSubmit}
+                disabled={loading || phone.replace(/\D/g, "").length < 11 || !agreeTerms || !agreePersonalData}
+              >
+                {loading ? "Проверяем..." : "Получить код →"}
+              </Button>
+            </div>
+          )}
 
         {step === "pin" && (
           <div className="space-y-4">
@@ -372,6 +468,15 @@ export default function PwaParentAuth({ onSuccess }: Props) {
           </div>
         )}
 
+      </div>
+
+        {/* Кнопка поддержки */}
+        <button
+          onClick={() => setShowSupport(true)}
+          className="w-full text-sm text-gray-400 text-center py-2 hover:text-[#6B7BFF] transition-colors"
+        >
+          💬 Техническая поддержка
+        </button>
       </div>
     </div>
 
