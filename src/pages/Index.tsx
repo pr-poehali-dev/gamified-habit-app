@@ -1169,32 +1169,229 @@ const ReviewCard = ({ text, author, role, stars }: { text: string; author: strin
 );
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
+const NAV_LINKS = [
+  { label: "Как работает", href: "#how-it-works" },
+  { label: "Мотивация", href: "#motivation" },
+  { label: "Друзья", href: "#friends" },
+  { label: "Старт", href: "#start" },
+  { label: "FAQ", href: "#faq" },
+];
+
+function scrollTo(id: string) {
+  const el = document.querySelector(id);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 export default function Index() {
   const [scrolled, setScrolled] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [supportForm, setSupportForm] = useState({ name: "", email: "", message: "" });
+  const [supportSent, setSupportSent] = useState(false);
 
   useEffect(() => {
     setTimeout(() => setHeroVisible(true), 80);
-    const handleScroll = () => setScrolled(window.scrollY > 30);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 30);
+      if (mobileMenuOpen) setMobileMenuOpen(false);
+    };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [mobileMenuOpen]);
+
+  const handleSupportSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Открываем почтовый клиент с заполненными данными
+    const subject = encodeURIComponent("Обращение в поддержку СтарКидс");
+    const body = encodeURIComponent(`Имя: ${supportForm.name}\nEmail: ${supportForm.email}\n\n${supportForm.message}`);
+    window.open(`mailto:support@tasks4kids.ru?subject=${subject}&body=${body}`);
+    setSupportSent(true);
+    setTimeout(() => { setSupportOpen(false); setSupportSent(false); setSupportForm({ name: "", email: "", message: "" }); }, 2000);
+  };
 
   return (
     <div className="landing-root">
+      {/* Overlay мобильного меню */}
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", zIndex: 98, backdropFilter: "blur(4px)" }}
+        />
+      )}
+
+      {/* Модалка поддержки */}
+      {supportOpen && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={() => setSupportOpen(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)" }} />
+          <div style={{
+            position: "relative", zIndex: 1,
+            background: "#fff", borderRadius: 24, padding: "32px 28px",
+            width: "100%", maxWidth: 440, boxShadow: "0 24px 64px rgba(0,0,0,0.2)",
+          }}>
+            {supportSent ? (
+              <div style={{ textAlign: "center", padding: "16px 0" }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: "#1E1B4B" }}>Открываем почту!</div>
+                <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 6 }}>Отправьте письмо — ответим в течение дня</div>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+                  <div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: "#1E1B4B", fontFamily: "Nunito, sans-serif" }}>💬 Написать в поддержку</div>
+                    <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 4 }}>Отвечаем в течение рабочего дня</div>
+                  </div>
+                  <button onClick={() => setSupportOpen(false)} style={{ border: "none", background: "#f3f4f6", borderRadius: 10, width: 32, height: 32, cursor: "pointer", fontSize: 16, color: "#6b7280" }}>✕</button>
+                </div>
+                <form onSubmit={handleSupportSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: "#374151", display: "block", marginBottom: 4 }}>Ваше имя</label>
+                    <input
+                      required value={supportForm.name}
+                      onChange={e => setSupportForm(f => ({ ...f, name: e.target.value }))}
+                      placeholder="Мария"
+                      style={{ width: "100%", border: "1.5px solid #e5e7eb", borderRadius: 12, padding: "10px 14px", fontSize: 14, color: "#1E1B4B", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: "#374151", display: "block", marginBottom: 4 }}>Email для ответа</label>
+                    <input
+                      required type="email" value={supportForm.email}
+                      onChange={e => setSupportForm(f => ({ ...f, email: e.target.value }))}
+                      placeholder="mail@example.com"
+                      style={{ width: "100%", border: "1.5px solid #e5e7eb", borderRadius: 12, padding: "10px 14px", fontSize: 14, color: "#1E1B4B", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: "#374151", display: "block", marginBottom: 4 }}>Сообщение</label>
+                    <textarea
+                      required value={supportForm.message}
+                      onChange={e => setSupportForm(f => ({ ...f, message: e.target.value }))}
+                      placeholder="Опишите вопрос или проблему..."
+                      rows={4}
+                      style={{ width: "100%", border: "1.5px solid #e5e7eb", borderRadius: 12, padding: "10px 14px", fontSize: 14, color: "#1E1B4B", outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }}
+                    />
+                  </div>
+                  <button type="submit" style={{
+                    background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", color: "#fff",
+                    border: "none", borderRadius: 14, padding: "14px", fontSize: 15, fontWeight: 800,
+                    cursor: "pointer", marginTop: 4,
+                  }}>
+                    Отправить →
+                  </button>
+                </form>
+                <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", marginTop: 12 }}>
+                  Или напишите напрямую:{" "}
+                  <a href="mailto:support@tasks4kids.ru" style={{ color: "#6B7BFF", fontWeight: 700, textDecoration: "none" }}>support@tasks4kids.ru</a>
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Navbar */}
-      <nav className={`landing-nav ${scrolled ? "landing-nav--scrolled" : ""}`}>
-        <div className="landing-nav__inner">
-          <div className="landing-logo">
+      <nav className={`landing-nav ${scrolled ? "landing-nav--scrolled" : ""}`} style={{ padding: "0.75rem 0" }}>
+        <div className="landing-nav__inner" style={{ gap: 12 }}>
+          {/* Logo */}
+          <button onClick={() => scrollTo("#hero")} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }} className="landing-logo">
             <span className="landing-logo__icon">⭐</span>
             <span className="landing-logo__text">СтарКидс</span>
+          </button>
+
+          {/* Desktop nav links */}
+          <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, justifyContent: "center" }} className="landing-nav-links">
+            {NAV_LINKS.map(link => (
+              <button key={link.href}
+                onClick={() => { scrollTo(link.href); setMobileMenuOpen(false); }}
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  fontSize: 13, fontWeight: 600, color: scrolled ? "#374151" : "rgba(255,255,255,0.85)",
+                  padding: "6px 10px", borderRadius: 8,
+                  transition: "color 0.2s, background 0.2s",
+                  whiteSpace: "nowrap",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(107,123,255,0.1)"; (e.currentTarget as HTMLElement).style.color = "#6B7BFF"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = scrolled ? "#374151" : "rgba(255,255,255,0.85)"; }}
+              >
+                {link.label}
+              </button>
+            ))}
           </div>
-          <a href={PWA_URL} className="landing-nav-btn">Открыть приложение</a>
+
+          {/* Right: support + open app + burger */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            <button
+              onClick={() => setSupportOpen(true)}
+              style={{
+                background: scrolled ? "#f3f4f6" : "rgba(255,255,255,0.15)",
+                border: scrolled ? "1px solid #e5e7eb" : "1px solid rgba(255,255,255,0.25)",
+                borderRadius: 50, padding: "7px 14px", fontSize: 12, fontWeight: 700,
+                color: scrolled ? "#374151" : "#fff",
+                cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
+                transition: "all 0.2s", whiteSpace: "nowrap",
+              }}
+            >
+              💬 Поддержка
+            </button>
+            <a href={PWA_URL} className="landing-nav-btn" style={{ fontSize: 13 }}>Открыть приложение</a>
+
+            {/* Burger for mobile */}
+            <button
+              onClick={() => setMobileMenuOpen(v => !v)}
+              className="landing-burger"
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                display: "none", flexDirection: "column", gap: 4, padding: 6,
+              }}
+              aria-label="Меню"
+            >
+              {[0,1,2].map(i => (
+                <span key={i} style={{ display: "block", width: 22, height: 2, background: scrolled ? "#374151" : "#fff", borderRadius: 99, transition: "all 0.2s" }} />
+              ))}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile dropdown */}
+        {mobileMenuOpen && (
+          <div style={{
+            position: "absolute", top: "100%", left: 0, right: 0, zIndex: 99,
+            background: "#fff", borderBottom: "1px solid #e5e7eb",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
+            padding: "12px 16px 16px",
+          }}>
+            {NAV_LINKS.map(link => (
+              <button key={link.href}
+                onClick={() => { scrollTo(link.href); setMobileMenuOpen(false); }}
+                style={{
+                  display: "block", width: "100%", textAlign: "left",
+                  background: "none", border: "none", cursor: "pointer",
+                  fontSize: 15, fontWeight: 600, color: "#374151",
+                  padding: "10px 8px", borderRadius: 10,
+                }}
+              >
+                {link.label}
+              </button>
+            ))}
+            <div style={{ height: 1, background: "#f3f4f6", margin: "8px 0" }} />
+            <button onClick={() => { setSupportOpen(true); setMobileMenuOpen(false); }}
+              style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: 15, fontWeight: 600, color: "#6B7BFF", padding: "10px 8px" }}>
+              💬 Написать в поддержку
+            </button>
+            <a href={PWA_URL} style={{
+              display: "block", marginTop: 8,
+              background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", color: "#fff",
+              borderRadius: 14, padding: "12px", textAlign: "center",
+              fontSize: 15, fontWeight: 800, textDecoration: "none",
+            }}>Открыть приложение →</a>
+          </div>
+        )}
       </nav>
 
       {/* Hero */}
-      <section className="landing-hero" style={{ minHeight: "auto", paddingBottom: 56, alignItems: "center", gap: "4rem" }}>
+      <section id="hero" className="landing-hero" style={{ minHeight: "auto", paddingBottom: 56, alignItems: "center", gap: "4rem" }}>
         <div className="hero-bg-blob hero-bg-blob--1" />
         <div className="hero-bg-blob hero-bg-blob--2" />
         <div className="hero-bg-blob hero-bg-blob--3" />
@@ -1377,20 +1574,12 @@ export default function Index() {
         </div>
       </section>
 
-      {/* 1. Проблема → Решение (эмоциональный крючок) */}
-      <ProblemSolution />
+      <div id="how-it-works"><ProblemSolution /></div>
+      <div id="motivation"><MotivationSection /></div>
+      <div id="friends"><FriendsSection /></div>
+      <div id="start"><HowToStart /></div>
 
-      {/* 2. Почему работает (логика и психология) */}
-      <MotivationSection />
-
-      {/* 3. Друзья — мотивация не бросать */}
-      <FriendsSection />
-
-      {/* 4. Как начать (снять барьер входа) */}
-      <HowToStart />
-
-      {/* 5. Отзывы (социальное доказательство) */}
-      <section className="section reviews-section">
+      <section id="reviews" className="section reviews-section">
         <div className="section-label">Отзывы семей</div>
         <h2 className="section-title">Родители уже в восторге</h2>
         <div className="reviews-grid">
@@ -1400,11 +1589,24 @@ export default function Index() {
         </div>
       </section>
 
-      {/* FAQ */}
-      <FaqSection />
-
-      {/* Final CTA */}
+      <div id="faq"><FaqSection /></div>
       <CtaSection />
+
+      {/* Float support button (mobile) */}
+      <button
+        onClick={() => setSupportOpen(true)}
+        className="landing-support-float"
+        style={{
+          position: "fixed", bottom: 24, right: 20, zIndex: 90,
+          background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)",
+          color: "#fff", border: "none", borderRadius: 50,
+          padding: "12px 20px", fontSize: 14, fontWeight: 800,
+          cursor: "pointer", boxShadow: "0 8px 24px rgba(107,123,255,0.4)",
+          display: "flex", alignItems: "center", gap: 6,
+        }}
+      >
+        💬 Поддержка
+      </button>
 
       {/* Footer */}
       <footer className="landing-footer">

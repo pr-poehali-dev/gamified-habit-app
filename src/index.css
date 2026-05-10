@@ -331,6 +331,24 @@
   justify-content: space-between;
 }
 
+@media (max-width: 860px) {
+  .landing-nav-links {
+    display: none !important;
+  }
+  .landing-burger {
+    display: flex !important;
+  }
+}
+
+@media (min-width: 861px) {
+  .landing-burger {
+    display: none !important;
+  }
+  .landing-support-float {
+    display: none !important;
+  }
+}
+
 .landing-logo {
   display: flex;
   align-items: center;
