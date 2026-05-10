@@ -408,12 +408,18 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
                   <p className="text-xs font-bold text-green-600 flex-1">{isPwaMode() ? "Ребёнок подключён" : "Telegram подключён"}</p>
                   <button onClick={() => onRefreshInvite(c.id)} className="text-[10px] font-bold text-gray-400 underline">сбросить</button>
                 </div>
-                <button
-                  onClick={() => c.inviteCode ? shareCode(c.id, c.inviteCode, c.name) : onRefreshInvite(c.id)}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-600 font-bold text-xs active:scale-95 transition-all"
-                >
-                  {copiedId === c.id ? "✅ Ссылка скопирована!" : "📤 Отправить ссылку повторно"}
-                </button>
+                {c.inviteCode && (
+                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                    <span className="text-xs text-gray-400">Код:</span>
+                    <span className="font-black tracking-widest text-[#1E1B4B] text-base flex-1">{c.inviteCode}</span>
+                    <button
+                      onClick={() => c.inviteCode ? shareCode(c.id, c.inviteCode, c.name) : onRefreshInvite(c.id)}
+                      className="shrink-0 bg-[#6B7BFF] text-white text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all"
+                    >
+                      {copiedId === c.id ? "✅" : "📤 Отправить"}
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="mb-3 bg-amber-50 border border-amber-100 rounded-xl px-3 py-3 space-y-2.5">
