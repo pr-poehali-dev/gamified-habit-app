@@ -370,7 +370,13 @@ export default function ParentMiniApp() {
             >
               💬
             </button>
-            <div className="w-10 h-10 bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] rounded-2xl flex items-center justify-center text-xl shadow-md">👨</div>
+            <button
+              onClick={() => setTab("profile")}
+              className="w-10 h-10 bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] rounded-2xl flex items-center justify-center text-xl shadow-md active:scale-95 transition-transform"
+              title="Профиль"
+            >
+              👤
+            </button>
           </div>
         </div>
         <ParentXpBar xp={data.parent_xp} points={data.parent_points} />

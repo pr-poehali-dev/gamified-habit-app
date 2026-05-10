@@ -1,6 +1,7 @@
 import { useState } from "react";
 import PushNotificationToggle from "@/components/pwa/PushNotificationToggle";
 import LinkPhoneModal from "@/components/pwa/LinkPhoneModal";
+import { SupportModal } from "@/components/ui/SupportModal";
 
 const isTelegramMiniApp = () => {
   const initData = window.Telegram?.WebApp?.initData;
@@ -66,6 +67,7 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(name);
   const [savingName, setSavingName] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
 
   // Привязка телефона
   const [showLinkPhone, setShowLinkPhone] = useState(false);
@@ -541,6 +543,21 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
 
       {/* Push-уведомления — только PWA */}
       {isPwaMode() && <PushNotificationToggle parentId={parentId} autoSubscribe />}
+
+      <SupportModal open={showSupport} onClose={() => setShowSupport(false)} />
+
+      {/* Поддержка */}
+      <button
+        onClick={() => setShowSupport(true)}
+        className="w-full bg-white/90 rounded-3xl p-4 shadow-sm flex items-center gap-3 active:scale-[0.98] transition-transform text-left"
+      >
+        <span className="text-2xl">💬</span>
+        <div className="flex-1">
+          <p className="font-bold text-[#1E1B4B] text-sm">Техническая поддержка</p>
+          <p className="text-xs text-gray-400">Ответим в течение рабочего дня</p>
+        </div>
+        <span className="text-gray-300 text-sm">→</span>
+      </button>
 
       {/* Legal */}
       <div className="bg-white/90 rounded-3xl p-4 shadow-sm">
