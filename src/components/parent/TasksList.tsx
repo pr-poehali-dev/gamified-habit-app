@@ -46,6 +46,7 @@ export function TasksList({ tasks, children, onDeleteTask, onCancelTask }: Props
   const [confirmCancelId, setConfirmCancelId] = useState<number | null>(null);
   const [nudgingId, setNudgingId] = useState<number | null>(null);
   const [nudgedId, setNudgedId] = useState<number | null>(null);
+  const [showNoPushId, setShowNoPushId] = useState<number | null>(null);
 
   const handleNudge = async (task: Task) => {
     setNudgingId(task.id);
@@ -107,20 +108,28 @@ export function TasksList({ tasks, children, onDeleteTask, onCancelTask }: Props
                     <div className="w-full py-2 rounded-xl bg-green-50 border border-green-200 text-green-600 font-bold text-xs text-center">
                       ✅ Уведомление отправлено!
                     </div>
-                  ) : hasPush ? (
+                  ) : (
                     <button
-                      onClick={() => handleNudge(task)}
+                      onClick={() => {
+                        if (hasPush) {
+                          handleNudge(task);
+                        } else {
+                          setShowNoPushId(showNoPushId === task.id ? null : task.id);
+                        }
+                      }}
                       disabled={nudgingId === task.id}
                       className="w-full py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 font-bold text-xs active:scale-95 transition-transform disabled:opacity-60 flex items-center justify-center gap-1.5"
                     >
                       {nudgingId === task.id ? "⏳ Отправляем..." : "🔔 Напомнить ребёнку"}
                     </button>
-                  ) : (
+                  )}
+
+                  {/* Подсказка — только если нет push и нажали кнопку */}
+                  {!hasPush && showNoPushId === task.id && (
                     <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5">
-                      <p className="text-xs font-bold text-blue-700 mb-0.5">📱 Push-уведомления не настроены</p>
+                      <p className="text-xs font-bold text-blue-700 mb-1">📱 Нужно установить приложение на телефон ребёнка</p>
                       <p className="text-[11px] text-blue-600 leading-relaxed">
-                        Чтобы отправлять напоминания ребёнку, установите приложение СтарКидс на его телефон: откройте{" "}
-                        <span className="font-bold">tasks4kids.ru/app</span> в браузере и нажмите «Добавить на экран».
+                        Откройте <span className="font-bold">tasks4kids.ru/app</span> в браузере на телефоне ребёнка → нажмите меню браузера → <span className="font-bold">«Добавить на экран»</span>. После этого напоминания будут работать.
                       </p>
                     </div>
                   )}
