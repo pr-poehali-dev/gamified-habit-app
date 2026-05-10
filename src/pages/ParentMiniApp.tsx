@@ -44,6 +44,8 @@ type ParentData = {
   rewards: Reward[];
   rewardWishes: { id: number; childId: number; childName: string; title: string; emoji: string; createdAt: string }[];
   phone_number?: string;
+  email?: string;
+  is_verified?: boolean;
   notifications_enabled: boolean;
   notification_settings: { tips: boolean; activity: boolean };
 };
@@ -384,6 +386,30 @@ export default function ParentMiniApp() {
       </div>
 
       <div className="px-4 pb-32">
+        {/* Баннер неверифицированного аккаунта */}
+        {data.is_verified === false && (
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-start gap-3">
+            <span className="text-2xl mt-0.5">⚠️</span>
+            <div className="flex-1">
+              <p className="text-sm font-black text-amber-800">Аккаунт не верифицирован</p>
+              <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
+                Добавление детей и создание заданий недоступны. Подтвердите аккаунт через телефон или Telegram.
+              </p>
+              <div className="flex gap-2 mt-2.5">
+                <a href="https://t.me/parenttask_bot" target="_blank" rel="noreferrer"
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg bg-[#2AABEE] text-white">
+                  ✈️ Telegram
+                </a>
+                <button
+                  onClick={() => { window.location.href = "/app?verify=phone"; }}
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg bg-[#6B7BFF] text-white">
+                  📱 Телефон
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {tab === "tasks" && (
           <ParentTabTasks
             tasks={data.tasks}

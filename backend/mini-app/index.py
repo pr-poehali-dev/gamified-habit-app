@@ -259,7 +259,7 @@ def get_child_stats(conn, child_id: int) -> dict:
 def get_parent_by_tg(conn, telegram_id):
     with conn.cursor() as cur:
         cur.execute(
-            f"SELECT id, full_name, parent_xp, parent_points, streak_current, streak_last_date, streak_claimed_today, streak_longest, is_premium, trial_started_at, trial_ends_at, trial_used, notifications_enabled, notification_settings FROM {SCHEMA}.parents WHERE telegram_id = %s",
+            f"SELECT id, full_name, parent_xp, parent_points, streak_current, streak_last_date, streak_claimed_today, streak_longest, is_premium, trial_started_at, trial_ends_at, trial_used, notifications_enabled, notification_settings, phone_verified, email_verified FROM {SCHEMA}.parents WHERE telegram_id = %s",
             (telegram_id,)
         )
         row = cur.fetchone()
@@ -279,6 +279,10 @@ def get_parent_by_tg(conn, telegram_id):
             remaining = trial_ends_at - now
             trial_days_left = max(1, ceil(remaining.total_seconds() / 86400))
     is_premium = is_premium_db or trial_active
+    phone_verified = bool(row[14]) if len(row) > 14 else False
+    email_verified = bool(row[15]) if len(row) > 15 else False
+    # Верифицирован если: телефон подтверждён ИЛИ Telegram реальный (tg_id > 0)
+    is_verified = phone_verified or (telegram_id is not None and telegram_id > 0)
     return {
         "id": row[0], "name": row[1], "role": "parent",
         "parent_xp": row[2] or 0, "parent_points": row[3] or 0,
@@ -294,6 +298,7 @@ def get_parent_by_tg(conn, telegram_id):
         "trial_ends_at": trial_ends_at.isoformat() if trial_ends_at else None,
         "notifications_enabled": bool(row[12]) if row[12] is not None else True,
         "notification_settings": json.loads(row[13]) if row[13] else {"tips": True, "activity": True},
+        "is_verified": is_verified,
     }
 
 

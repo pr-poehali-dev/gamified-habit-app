@@ -85,3 +85,17 @@ export async function logoutPwa(
 ): Promise<Record<string, unknown>> {
   return call({ action: "logout", session_token: sessionToken, role });
 }
+
+type EmailAuthResult = { status?: string; role?: string; session_token?: string; parent_id?: number; full_name?: string; is_new?: boolean; is_verified?: boolean; auth_method?: string; error?: string };
+
+export async function checkEmail(email: string): Promise<{ registered?: boolean; has_name?: boolean; error?: string }> {
+  return call({ action: "check_email", email }) as Promise<{ registered?: boolean; has_name?: boolean; error?: string }>;
+}
+
+export async function sendEmailOtp(email: string): Promise<{ status?: string; error?: string }> {
+  return call({ action: "send_email_otp", email }) as Promise<{ status?: string; error?: string }>;
+}
+
+export async function verifyEmailOtp(email: string, otp: string, fullName?: string): Promise<EmailAuthResult> {
+  return call({ action: "verify_email_otp", email, otp, full_name: fullName || "" }) as Promise<EmailAuthResult>;
+}

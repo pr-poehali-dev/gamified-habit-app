@@ -23,6 +23,9 @@ from datetime import datetime, timezone, timedelta
 SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "t_p84704826_gamified_habit_app")
 SMSAERO_EMAIL = os.environ.get("SMSAERO_EMAIL", "")
 SMSAERO_API_KEY = os.environ.get("SMSAERO_API_KEY", "")
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
+SENDGRID_FROM = "noreply@tasks4kids.ru"
+SENDGRID_FROM_NAME = "СтарКидс"
 OTP_TTL_MINUTES = 10
 SESSION_TTL_DAYS = 30
 
@@ -461,7 +464,9 @@ def verify_session(session_token: str, role: str) -> dict:
 
     if role == "parent":
         cur.execute(
-            f"SELECT id, full_name, phone_number, is_premium, is_premium_paid, premium_until, pin_code FROM {SCHEMA}.parents WHERE pwa_session_token = %s",
+            f"""SELECT id, full_name, phone_number, is_premium, is_premium_paid, premium_until,
+                       pin_code, email, phone_verified, email_verified, telegram_id
+                FROM {SCHEMA}.parents WHERE pwa_session_token = %s""",
             (session_token,)
         )
         row = cur.fetchone()
@@ -469,16 +474,19 @@ def verify_session(session_token: str, role: str) -> dict:
         conn.close()
         if not row:
             return err("Сессия недействительна.", 401)
-        pid, name, phone, is_premium, is_premium_paid, premium_until, pin_code = row
+        pid, name, phone, is_premium, is_premium_paid, premium_until, pin_code, email, phone_verified, email_verified, tg_id = row
+        is_verified = bool(phone_verified) or (tg_id is not None and tg_id > 0)
         return ok({
             "status": "ok",
             "role": "parent",
             "parent_id": pid,
             "full_name": name or "",
             "phone_number": phone or "",
+            "email": email or "",
             "is_premium": is_premium or is_premium_paid,
             "premium_until": premium_until.isoformat() if premium_until else None,
             "has_pin": bool(pin_code),
+            "is_verified": is_verified,
         })
     else:
         cur.execute(
@@ -699,6 +707,180 @@ def link_phone_confirm(telegram_id: int, phone_raw: str, otp_input: str) -> dict
     return ok({"status": "ok", "phone": phone})
 
 
+def send_email_via_sendgrid(to_email: str, subject: str, html: str) -> tuple[bool, str]:
+    """Отправить письмо через SendGrid API."""
+    if not SENDGRID_API_KEY:
+        return False, "SENDGRID_API_KEY не настроен"
+    payload = json.dumps({
+        "personalizations": [{"to": [{"email": to_email}]}],
+        "from": {"email": SENDGRID_FROM, "name": SENDGRID_FROM_NAME},
+        "subject": subject,
+        "content": [{"type": "text/html", "value": html}],
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        "https://api.sendgrid.com/v3/mail/send",
+        data=payload,
+        headers={
+            "Authorization": f"Bearer {SENDGRID_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        resp = urllib.request.urlopen(req, timeout=10)
+        return resp.status in (200, 202), ""
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="ignore")
+        print(f"[SendGrid] error {e.code}: {body}")
+        return False, f"SendGrid error {e.code}"
+    except Exception as e:
+        print(f"[SendGrid] exception: {e}")
+        return False, str(e)
+
+
+def normalize_email(raw: str) -> str:
+    email = raw.strip().lower()
+    if "@" not in email or "." not in email.split("@")[-1]:
+        raise ValueError("Неверный формат email")
+    return email
+
+
+def send_email_otp(email_raw: str) -> dict:
+    """Отправить OTP-код на email. Создать аккаунт если не существует."""
+    try:
+        email = normalize_email(email_raw)
+    except ValueError as e:
+        return err(str(e))
+
+    otp = generate_otp()
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=OTP_TTL_MINUTES)
+
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(f"SELECT id FROM {SCHEMA}.parents WHERE email = %s", (email,))
+    exists = cur.fetchone()
+
+    if exists:
+        cur.execute(
+            f"UPDATE {SCHEMA}.parents SET email_otp_code = %s, email_otp_expires_at = %s WHERE email = %s",
+            (otp, expires_at, email)
+        )
+    else:
+        cur.execute("SELECT -ABS(EXTRACT(EPOCH FROM NOW())::bigint * 1000 + (random() * 999)::int)")
+        pwa_tg_id = int(cur.fetchone()[0])
+        cur.execute(
+            f"""INSERT INTO {SCHEMA}.parents (telegram_id, email, email_otp_code, email_otp_expires_at, full_name)
+                VALUES (%s, %s, %s, %s, '')""",
+            (pwa_tg_id, email, otp, expires_at)
+        )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px">
+      <h2 style="color:#2D1B69">🌟 СтарКидс</h2>
+      <p style="color:#374151">Ваш код подтверждения:</p>
+      <div style="background:#F0EEFF;border-radius:12px;padding:24px;text-align:center;margin:24px 0">
+        <span style="font-size:36px;font-weight:900;letter-spacing:8px;color:#2D1B69">{otp}</span>
+      </div>
+      <p style="color:#6B7280;font-size:14px">Код действителен {OTP_TTL_MINUTES} минут.<br>
+      Если вы не запрашивали код — проигнорируйте это письмо.</p>
+    </div>
+    """
+    ok_send, send_err = send_email_via_sendgrid(email, "Код входа в СтарКидс", html)
+    if not ok_send:
+        return err(f"Не удалось отправить письмо: {send_err}")
+
+    return ok({"status": "sent"})
+
+
+def verify_email_otp(email_raw: str, otp_input: str, full_name: str = "") -> dict:
+    """Проверить OTP-код, вернуть сессию. Аккаунт помечается как неверифицированный."""
+    try:
+        email = normalize_email(email_raw)
+    except ValueError as e:
+        return err(str(e))
+
+    if not otp_input or len(otp_input) != 6:
+        return err("Введите 6-значный код.")
+
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        f"SELECT id, email_otp_code, email_otp_expires_at, full_name, phone_verified, email_verified, telegram_id FROM {SCHEMA}.parents WHERE email = %s",
+        (email,)
+    )
+    row = cur.fetchone()
+    if not row:
+        cur.close(); conn.close()
+        return err("Email не найден. Запросите новый код.")
+
+    pid, stored_otp, expires_at, name, phone_verified, email_verified, tg_id = row
+
+    if not stored_otp or not expires_at:
+        cur.close(); conn.close()
+        return err("Код не был запрошен. Запросите новый.")
+
+    now = datetime.now(timezone.utc)
+    exp = expires_at if expires_at.tzinfo else expires_at.replace(tzinfo=timezone.utc)
+    if now > exp:
+        cur.close(); conn.close()
+        return err("Код истёк. Запросите новый.")
+
+    if stored_otp != otp_input.strip():
+        cur.close(); conn.close()
+        return err("Неверный код.")
+
+    # Подтверждаем email, обновляем имя если новый, выдаём сессию
+    token = generate_token()
+    new_name = name or full_name or ""
+    cur.execute(
+        f"""UPDATE {SCHEMA}.parents
+            SET email_verified = true, email_otp_code = NULL, email_otp_expires_at = NULL,
+                pwa_session_token = %s, full_name = COALESCE(NULLIF(full_name,''), %s)
+            WHERE id = %s""",
+        (token, full_name, pid)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    # Аккаунт верифицирован если: телефон подтверждён ИЛИ Telegram реальный (tg_id > 0)
+    is_verified = phone_verified or (tg_id is not None and tg_id > 0)
+    is_new = not name
+
+    return ok({
+        "status": "ok",
+        "role": "parent",
+        "session_token": token,
+        "parent_id": pid,
+        "full_name": new_name,
+        "is_new": is_new,
+        "is_verified": is_verified,
+        "auth_method": "email",
+    })
+
+
+def check_email(email_raw: str) -> dict:
+    """Проверить есть ли аккаунт с таким email."""
+    try:
+        email = normalize_email(email_raw)
+    except ValueError as e:
+        return err(str(e))
+
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(f"SELECT id, full_name, email_verified FROM {SCHEMA}.parents WHERE email = %s", (email,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    if not row:
+        return ok({"registered": False})
+    return ok({"registered": True, "has_name": bool(row[1]), "email_verified": row[2]})
+
+
 def logout(session_token: str, role: str) -> dict:
     """Сбросить сессионный токен (выход из аккаунта)."""
     if not session_token or role not in ("parent", "child"):
@@ -786,5 +968,14 @@ def handler(event: dict, context) -> dict:
 
     if action == "link_phone_confirm":
         return link_phone_confirm(body.get("telegram_id", 0), body.get("phone", ""), body.get("otp", ""))
+
+    if action == "check_email":
+        return check_email(body.get("email", ""))
+
+    if action == "send_email_otp":
+        return send_email_otp(body.get("email", ""))
+
+    if action == "verify_email_otp":
+        return verify_email_otp(body.get("email", ""), body.get("otp", ""), body.get("full_name", ""))
 
     return err("Неизвестное действие.")
