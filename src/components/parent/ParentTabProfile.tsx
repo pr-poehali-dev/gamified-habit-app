@@ -12,7 +12,6 @@ const getPwaInviteUrl = (code: string) => `${window.location.origin}/invite?code
 import { getParentLevelInfo, getParentLevelTier, type StreakState } from "@/lib/gameTypes";
 import { ChildAnalyticsCard, type ChildAnalytics } from "./ChildAnalyticsCard";
 import { apiCall } from "@/components/miniapp/useApi";
-import { PremiumBadge } from "@/components/ui/PremiumBadge";
 import { StreakCard } from "@/components/ui/StreakCard";
 
 type Child = { id: number; name: string; stars: number; avatar: string; age: number; inviteCode: string | null; connected: boolean };
@@ -149,103 +148,112 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
 
   return (
     <div className="space-y-4">
-      {/* Hero card */}
-      <div className="bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] rounded-3xl p-6 text-center text-white shadow-lg">
-        <div className="text-6xl mb-2">👨</div>
-        {editingName ? (
-          <div className="flex items-center gap-2 justify-center mb-1">
-            <input
-              value={nameInput}
-              onChange={e => setNameInput(e.target.value)}
-              onKeyDown={async e => {
-                if (e.key === "Enter" && nameInput.trim()) {
-                  setSavingName(true);
-                  await onUpdateName?.(nameInput.trim());
-                  setSavingName(false);
-                  setEditingName(false);
-                }
-                if (e.key === "Escape") { setEditingName(false); setNameInput(name); }
-              }}
-              className="bg-white/20 text-white placeholder-white/60 font-black text-xl text-center rounded-xl px-3 py-1 outline-none border-2 border-white/40 focus:border-white w-48"
-              placeholder="Ваше имя"
-              autoFocus
-            />
-            <button
-              onClick={async () => {
-                if (!nameInput.trim()) return;
-                setSavingName(true);
-                await onUpdateName?.(nameInput.trim());
-                setSavingName(false);
-                setEditingName(false);
-              }}
-              disabled={savingName || !nameInput.trim()}
-              className="bg-white/30 hover:bg-white/40 rounded-xl px-2 py-1 text-sm font-bold disabled:opacity-50"
-            >
-              {savingName ? "..." : "✓"}
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 justify-center mb-1">
-            <h2 className="text-2xl font-black">{name || "Без имени"}</h2>
-            {isPwaMode() && (
-              <button
-                onClick={() => { setEditingName(true); setNameInput(name); }}
-                className="bg-white/20 hover:bg-white/30 rounded-lg p-1 transition-all"
-                title="Изменить имя"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                </svg>
-              </button>
+
+      {/* ── Объединённая карточка: профиль + стрик + баланс ── */}
+      <div className="bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] rounded-3xl shadow-lg overflow-hidden text-white">
+
+        {/* Верх: имя + тир */}
+        <div className="px-5 pt-5 pb-4 flex items-center gap-4">
+          <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">👤</div>
+          <div className="flex-1 min-w-0">
+            {editingName ? (
+              <div className="flex items-center gap-2">
+                <input
+                  value={nameInput}
+                  onChange={e => setNameInput(e.target.value)}
+                  onKeyDown={async e => {
+                    if (e.key === "Enter" && nameInput.trim()) {
+                      setSavingName(true);
+                      await onUpdateName?.(nameInput.trim());
+                      setSavingName(false);
+                      setEditingName(false);
+                    }
+                    if (e.key === "Escape") { setEditingName(false); setNameInput(name); }
+                  }}
+                  className="bg-white/20 text-white placeholder-white/60 font-black text-lg text-left rounded-xl px-3 py-1.5 outline-none border-2 border-white/40 focus:border-white flex-1"
+                  placeholder="Ваше имя"
+                  autoFocus
+                />
+                <button
+                  onClick={async () => {
+                    if (!nameInput.trim()) return;
+                    setSavingName(true);
+                    await onUpdateName?.(nameInput.trim());
+                    setSavingName(false);
+                    setEditingName(false);
+                  }}
+                  disabled={savingName || !nameInput.trim()}
+                  className="bg-white/30 rounded-xl px-3 py-1.5 text-sm font-bold disabled:opacity-50"
+                >
+                  {savingName ? "..." : "✓"}
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-black truncate">{name || "Без имени"}</h2>
+                {isPwaMode() && (
+                  <button
+                    onClick={() => { setEditingName(true); setNameInput(name); }}
+                    className="bg-white/20 rounded-lg p-1 flex-shrink-0 active:scale-95 transition-transform"
+                    title="Изменить имя"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                  </button>
+                )}
+              </div>
             )}
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-sm opacity-80">{tier.badge}</span>
+              <span className="text-xs opacity-60">·</span>
+              <span className="text-xs opacity-70">Уровень {level}</span>
+            </div>
           </div>
-        )}
-        <p className="opacity-80 font-bold">{tier.badge}</p>
-        <div className="mt-3 bg-white/20 rounded-2xl px-4 py-2 inline-block">
-          <p className="text-sm font-black">{parent_points.toLocaleString()} баллов</p>
-        </div>
-      </div>
-
-      <StreakCard streak={streak} reward={streakReward} />
-
-      {/* Баланс баллов */}
-      <div className="bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] rounded-3xl p-5 text-white shadow-lg">
-        <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">Ваш баланс</p>
-        <p className="text-4xl font-black">{parent_points.toLocaleString()} <span className="text-2xl font-bold">баллов</span></p>
-        <p className="text-white/70 text-xs mt-2">+1 000 баллов за каждый новый уровень</p>
-        <div className="mt-3 flex items-center gap-2">
-          <span className="text-lg">{tier.emoji}</span>
-          <span className="text-sm font-bold">{tier.badge}</span>
-        </div>
-      </div>
-
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 gap-3">
-        {[
-          { label: "Детей", value: children.length, emoji: "👨‍👧‍👦" },
-          { label: "Задач создано", value: tasks_count, emoji: "📋" },
-          { label: "Уровень", value: level, emoji: tier.emoji },
-          { label: "Дни подряд", value: `${streak_current}🔥`, emoji: "📅" },
-        ].map(s => (
-          <div key={s.label} className="bg-white/90 rounded-3xl p-4 text-center shadow-sm">
-            <div className="text-3xl mb-1">{s.emoji}</div>
-            <div className="text-2xl font-black text-[#1E1B4B]">{s.value}</div>
-            <div className="text-xs font-bold text-gray-500">{s.label}</div>
+          {/* Баллы справа */}
+          <div className="text-right flex-shrink-0">
+            <div className="text-2xl font-black">{parent_points.toLocaleString()}</div>
+            <div className="text-xs opacity-70">баллов</div>
           </div>
-        ))}
+        </div>
+
+        {/* Разделитель */}
+        <div className="h-px bg-white/15 mx-5" />
+
+        {/* Стрик */}
+        <div className="px-5 py-3">
+          <StreakCard streak={streak} reward={streakReward} compact />
+        </div>
+
+        {/* Низ: XP прогресс */}
+        <div className="px-5 pb-5">
+          <div className="bg-white/15 rounded-2xl px-4 py-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs opacity-70 font-semibold">Прогресс уровня {level} → {level + 1}</span>
+              <span className="text-xs font-black">{parent_xp} XP</span>
+            </div>
+            <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-white rounded-full transition-all duration-700"
+                style={{ width: `${Math.min(((parent_xp % 100) / 100) * 100, 100)}%` }}
+              />
+            </div>
+            <div className="flex justify-between mt-1.5 text-[10px] opacity-60">
+              <span>+1 000 баллов за каждый новый уровень</span>
+              <span>{100 - (parent_xp % 100)} XP до ур. {level + 1}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ── ANALYTICS SECTION ── */}
       {children.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-[#1E1B4B]">📊 Аналитика</h2>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-[#1E1B4B]">📊 Аналитика</h2>
-              {!isPremium && <PremiumBadge compact trialUsed={trialUsed} onActivateTrial={onActivateTrial} onSubscribe={onSubscribe} />}
-            </div>
-            <div className="flex items-center gap-2">
-              {isPremium && showAnalytics && analyticsData && (
+              {showAnalytics && analyticsData && (
                 <button
                   onClick={refreshAnalytics}
                   disabled={analyticsLoading}
@@ -254,30 +262,28 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
                   {analyticsLoading ? "⏳" : "🔄 Обновить"}
                 </button>
               )}
-              {isPremium && (
-                <button
-                  onClick={loadAnalytics}
-                  disabled={analyticsLoading}
-                  className={`text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-transform disabled:opacity-50 ${
-                    showAnalytics
-                      ? "bg-gray-100 text-gray-500"
-                      : "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white"
-                  }`}
-                >
-                  {analyticsLoading ? "⏳ Загрузка..." : showAnalytics ? "✕ Скрыть" : "📈 Показать"}
-                </button>
-              )}
+              <button
+                onClick={loadAnalytics}
+                disabled={analyticsLoading}
+                className={`text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-transform disabled:opacity-50 ${
+                  showAnalytics
+                    ? "bg-gray-100 text-gray-500"
+                    : "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white"
+                }`}
+              >
+                {analyticsLoading ? "⏳ Загрузка..." : showAnalytics ? "✕ Скрыть" : "📈 Показать"}
+              </button>
             </div>
           </div>
 
-          {isPremium && analyticsError && (
+          {analyticsError && (
             <div className="bg-red-50 border border-red-100 rounded-2xl p-3 text-center">
               <p className="text-sm font-bold text-red-500">{analyticsError}</p>
               <button onClick={refreshAnalytics} className="text-xs font-bold text-red-400 underline mt-1">Попробовать снова</button>
             </div>
           )}
 
-          {isPremium && showAnalytics && analyticsData && (
+          {showAnalytics && analyticsData && (
             <div className="space-y-4">
               {analyticsData.length === 0 ? (
                 <div className="bg-white rounded-3xl p-6 text-center shadow-sm">
@@ -293,7 +299,7 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
           )}
 
           {!showAnalytics && !analyticsLoading && (
-            <div className={`bg-gradient-to-r from-[#6B7BFF]/8 to-[#9B6BFF]/8 border border-[#6B7BFF]/20 rounded-2xl p-4 flex items-center gap-3 ${!isPremium ? "opacity-60" : ""}`}>
+            <div className="bg-gradient-to-r from-[#6B7BFF]/8 to-[#9B6BFF]/8 border border-[#6B7BFF]/20 rounded-2xl p-4 flex items-center gap-3">
               <span className="text-2xl">📈</span>
               <div className="flex-1">
                 <p className="text-sm font-bold text-[#1E1B4B]">Детальная статистика</p>

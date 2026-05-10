@@ -1395,8 +1395,6 @@ def handle_child_analytics(conn, body):
     tid, parent = resolve_parent(conn, body)
     if not parent:
         return error_response("Unauthorized", 401)
-    if not parent.get("is_premium"):
-        return error_response("premium_required", 403)
 
     with conn.cursor() as cur:
         cur.execute(
