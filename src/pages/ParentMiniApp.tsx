@@ -38,7 +38,7 @@ type ParentData = {
   trial_used: boolean;
   trial_ends_at: string | null;
   streakReward: { justClaimed: boolean; todayXp: number; todayPoints: number; nextXp: number; nextPoints: number; claimed: boolean };
-  children: { id: number; name: string; stars: number; avatar: string; age: number; inviteCode: string | null; connected: boolean }[];
+  children: { id: number; name: string; stars: number; avatar: string; age: number; inviteCode: string | null; connected: boolean; pushSubscribed: boolean }[];
   tasks: Task[];
   gradeRequests: GradeRequest[];
   rewards: Reward[];

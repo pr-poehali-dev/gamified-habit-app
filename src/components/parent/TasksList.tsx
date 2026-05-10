@@ -3,7 +3,7 @@ import func2url from "../../../backend/func2url.json";
 
 const PUSH_URL = func2url["push-notify"];
 
-type Child = { id: number; name: string; stars: number; avatar: string; age: number; inviteCode?: string | null; connected?: boolean };
+type Child = { id: number; name: string; stars: number; avatar: string; age: number; inviteCode?: string | null; connected?: boolean; pushSubscribed?: boolean };
 type Task = {
   id: number; title: string; stars: number; emoji: string;
   status: string; childId: number; requirePhoto: boolean;
@@ -98,23 +98,35 @@ export function TasksList({ tasks, children, onDeleteTask, onCancelTask }: Props
             </div>
 
             {/* Кнопка напоминания для просроченных */}
-            {task.deadline && isOverdue(task.deadline) && (
-              <div className="px-4 pb-0">
-                {nudgedId === task.id ? (
-                  <div className="w-full py-2 rounded-xl bg-green-50 border border-green-200 text-green-600 font-bold text-xs text-center">
-                    ✅ Уведомление отправлено!
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => handleNudge(task)}
-                    disabled={nudgingId === task.id}
-                    className="w-full py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 font-bold text-xs active:scale-95 transition-transform disabled:opacity-60 flex items-center justify-center gap-1.5"
-                  >
-                    {nudgingId === task.id ? "Отправляем..." : "🔔 Напомнить ребёнку"}
-                  </button>
-                )}
-              </div>
-            )}
+            {task.deadline && isOverdue(task.deadline) && (() => {
+              const child = children.find(c => c.id === task.childId);
+              const hasPush = child?.pushSubscribed;
+              return (
+                <div className="px-4 pb-0 space-y-1.5">
+                  {nudgedId === task.id ? (
+                    <div className="w-full py-2 rounded-xl bg-green-50 border border-green-200 text-green-600 font-bold text-xs text-center">
+                      ✅ Уведомление отправлено!
+                    </div>
+                  ) : hasPush ? (
+                    <button
+                      onClick={() => handleNudge(task)}
+                      disabled={nudgingId === task.id}
+                      className="w-full py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 font-bold text-xs active:scale-95 transition-transform disabled:opacity-60 flex items-center justify-center gap-1.5"
+                    >
+                      {nudgingId === task.id ? "⏳ Отправляем..." : "🔔 Напомнить ребёнку"}
+                    </button>
+                  ) : (
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5">
+                      <p className="text-xs font-bold text-blue-700 mb-0.5">📱 Push-уведомления не настроены</p>
+                      <p className="text-[11px] text-blue-600 leading-relaxed">
+                        Чтобы отправлять напоминания ребёнку, установите приложение СтарКидс на его телефон: откройте{" "}
+                        <span className="font-bold">tasks4kids.ru/app</span> в браузере и нажмите «Добавить на экран».
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {onCancelTask && (
               confirmCancelId === task.id ? (
