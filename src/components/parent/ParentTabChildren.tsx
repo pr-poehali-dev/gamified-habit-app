@@ -55,6 +55,8 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
       document.body.removeChild(el);
     }
     toast.success("Ссылка скопирована!", { description: "Отправь её ребёнку в любом мессенджере" });
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2500);
   };
 
   const copyPwaLink = async (id: number, code: string) => {
