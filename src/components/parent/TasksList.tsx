@@ -1,4 +1,7 @@
 import { useState } from "react";
+import func2url from "../../../backend/func2url.json";
+
+const PUSH_URL = func2url["push-notify"];
 
 type Child = { id: number; name: string; stars: number; avatar: string; age: number; inviteCode?: string | null; connected?: boolean };
 type Task = {
@@ -41,6 +44,32 @@ function isOverdue(deadline: string): boolean {
 export function TasksList({ tasks, children, onDeleteTask, onCancelTask }: Props) {
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<number | null>(null);
+  const [nudgingId, setNudgingId] = useState<number | null>(null);
+  const [nudgedId, setNudgedId] = useState<number | null>(null);
+
+  const handleNudge = async (task: Task) => {
+    setNudgingId(task.id);
+    const child = children.find(c => c.id === task.childId);
+    try {
+      await fetch(PUSH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "send_to_child",
+          child_id: task.childId,
+          payload: {
+            title: "⏰ Задание просрочено!",
+            body: `${child?.name ?? "Привет"}! Задание «${task.emoji} ${task.title}» ждёт тебя — не забудь выполнить!`,
+            url: "/app",
+            tag: `overdue-task-${task.id}`,
+          },
+        }),
+      });
+      setNudgedId(task.id);
+      setTimeout(() => setNudgedId(null), 3000);
+    } catch { /* игнорируем */ }
+    setNudgingId(null);
+  };
 
   const activeTasks = tasks.filter(t => t.status === "pending" && !t.extensionRequested);
   const completedTasks = tasks.filter(t => t.status === "approved" || t.status === "done");
@@ -68,9 +97,28 @@ export function TasksList({ tasks, children, onDeleteTask, onCancelTask }: Props
               <span className="text-sm font-bold text-amber-500">{task.stars}⭐</span>
             </div>
 
+            {/* Кнопка напоминания для просроченных */}
+            {task.deadline && isOverdue(task.deadline) && (
+              <div className="px-4 pb-0">
+                {nudgedId === task.id ? (
+                  <div className="w-full py-2 rounded-xl bg-green-50 border border-green-200 text-green-600 font-bold text-xs text-center">
+                    ✅ Уведомление отправлено!
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleNudge(task)}
+                    disabled={nudgingId === task.id}
+                    className="w-full py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 font-bold text-xs active:scale-95 transition-transform disabled:opacity-60 flex items-center justify-center gap-1.5"
+                  >
+                    {nudgingId === task.id ? "Отправляем..." : "🔔 Напомнить ребёнку"}
+                  </button>
+                )}
+              </div>
+            )}
+
             {onCancelTask && (
               confirmCancelId === task.id ? (
-                <div className="px-4 pb-4 space-y-2">
+                <div className="px-4 pb-4 pt-2 space-y-2">
                   <p className="text-xs font-bold text-red-500 text-center">Отменить задание?</p>
                   <div className="flex gap-2">
                     <button onClick={() => setConfirmCancelId(null)} className="flex-1 py-2 rounded-xl bg-gray-100 text-gray-500 font-bold text-xs active:scale-95 transition-transform">Не отменять</button>
@@ -78,7 +126,7 @@ export function TasksList({ tasks, children, onDeleteTask, onCancelTask }: Props
                   </div>
                 </div>
               ) : (
-                <div className="px-4 pb-4">
+                <div className="px-4 pb-4 pt-2">
                   <button onClick={() => setConfirmCancelId(task.id)} className="w-full py-2 rounded-xl bg-red-50 border border-red-200 text-red-500 font-bold text-xs active:scale-95 transition-transform">
                     ✕ Отменить задание
                   </button>
