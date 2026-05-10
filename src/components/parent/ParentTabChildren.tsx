@@ -33,17 +33,30 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
     const text = `Привет, ${childName}! Я жду тебя в приложении СтарКидс 🌟\n\nПерейди по ссылке и введи своё имя:\n👉 ${pwaUrl}\n\nИли через Telegram: https://t.me/task4kids_bot?start=${code}`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: "СтарКидс — приглашение", text, url: pwaUrl });
+        await navigator.share({ title: "СтарКидс — приглашение", text });
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2000);
+        return;
       } catch {
-        // пользователь отменил — ничего не делаем
+        // пользователь отменил или share недоступен — падаем в clipboard
       }
-    } else {
-      await navigator.clipboard.writeText(text);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
     }
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // clipboard тоже недоступен — последний fallback через textarea
+      const el = document.createElement("textarea");
+      el.value = text;
+      el.style.position = "fixed";
+      el.style.opacity = "0";
+      document.body.appendChild(el);
+      el.focus();
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    }
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const copyPwaLink = async (id: number, code: string) => {
