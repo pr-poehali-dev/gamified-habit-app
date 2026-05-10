@@ -241,32 +241,28 @@
 }
 
 /* ============================================================
-   LANDING PAGE STYLES
+   LANDING PAGE STYLES — LIGHT THEME
    ============================================================ */
 
-/* Google Fonts import */
 @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Golos+Text:wght@400;500;600;700&display=swap");
 
 @keyframes landing-float {
   0%,
   100% {
-    transform: translateY(0px) rotate(0deg);
+    transform: translateY(0px);
   }
-  33% {
-    transform: translateY(-10px) rotate(8deg);
-  }
-  66% {
-    transform: translateY(-5px) rotate(-5deg);
+  50% {
+    transform: translateY(-8px);
   }
 }
 
 @keyframes landing-pulse-glow {
   0%,
   100% {
-    box-shadow: 0 0 20px 0px rgba(255, 107, 157, 0.4);
+    box-shadow: 0 8px 24px rgba(107, 123, 255, 0.35);
   }
   50% {
-    box-shadow: 0 0 40px 8px rgba(255, 107, 157, 0.7);
+    box-shadow: 0 12px 36px rgba(107, 123, 255, 0.55);
   }
 }
 
@@ -288,18 +284,18 @@
     transform: translate(0, 0) scale(1);
   }
   33% {
-    transform: translate(30px, -20px) scale(1.05);
+    transform: translate(20px, -15px) scale(1.04);
   }
   66% {
-    transform: translate(-20px, 20px) scale(0.97);
+    transform: translate(-15px, 15px) scale(0.97);
   }
 }
 
 /* Root */
 .landing-root {
   font-family: "Golos Text", "Nunito", sans-serif;
-  background: #0f0a2e;
-  color: #fff;
+  background: #ffffff;
+  color: #1e1b4b;
   overflow-x: hidden;
   min-height: 100vh;
 }
@@ -311,7 +307,7 @@
   left: 0;
   right: 0;
   z-index: 100;
-  padding: 1rem 0;
+  padding: 0.875rem 0;
   transition:
     background 0.3s,
     backdrop-filter 0.3s,
@@ -319,9 +315,11 @@
 }
 
 .landing-nav--scrolled {
-  background: rgba(15, 10, 46, 0.85);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(16px);
-  box-shadow: 0 2px 32px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 1px 0 #e5e7eb,
+    0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
 .landing-nav__inner {
@@ -349,14 +347,14 @@
   font-family: "Nunito", sans-serif;
   font-weight: 900;
   font-size: 1.25rem;
-  background: linear-gradient(135deg, #ff6b9d, #ffd700);
+  background: linear-gradient(135deg, #6b7bff, #9b6bff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .landing-nav-btn {
-  background: linear-gradient(135deg, #ff6b9d, #ff9b6b);
+  background: linear-gradient(135deg, #6b7bff, #9b6bff);
   color: #fff;
   font-weight: 700;
   font-size: 0.875rem;
@@ -367,11 +365,12 @@
     transform 0.2s,
     box-shadow 0.2s;
   white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(107, 123, 255, 0.3);
 }
 
 .landing-nav-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 107, 157, 0.5);
+  box-shadow: 0 8px 22px rgba(107, 123, 255, 0.45);
 }
 
 /* ---- Hero ---- */
@@ -385,6 +384,7 @@
   overflow: hidden;
   gap: 3rem;
   flex-wrap: wrap;
+  background: linear-gradient(160deg, #f8f9ff 0%, #f0f4ff 50%, #faf5ff 100%);
 }
 
 .hero-bg-blob {
@@ -392,7 +392,7 @@
   border-radius: 50%;
   filter: blur(80px);
   pointer-events: none;
-  animation: landing-blob-drift 12s ease-in-out infinite;
+  animation: landing-blob-drift 14s ease-in-out infinite;
 }
 
 .hero-bg-blob--1 {
@@ -400,7 +400,7 @@
   height: 600px;
   background: radial-gradient(
     circle,
-    rgba(120, 60, 220, 0.35) 0%,
+    rgba(107, 123, 255, 0.12) 0%,
     transparent 70%
   );
   top: -100px;
@@ -413,7 +413,7 @@
   height: 500px;
   background: radial-gradient(
     circle,
-    rgba(255, 107, 157, 0.25) 0%,
+    rgba(155, 107, 255, 0.1) 0%,
     transparent 70%
   );
   top: 200px;
@@ -427,7 +427,7 @@
   height: 400px;
   background: radial-gradient(
     circle,
-    rgba(255, 180, 60, 0.18) 0%,
+    rgba(255, 180, 60, 0.08) 0%,
     transparent 70%
   );
   bottom: -80px;
@@ -438,7 +438,7 @@
 
 .landing-star {
   font-size: 1.4rem;
-  opacity: 0.6;
+  opacity: 0.4;
   animation: landing-float 4s ease-in-out infinite;
 }
 
@@ -450,10 +450,10 @@
 
 .hero-badge {
   display: inline-block;
-  background: rgba(255, 107, 157, 0.15);
-  border: 1px solid rgba(255, 107, 157, 0.4);
-  color: #ff9b9b;
-  font-size: 0.8rem;
+  background: rgba(107, 123, 255, 0.1);
+  border: 1px solid rgba(107, 123, 255, 0.25);
+  color: #6b7bff;
+  font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -465,14 +465,14 @@
 .hero-title {
   font-family: "Nunito", sans-serif;
   font-weight: 900;
-  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
   line-height: 1.15;
   margin-bottom: 1.25rem;
-  color: #fff;
+  color: #1e1b4b;
 }
 
 .hero-title-accent {
-  background: linear-gradient(135deg, #ff6b9d 0%, #ffd700 100%);
+  background: linear-gradient(135deg, #6b7bff 0%, #9b6bff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -481,7 +481,7 @@
 .hero-subtitle {
   font-size: 1.05rem;
   line-height: 1.7;
-  color: rgba(255, 255, 255, 0.72);
+  color: #6b7280;
   margin-bottom: 2rem;
   max-width: 480px;
 }
@@ -514,173 +514,35 @@
 }
 
 .hero-btn--primary {
-  background: linear-gradient(135deg, #7b4fdb, #9b6bff);
-  box-shadow: 0 8px 24px rgba(123, 79, 219, 0.45);
+  background: linear-gradient(135deg, #6b7bff, #9b6bff);
+  box-shadow: 0 8px 24px rgba(107, 123, 255, 0.35);
   color: #fff;
 }
-
 .hero-btn--primary:hover {
-  box-shadow: 0 12px 32px rgba(123, 79, 219, 0.6);
+  box-shadow: 0 12px 32px rgba(107, 123, 255, 0.5);
 }
 
 .hero-btn--secondary {
-  background: linear-gradient(135deg, #ff6b9d, #ff9b6b);
-  box-shadow: 0 8px 24px rgba(255, 107, 157, 0.45);
-  color: #fff;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+  color: #374151;
 }
-
 .hero-btn--secondary:hover {
-  box-shadow: 0 12px 32px rgba(255, 107, 157, 0.6);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
 .hero-btn-sub {
   font-size: 0.72rem;
   font-weight: 500;
-  opacity: 0.85;
+  opacity: 0.8;
   margin-top: 0.15rem;
 }
 
 .hero-hint {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.45);
+  color: #9ca3af;
   letter-spacing: 0.02em;
-}
-
-/* ---- Phone mockup ---- */
-.hero-mockup {
-  position: relative;
-  z-index: 2;
-  flex-shrink: 0;
-}
-
-.phone-shell {
-  width: 260px;
-  background: linear-gradient(145deg, #1a1040, #2a1860);
-  border-radius: 36px;
-  padding: 3px;
-  box-shadow:
-    0 30px 80px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(255, 255, 255, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  animation: landing-float 5s ease-in-out infinite;
-}
-
-.phone-screen {
-  background: linear-gradient(180deg, #130d35 0%, #0f0a2e 100%);
-  border-radius: 33px;
-  overflow: hidden;
-}
-
-.phone-header {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.9rem 1rem 0.6rem;
-  background: rgba(123, 79, 219, 0.15);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.phone-avatar {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #7b4fdb, #ff6b9d);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-}
-
-.phone-name {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #fff;
-  font-family: "Nunito", sans-serif;
-}
-
-.phone-status {
-  font-size: 0.6rem;
-  color: #4ade80;
-}
-
-.phone-body {
-  padding: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.phone-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.6rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.72rem;
-  font-weight: 600;
-}
-
-.phone-card--purple {
-  background: rgba(123, 79, 219, 0.25);
-  border: 1px solid rgba(123, 79, 219, 0.3);
-}
-
-.phone-card--pink {
-  background: rgba(255, 107, 157, 0.2);
-  border: 1px solid rgba(255, 107, 157, 0.3);
-}
-
-.phone-card--orange {
-  background: rgba(255, 155, 107, 0.2);
-  border: 1px solid rgba(255, 155, 107, 0.3);
-}
-
-.phone-stars {
-  font-size: 0.68rem;
-  color: #ffd700;
-  font-weight: 700;
-}
-
-.phone-card--green {
-  background: rgba(74, 222, 128, 0.15);
-  border: 1px solid rgba(74, 222, 128, 0.25);
-  opacity: 0.6;
-  text-decoration: line-through;
-}
-
-.phone-achievements {
-  display: flex;
-  gap: 0.4rem;
-  justify-content: center;
-  padding: 0.25rem 0 0.1rem;
-  font-size: 0.9rem;
-}
-
-.phone-progress {
-  padding: 0.5rem 0.25rem 0.25rem;
-}
-
-.phone-progress__label {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.65rem;
-  color: rgba(255, 255, 255, 0.65);
-  margin-bottom: 0.35rem;
-}
-
-.phone-progress__bar {
-  height: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 99px;
-  overflow: hidden;
-}
-
-.phone-progress__fill {
-  height: 100%;
-  background: linear-gradient(90deg, #7b4fdb, #ffd700);
-  border-radius: 99px;
-  animation: landing-gradient-shift 3s ease infinite;
-  background-size: 200% 100%;
 }
 
 /* ---- Stats strip ---- */
@@ -690,9 +552,9 @@
   justify-content: center;
   flex-wrap: wrap;
   gap: 0;
-  background: rgba(255, 255, 255, 0.04);
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
   padding: 1.5rem 1rem;
 }
 
@@ -708,19 +570,19 @@
   font-family: "Nunito", sans-serif;
   font-weight: 900;
   font-size: 1.5rem;
-  color: #fff;
+  color: #1e1b4b;
 }
 
 .stat-label {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: #9ca3af;
   text-align: center;
 }
 
 .stat-divider {
   width: 1px;
   height: 40px;
-  background: rgba(255, 255, 255, 0.12);
+  background: #e5e7eb;
 }
 
 @media (max-width: 600px) {
@@ -741,9 +603,9 @@
 
 .section-label {
   display: inline-block;
-  background: rgba(255, 107, 157, 0.12);
-  border: 1px solid rgba(255, 107, 157, 0.3);
-  color: #ff9b9b;
+  background: rgba(107, 123, 255, 0.08);
+  border: 1px solid rgba(107, 123, 255, 0.2);
+  color: #6b7bff;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -759,7 +621,7 @@
   font-size: clamp(1.75rem, 3.5vw, 2.75rem);
   line-height: 1.2;
   margin-bottom: 3rem;
-  color: #fff;
+  color: #1e1b4b;
 }
 
 /* ---- Features ---- */
@@ -770,20 +632,21 @@
 }
 
 .feature-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #fff;
+  border: 1px solid #e5e7eb;
   border-radius: 20px;
   padding: 1.75rem 1.5rem;
   transition:
     border-color 0.3s,
-    background 0.3s,
+    box-shadow 0.3s,
     transform 0.2s;
   cursor: default;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .feature-card:hover {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(123, 79, 219, 0.4);
+  border-color: rgba(107, 123, 255, 0.4);
+  box-shadow: 0 8px 28px rgba(107, 123, 255, 0.12);
   transform: translateY(-4px);
 }
 
@@ -797,14 +660,14 @@
   font-family: "Nunito", sans-serif;
   font-weight: 800;
   font-size: 1.1rem;
-  color: #fff;
+  color: #1e1b4b;
   margin-bottom: 0.5rem;
 }
 
 .feature-desc {
   font-size: 0.88rem;
   line-height: 1.65;
-  color: rgba(255, 255, 255, 0.6);
+  color: #6b7280;
 }
 
 /* ---- Roles ---- */
@@ -832,21 +695,13 @@
 }
 
 .role-card--parent {
-  background: linear-gradient(
-    145deg,
-    rgba(123, 79, 219, 0.2) 0%,
-    rgba(80, 40, 160, 0.15) 100%
-  );
-  border: 1px solid rgba(123, 79, 219, 0.3);
+  background: linear-gradient(145deg, #f0f0ff 0%, #ede9fe 100%);
+  border: 1px solid #c4b5fd;
 }
 
 .role-card--child {
-  background: linear-gradient(
-    145deg,
-    rgba(255, 107, 157, 0.2) 0%,
-    rgba(255, 155, 107, 0.12) 100%
-  );
-  border: 1px solid rgba(255, 107, 157, 0.3);
+  background: linear-gradient(145deg, #fff0f6 0%, #fce7f3 100%);
+  border: 1px solid #f9a8d4;
 }
 
 .role-card__icon {
@@ -859,7 +714,7 @@
   font-family: "Nunito", sans-serif;
   font-weight: 900;
   font-size: 1.4rem;
-  color: #fff;
+  color: #1e1b4b;
   margin-bottom: 1.25rem;
 }
 
@@ -874,7 +729,7 @@
 
 .role-card__list li {
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.78);
+  color: #374151;
   line-height: 1.5;
 }
 
@@ -895,23 +750,21 @@
 }
 
 .role-card__btn--parent {
-  background: linear-gradient(135deg, #7b4fdb, #9b6bff);
+  background: linear-gradient(135deg, #6b7bff, #9b6bff);
   color: #fff;
-  box-shadow: 0 6px 20px rgba(123, 79, 219, 0.45);
+  box-shadow: 0 6px 20px rgba(107, 123, 255, 0.35);
 }
-
 .role-card__btn--parent:hover {
-  box-shadow: 0 10px 28px rgba(123, 79, 219, 0.6);
+  box-shadow: 0 10px 28px rgba(107, 123, 255, 0.5);
 }
 
 .role-card__btn--child {
-  background: linear-gradient(135deg, #ff6b9d, #ff9b6b);
+  background: linear-gradient(135deg, #f472b6, #fb7185);
   color: #fff;
-  box-shadow: 0 6px 20px rgba(255, 107, 157, 0.4);
+  box-shadow: 0 6px 20px rgba(244, 114, 182, 0.35);
 }
-
 .role-card__btn--child:hover {
-  box-shadow: 0 10px 28px rgba(255, 107, 157, 0.55);
+  box-shadow: 0 10px 28px rgba(244, 114, 182, 0.5);
 }
 
 /* ---- Steps ---- */
@@ -939,13 +792,13 @@
   font-family: "Nunito", sans-serif;
   font-weight: 800;
   font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: #1e1b4b;
   margin-bottom: 1.25rem;
 }
 
 .steps-divider {
   width: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: #e5e7eb;
   align-self: stretch;
   margin-top: 2.5rem;
 }
@@ -954,18 +807,19 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: #fff;
+  border: 1px solid #e5e7eb;
   border-radius: 14px;
   padding: 0.85rem 1rem;
   margin-bottom: 0.75rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .step-num {
   width: 32px;
   height: 32px;
   flex-shrink: 0;
-  background: linear-gradient(135deg, #7b4fdb, #ff6b9d);
+  background: linear-gradient(135deg, #6b7bff, #9b6bff);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -978,7 +832,7 @@
 
 .step-text {
   font-size: 0.88rem;
-  color: rgba(255, 255, 255, 0.72);
+  color: #374151;
   line-height: 1.5;
 }
 
@@ -994,13 +848,14 @@
 }
 
 .review-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #fff;
+  border: 1px solid #e5e7eb;
   border-radius: 20px;
   padding: 1.75rem 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .review-stars {
@@ -1011,7 +866,7 @@
 .review-text {
   font-size: 0.9rem;
   line-height: 1.7;
-  color: rgba(255, 255, 255, 0.8);
+  color: #4b5563;
   flex: 1;
   font-style: italic;
 }
@@ -1021,16 +876,14 @@
   flex-direction: column;
   gap: 0.1rem;
 }
-
 .review-name {
   font-weight: 700;
   font-size: 0.85rem;
-  color: #fff;
+  color: #1e1b4b;
 }
-
 .review-role {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.45);
+  color: #9ca3af;
 }
 
 /* ---- CTA ---- */
@@ -1039,12 +892,8 @@
   overflow: hidden;
   padding: 6rem 1.5rem;
   text-align: center;
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgba(123, 79, 219, 0.12) 100%
-  );
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(160deg, #f0f0ff 0%, #fdf4ff 100%);
+  border-top: 1px solid #e5e7eb;
 }
 
 .cta-bg-blob {
@@ -1060,7 +909,7 @@
   height: 500px;
   background: radial-gradient(
     circle,
-    rgba(123, 79, 219, 0.3) 0%,
+    rgba(107, 123, 255, 0.12) 0%,
     transparent 70%
   );
   top: -100px;
@@ -1072,7 +921,7 @@
   height: 400px;
   background: radial-gradient(
     circle,
-    rgba(255, 107, 157, 0.25) 0%,
+    rgba(155, 107, 255, 0.1) 0%,
     transparent 70%
   );
   bottom: -80px;
@@ -1099,14 +948,14 @@
   font-family: "Nunito", sans-serif;
   font-weight: 900;
   font-size: clamp(2rem, 4vw, 3rem);
-  color: #fff;
+  color: #1e1b4b;
   margin-bottom: 1rem;
 }
 
 .cta-subtitle {
   font-size: 1rem;
   line-height: 1.7;
-  color: rgba(255, 255, 255, 0.65);
+  color: #6b7280;
   margin-bottom: 2.5rem;
 }
 
@@ -1134,17 +983,14 @@
 .cta-btn:hover {
   transform: translateY(-3px);
 }
-
 .cta-btn-icon {
   font-size: 1.75rem;
 }
-
 .cta-btn-main {
   display: block;
   font-size: 1rem;
   color: #fff;
 }
-
 .cta-btn-sub {
   display: block;
   font-size: 0.72rem;
@@ -1154,29 +1000,28 @@
 }
 
 .cta-btn--parent {
-  background: linear-gradient(135deg, #7b4fdb, #9b6bff);
-  box-shadow: 0 10px 30px rgba(123, 79, 219, 0.5);
+  background: linear-gradient(135deg, #6b7bff, #9b6bff);
+  box-shadow: 0 10px 30px rgba(107, 123, 255, 0.4);
   animation: landing-pulse-glow 3s ease-in-out infinite;
 }
-
 .cta-btn--parent:hover {
-  box-shadow: 0 14px 40px rgba(123, 79, 219, 0.7);
+  box-shadow: 0 14px 40px rgba(107, 123, 255, 0.6);
 }
 
 .cta-btn--child {
-  background: linear-gradient(135deg, #ff6b9d, #ff9b6b);
-  box-shadow: 0 10px 30px rgba(255, 107, 157, 0.4);
+  background: linear-gradient(135deg, #f472b6, #fb7185);
+  box-shadow: 0 10px 30px rgba(244, 114, 182, 0.35);
 }
-
 .cta-btn--child:hover {
-  box-shadow: 0 14px 40px rgba(255, 107, 157, 0.6);
+  box-shadow: 0 14px 40px rgba(244, 114, 182, 0.55);
 }
 
 /* ---- Footer ---- */
 .landing-footer {
   text-align: center;
   padding: 2.5rem 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1190,7 +1035,7 @@
   font-family: "Nunito", sans-serif;
   font-weight: 900;
   font-size: 1.1rem;
-  background: linear-gradient(135deg, #ff6b9d, #ffd700);
+  background: linear-gradient(135deg, #6b7bff, #9b6bff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1198,22 +1043,23 @@
 
 .footer-tagline {
   font-size: 0.82rem;
-  color: rgba(255, 255, 255, 0.4);
+  color: #9ca3af;
 }
 
 .footer-links {
   display: flex;
   gap: 0.75rem;
   font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.35);
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .footer-links a {
-  color: rgba(255, 255, 255, 0.45);
+  color: #9ca3af;
   text-decoration: none;
   transition: color 0.2s;
 }
 
 .footer-links a:hover {
-  color: rgba(255, 255, 255, 0.75);
+  color: #6b7bff;
 }

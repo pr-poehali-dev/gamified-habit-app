@@ -131,20 +131,20 @@ export default function Index() {
             ].map((b, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <span style={{ fontSize: 14 }}>{b.icon}</span>
-                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>{b.text}</span>
+                <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 500 }}>{b.text}</span>
               </div>
             ))}
           </div>
 
           {/* Safety block */}
           <div style={{
-            background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)",
+            background: "#f0fdf4", border: "1px solid #bbf7d0",
             borderRadius: 14, padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start",
           }}>
             <span style={{ fontSize: 20, lineHeight: 1, marginTop: 1 }}>🛡️</span>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.9)", marginBottom: 3 }}>Полная безопасность для ребёнка</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: 1.5 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#15803d", marginBottom: 3 }}>Полная безопасность для ребёнка</div>
+              <div style={{ fontSize: 11, color: "#4b7a5a", lineHeight: 1.5 }}>
                 Мы не собираем имя, фото, геолокацию или школу ребёнка. Только игровые данные: задания и звёзды. Никакой рекламы.
               </div>
             </div>
