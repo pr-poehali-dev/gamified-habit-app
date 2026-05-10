@@ -861,6 +861,25 @@ def verify_email_otp(email_raw: str, otp_input: str, full_name: str = "") -> dic
     })
 
 
+def update_name(session_token: str, full_name: str) -> dict:
+    """Обновить имя пользователя по session_token."""
+    if not session_token or not full_name.strip():
+        return err("Неверные параметры.")
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        f"UPDATE {SCHEMA}.parents SET full_name = %s WHERE pwa_session_token = %s RETURNING id",
+        (full_name.strip(), session_token)
+    )
+    row = cur.fetchone()
+    conn.commit()
+    cur.close()
+    conn.close()
+    if not row:
+        return err("Сессия не найдена.", 401)
+    return ok({"status": "ok"})
+
+
 def check_email(email_raw: str) -> dict:
     """Проверить есть ли аккаунт с таким email."""
     try:
@@ -976,5 +995,8 @@ def handler(event: dict, context) -> dict:
 
     if action == "verify_email_otp":
         return verify_email_otp(body.get("email", ""), body.get("otp", ""), body.get("full_name", ""))
+
+    if action == "update_name":
+        return update_name(body.get("session_token", ""), body.get("full_name", ""))
 
     return err("Неизвестное действие.")

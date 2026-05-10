@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { checkPhone, sendOtp, verifyOtp, loginPin, setPin, checkEmail, sendEmailOtp, verifyEmailOtp } from "./pwaApi";
+import { checkPhone, sendOtp, verifyOtp, loginPin, setPin, checkEmail, sendEmailOtp, verifyEmailOtp, updateName } from "./pwaApi";
 import { savePwaSession } from "./usePwaSession";
 import MergeAccountModal from "./MergeAccountModal";
 import func2url from "../../../backend/func2url.json";
@@ -194,16 +194,18 @@ export default function PwaParentAuth({ onSuccess }: Props) {
   const handleSaveName = async () => {
     if (!fullName.trim()) { setError("Введите ваше имя."); return; }
     setError(""); setLoading(true);
-    let res;
     if (authMethod === "email") {
-      res = await verifyEmailOtp(email, otp.join(""), fullName);
+      // Сессия уже создана — просто обновляем имя
+      const res = await updateName(sessionToken, fullName);
+      setLoading(false);
+      if (res.error) { setError(res.error); return; }
     } else {
-      res = await verifyOtp(phone, otp.join(""), fullName);
+      const res = await verifyOtp(phone, otp.join(""), fullName);
+      setLoading(false);
+      if (res.error) { setError(res.error); return; }
+      setSessionToken(res.session_token || "");
+      savePwaSession(res.session_token!, "parent");
     }
-    setLoading(false);
-    if (res.error) { setError(res.error); return; }
-    setSessionToken(res.session_token || "");
-    savePwaSession(res.session_token!, "parent");
     setStep("set_pin");
   };
 
@@ -426,6 +428,7 @@ export default function PwaParentAuth({ onSuccess }: Props) {
                   onClick={handleSaveName} disabled={loading || !fullName.trim()}>
                   {loading ? "Сохраняем..." : "Далее →"}
                 </Button>
+                <button className="w-full text-xs text-gray-400 text-center" onClick={() => { setStep("choose"); setError(""); }}>← Начать заново</button>
               </div>
             )}
 

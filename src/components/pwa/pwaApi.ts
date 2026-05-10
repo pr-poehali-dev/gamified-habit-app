@@ -99,3 +99,7 @@ export async function sendEmailOtp(email: string): Promise<{ status?: string; er
 export async function verifyEmailOtp(email: string, otp: string, fullName?: string): Promise<EmailAuthResult> {
   return call({ action: "verify_email_otp", email, otp, full_name: fullName || "" }) as Promise<EmailAuthResult>;
 }
+
+export async function updateName(sessionToken: string, fullName: string): Promise<{ status?: string; error?: string }> {
+  return call({ action: "update_name", session_token: sessionToken, full_name: fullName }) as Promise<{ status?: string; error?: string }>;
+}
