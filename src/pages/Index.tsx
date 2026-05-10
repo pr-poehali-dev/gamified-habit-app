@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import AppMockup from "@/components/landing/AppMockup";
 
 const PWA_URL = "/app";
 
@@ -770,6 +769,173 @@ function MotivationSection() {
   );
 }
 
+// ─── Друзья и соревнование ───────────────────────────────────────────────────
+function FriendsMockup() {
+  const friends = [
+    { emoji: "🐱", name: "Лёша",  stars: 67, level: 6, streak: 12, you: false },
+    { emoji: "🦋", name: "Катя",  stars: 42, level: 4, streak: 5,  you: true  },
+    { emoji: "🦊", name: "Дима",  stars: 38, level: 4, streak: 3,  you: false },
+    { emoji: "🐸", name: "Соня",  stars: 21, level: 2, streak: 1,  you: false },
+  ];
+  return (
+    <div style={{
+      width: 252, background: "#d1d5db", borderRadius: 36, padding: 3,
+      boxShadow: "0 20px 56px rgba(107,123,255,0.2), 0 0 0 1px rgba(0,0,0,0.05)",
+    }}>
+      <div style={{ background: "linear-gradient(180deg,#f8f9ff,#f0f4ff)", borderRadius: 33, overflow: "hidden" }}>
+        <div style={{ padding: "8px 14px 4px", display: "flex", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: "#1E1B4B" }}>9:41</span>
+          <div style={{ width: 60, height: 14, background: "#1f2937", borderRadius: 99 }} />
+          <span style={{ fontSize: 8, color: "#9ca3af" }}>🔋</span>
+        </div>
+        <div style={{ padding: "8px 11px 10px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <div style={{ fontSize: 13, fontWeight: 900, color: "#1E1B4B" }}>👥 Мои друзья</div>
+            <div style={{ background: "#ede9fe", border: "1px solid #c4b5fd", borderRadius: 8, padding: "3px 8px", fontSize: 9, fontWeight: 700, color: "#6B7BFF" }}>+ Добавить</div>
+          </div>
+
+          {/* Leaderboard */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>🏆 Рейтинг на этой неделе</div>
+            {friends.map((f, i) => (
+              <div key={i} style={{
+                background: f.you ? "linear-gradient(135deg,#ede9fe,#e0e7ff)" : "#fff",
+                border: `1px solid ${f.you ? "#c4b5fd" : "#f3f4f6"}`,
+                borderRadius: 11, padding: "7px 9px", marginBottom: 5,
+                display: "flex", alignItems: "center", gap: 7,
+                boxShadow: f.you ? "0 2px 8px rgba(107,123,255,0.15)" : "0 1px 3px rgba(0,0,0,0.04)",
+              }}>
+                <div style={{
+                  width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+                  background: i === 0 ? "linear-gradient(135deg,#ffd700,#f59e0b)" : i === 1 ? "#e5e7eb" : i === 2 ? "#fcd9b6" : "#f3f4f6",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 10, fontWeight: 900, color: i === 0 ? "#92400e" : "#6b7280",
+                }}>{i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i+1}`}</div>
+                <div style={{ width: 26, height: 26, background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>{f.emoji}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: "#1E1B4B" }}>{f.name} {f.you && <span style={{ fontSize: 8, color: "#6B7BFF", fontWeight: 700 }}>(ты)</span>}</div>
+                  <div style={{ fontSize: 9, color: "#9ca3af" }}>ур.{f.level} · 🔥{f.streak} дней</div>
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "#d97706" }}>{f.stars}⭐</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Shared achievement */}
+          <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 11, padding: "8px 10px" }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: "#92400e", marginBottom: 5 }}>🎉 Новое у друга</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <div style={{ width: 28, height: 28, background: "#fef9c3", border: "1px solid #fde68a", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🔥</div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#1E1B4B" }}>Лёша открыл «Серия 7 дней»</div>
+                <div style={{ fontSize: 9, color: "#d97706" }}>Обгони его — у тебя 5 дней подряд!</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ borderTop: "1px solid #e5e7eb", background: "#fff", display: "flex", padding: "5px 0 9px" }}>
+          {[["✅","Задачи",false],["📝","Оценки",false],["🛍️","Магазин",false],["👥","Друзья",true]].map(([icon,label,active], i) => (
+            <div key={i} style={{ flex: 1, textAlign: "center" }}>
+              <div style={{ fontSize: 14 }}>{icon}</div>
+              <div style={{ fontSize: 7, fontWeight: 700, color: active ? "#6B7BFF" : "#9ca3af" }}>{label}</div>
+              {active && <div style={{ width: 14, height: 2, background: "#6B7BFF", borderRadius: 99, margin: "2px auto 0" }} />}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FriendsSection() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const observer = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.08 });
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <section ref={ref} style={{
+      background: "linear-gradient(160deg, #f0f0ff 0%, #fdf4ff 100%)",
+      padding: "80px 24px",
+      opacity: visible ? 1 : 0,
+      transform: visible ? "translateY(0)" : "translateY(40px)",
+      transition: "opacity 0.7s ease, transform 0.7s ease",
+    }}>
+      <div style={{ maxWidth: 1060, margin: "0 auto", display: "flex", gap: 56, alignItems: "center", justifyContent: "center", flexWrap: "wrap" }}>
+
+        {/* Phone */}
+        <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+          <FriendsMockup />
+          <div style={{
+            background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14,
+            padding: "10px 16px", display: "flex", alignItems: "center", gap: 8,
+            boxShadow: "0 4px 14px rgba(0,0,0,0.07)", maxWidth: 252,
+          }}>
+            <span style={{ fontSize: 20 }}>💬</span>
+            <div style={{ fontSize: 11, color: "#4b5563", lineHeight: 1.5, fontStyle: "italic" }}>
+              «Лёша уже на 3-м месте — надо его обогнать!»<br />
+              <span style={{ color: "#9ca3af", fontStyle: "normal" }}>— Катя, 9 лет</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Text */}
+        <div style={{ flex: 1, minWidth: 280, maxWidth: 460 }}>
+          <div style={{
+            display: "inline-block", background: "rgba(107,123,255,0.08)", border: "1px solid rgba(107,123,255,0.2)",
+            color: "#6B7BFF", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em",
+            textTransform: "uppercase", padding: "5px 14px", borderRadius: 50, marginBottom: 16,
+          }}>Социальная механика</div>
+
+          <h2 style={{
+            fontFamily: "Nunito, sans-serif", fontWeight: 900,
+            fontSize: "clamp(1.6rem, 3vw, 2.4rem)", color: "#1E1B4B", lineHeight: 1.2, marginBottom: 16,
+          }}>Друзья — главная причина<br />не бросить на полпути</h2>
+
+          <p style={{ fontSize: "1rem", color: "#6b7280", lineHeight: 1.75, marginBottom: 24 }}>
+            Ребёнок видит, сколько звёзд у друзей, кто открыл новое достижение и какая у кого серия. Это не давление — это живой повод стараться сегодня, а не завтра.
+          </p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
+            {[
+              { emoji: "🏆", title: "Рейтинг среди друзей", text: "Еженедельный топ по звёздам — ребёнок всегда знает своё место и хочет подняться выше." },
+              { emoji: "🎉", title: "Достижения видны всем", text: "Открыл «Серию 7 дней» — друзья это увидят. Гордость работает лучше любого напоминания." },
+              { emoji: "🔥", title: "Серии заражают", text: "Когда у друга 12 дней подряд, а у тебя 5 — хочется не пропускать. Именно так формируется привычка." },
+              { emoji: "🤝", title: "Добавить по коду", text: "Простое подключение без аккаунтов: ребёнок делится своим кодом — и друг уже в рейтинге." },
+            ].map((item, i) => (
+              <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <div style={{
+                  width: 38, height: 38, borderRadius: 11, background: "#fff",
+                  border: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 18, flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                }}>{item.emoji}</div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: "#1E1B4B", marginBottom: 2 }}>{item.title}</div>
+                  <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.6 }}>{item.text}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{
+            background: "linear-gradient(135deg,#ede9fe,#e0e7ff)", border: "1px solid #c4b5fd",
+            borderRadius: 14, padding: "14px 16px",
+          }}>
+            <div style={{ fontSize: 12, fontWeight: 900, color: "#4c1d95", marginBottom: 4 }}>💡 Почему это важно для родителя</div>
+            <div style={{ fontSize: 12, color: "#5b21b6", lineHeight: 1.6 }}>
+              Внешняя мотивация от друзей снимает с вас роль надзирателя. Ребёнок старается не потому что «мама сказала» — а потому что не хочет отставать от Лёши.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── Review ──────────────────────────────────────────────────────────────────
 const ReviewCard = ({ text, author, role, stars }: { text: string; author: string; role: string; stars: number }) => (
   <div className="review-card">
@@ -991,30 +1157,19 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="stats-strip">
-        <div className="stat-item"><span className="stat-num">⭐ 10+</span><span className="stat-label">уровней прокачки</span></div>
-        <div className="stat-divider" />
-        <div className="stat-item"><span className="stat-num">🏆 16</span><span className="stat-label">достижений</span></div>
-        <div className="stat-divider" />
-        <div className="stat-item"><span className="stat-num">🛍️ ∞</span><span className="stat-label">призов в магазине</span></div>
-        <div className="stat-divider" />
-        <div className="stat-item"><span className="stat-num">💸 0 ₽</span><span className="stat-label">стоимость навсегда</span></div>
-      </section>
-
-      {/* App Mockup */}
-      <AppMockup />
-
-      {/* Problem → Solution */}
+      {/* 1. Проблема → Решение (эмоциональный крючок) */}
       <ProblemSolution />
 
-      {/* How to start — новый блок с мокапами */}
-      <HowToStart />
-
-      {/* Motivation */}
+      {/* 2. Почему работает (логика и психология) */}
       <MotivationSection />
 
-      {/* Reviews */}
+      {/* 3. Друзья — мотивация не бросать */}
+      <FriendsSection />
+
+      {/* 4. Как начать (снять барьер входа) */}
+      <HowToStart />
+
+      {/* 5. Отзывы (социальное доказательство) */}
       <section className="section reviews-section">
         <div className="section-label">Отзывы семей</div>
         <h2 className="section-title">Родители уже в восторге</h2>
