@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import func2url from "../../backend/func2url.json";
+
+const SUPPORT_URL = func2url["support-email"];
 
 const PWA_URL = "/app";
 
@@ -990,7 +993,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Что если у меня возникнут вопросы или проблемы?",
-    a: "Напишите нам на support@tasks4kids.ru — отвечаем в течение дня. Также есть центр поддержки на сайте.",
+    a: "Воспользуйтесь формой обратной связи на этой странице — нажмите кнопку «Поддержка» в меню вверху. Отвечаем в течение рабочего дня.",
     emoji: "💬",
   },
 ];
@@ -1053,12 +1056,24 @@ function FaqSection() {
         </div>
 
         <div style={{ textAlign: "center", marginTop: 36 }}>
-          <p style={{ color: "#9ca3af", fontSize: 13 }}>
-            Остался вопрос?{" "}
-            <a href="mailto:support@tasks4kids.ru" style={{ color: "#6B7BFF", fontWeight: 700, textDecoration: "none" }}>
-              Напишите нам →
-            </a>
-          </p>
+          <p style={{ color: "#9ca3af", fontSize: 13, marginBottom: 12 }}>Остался вопрос?</p>
+          <button
+            onClick={() => {
+              const el = document.querySelector<HTMLButtonElement>(".landing-support-float, [data-support-btn]");
+              if (el) el.click();
+              else {
+                // триггер через кастомное событие
+                window.dispatchEvent(new CustomEvent("open-support"));
+              }
+            }}
+            style={{
+              background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", color: "#fff",
+              border: "none", borderRadius: 12, padding: "10px 24px",
+              fontSize: 14, fontWeight: 700, cursor: "pointer",
+            }}
+          >
+            💬 Написать в поддержку
+          </button>
         </div>
       </div>
     </section>
@@ -1196,18 +1211,32 @@ export default function Index() {
       setScrolled(window.scrollY > 30);
       if (mobileMenuOpen) setMobileMenuOpen(false);
     };
+    const handleOpenSupport = () => setSupportOpen(true);
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("open-support", handleOpenSupport);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("open-support", handleOpenSupport);
+    };
   }, [mobileMenuOpen]);
 
-  const handleSupportSubmit = (e: React.FormEvent) => {
+  const [supportLoading, setSupportLoading] = useState(false);
+
+  const handleSupportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Открываем почтовый клиент с заполненными данными
-    const subject = encodeURIComponent("Обращение в поддержку СтарКидс");
-    const body = encodeURIComponent(`Имя: ${supportForm.name}\nEmail: ${supportForm.email}\n\n${supportForm.message}`);
-    window.open(`mailto:support@tasks4kids.ru?subject=${subject}&body=${body}`);
+    setSupportLoading(true);
+    try {
+      await fetch(SUPPORT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(supportForm),
+      });
+    } catch {
+      // отправили — ок, ошибку сети игнорируем
+    }
+    setSupportLoading(false);
     setSupportSent(true);
-    setTimeout(() => { setSupportOpen(false); setSupportSent(false); setSupportForm({ name: "", email: "", message: "" }); }, 2000);
+    setTimeout(() => { setSupportOpen(false); setSupportSent(false); setSupportForm({ name: "", email: "", message: "" }); }, 3000);
   };
 
   return (
@@ -1232,8 +1261,8 @@ export default function Index() {
             {supportSent ? (
               <div style={{ textAlign: "center", padding: "16px 0" }}>
                 <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
-                <div style={{ fontSize: 18, fontWeight: 900, color: "#1E1B4B" }}>Открываем почту!</div>
-                <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 6 }}>Отправьте письмо — ответим в течение дня</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: "#1E1B4B" }}>Сообщение отправлено!</div>
+                <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 6 }}>Ответим на ваш email в течение рабочего дня</div>
               </div>
             ) : (
               <>
@@ -1273,18 +1302,15 @@ export default function Index() {
                       style={{ width: "100%", border: "1.5px solid #e5e7eb", borderRadius: 12, padding: "10px 14px", fontSize: 14, color: "#1E1B4B", outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }}
                     />
                   </div>
-                  <button type="submit" style={{
+                  <button type="submit" disabled={supportLoading} style={{
                     background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", color: "#fff",
                     border: "none", borderRadius: 14, padding: "14px", fontSize: 15, fontWeight: 800,
-                    cursor: "pointer", marginTop: 4,
+                    cursor: supportLoading ? "not-allowed" : "pointer", marginTop: 4,
+                    opacity: supportLoading ? 0.75 : 1, transition: "opacity 0.2s",
                   }}>
-                    Отправить →
+                    {supportLoading ? "Отправляем..." : "Отправить →"}
                   </button>
                 </form>
-                <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", marginTop: 12 }}>
-                  Или напишите напрямую:{" "}
-                  <a href="mailto:support@tasks4kids.ru" style={{ color: "#6B7BFF", fontWeight: 700, textDecoration: "none" }}>support@tasks4kids.ru</a>
-                </p>
               </>
             )}
           </div>

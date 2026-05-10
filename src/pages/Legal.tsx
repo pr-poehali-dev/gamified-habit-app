@@ -11,7 +11,8 @@ const TABS: { key: TabKey; label: string; icon: string }[] = [
   { key: "consent", label: "Согласие на ПДн", icon: "CheckCircle2" },
 ];
 
-const CONTACT_EMAIL = "support@tasks4kids.ru";
+const SUPPORT_PAGE = "https://tasks4kids.ru/#faq";
+const CONTACT_EMAIL = "support@tasks4kids.ru"; // не используется публично, только для оператора
 const OPERATOR_NAME = "Самозанятый Кругов Максим Геннадьевич, ИНН 772379179900";
 const OPERATOR_SHORT = "Кругов М.Г.";
 const SITE = "tasks4kids.ru";
@@ -73,8 +74,8 @@ export default function Legal() {
           <p>{OPERATOR_NAME}</p>
           <p>
             Контакты:{" "}
-            <a href={`mailto:${CONTACT_EMAIL}`} className="underline text-[#6B7BFF]">
-              {CONTACT_EMAIL}
+            <a href={SUPPORT_PAGE} className="underline text-[#6B7BFF]">
+              Форма обратной связи
             </a>
           </p>
           <p>© 2026 СтарКидс · 0+</p>
@@ -111,9 +112,9 @@ function AboutSection() {
           <b>ИНН:</b> 772379179900
         </p>
         <p>
-          <b>Электронная почта:</b>{" "}
-          <a href={`mailto:${CONTACT_EMAIL}`} className="text-[#6B7BFF] underline">
-            {CONTACT_EMAIL}
+          <b>Контакты:</b>{" "}
+          <a href={SUPPORT_PAGE} className="text-[#6B7BFF] underline">
+            Форма обратной связи на сайте
           </a>
         </p>
         <p>
@@ -323,7 +324,8 @@ function PrivacySection() {
         </p>
         <p>
           Родитель вправе в любой момент удалить профиль ребёнка через интерфейс Сервиса или
-          направив запрос на {CONTACT_EMAIL}.
+          направив запрос через{" "}
+          <a href={SUPPORT_PAGE} className="text-[#6B7BFF] underline">форму обратной связи</a>.
         </p>
       </Section>
 
