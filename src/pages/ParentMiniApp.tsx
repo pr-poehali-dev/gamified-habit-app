@@ -302,6 +302,9 @@ export default function ParentMiniApp() {
     longestStreak: data.streak_longest,
   };
 
+  // Временно: все пользователи получают полный доступ (Premium отключён)
+  const effectiveIsPremium = true;
+
   const pendingTasks = data.tasks.filter(t => t.status === "pending_confirm" || (t.status === "done" && t.requireConfirm));
   const pendingGrades = data.gradeRequests.filter(g => g.status === "pending");
   const { level } = getParentLevelInfo(data.parent_xp);
@@ -327,20 +330,23 @@ export default function ParentMiniApp() {
         </div>
       )}
 
-      <PremiumModal
-        open={showPremium}
-        onClose={() => setShowPremium(false)}
-        isPremium={data.is_premium}
-        isPremiumPaid={data.is_premium_paid}
-        trialActive={data.trial_active}
-        trialDaysLeft={data.trial_days_left}
-        trialUsed={data.trial_used}
-        onActivateTrial={activateTrial}
-        parentName={data.name}
-        parentPhone={data.phone_number}
-        parentTelegramId={data.telegram_id}
-        parentId={data.id}
-      />
+      {/* PremiumModal сохранён на будущее */}
+      {showPremium && (
+        <PremiumModal
+          open={showPremium}
+          onClose={() => setShowPremium(false)}
+          isPremium={data.is_premium}
+          isPremiumPaid={data.is_premium_paid}
+          trialActive={data.trial_active}
+          trialDaysLeft={data.trial_days_left}
+          trialUsed={data.trial_used}
+          onActivateTrial={activateTrial}
+          parentName={data.name}
+          parentPhone={data.phone_number}
+          parentTelegramId={data.telegram_id}
+          parentId={data.id}
+        />
+      )}
 
       <div className="px-4 pt-5 pb-4">
         <div className="flex items-center justify-between mb-3">
@@ -348,15 +354,6 @@ export default function ParentMiniApp() {
             <p className="text-xs text-gray-500 font-medium">Добро пожаловать</p>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-[#1E1B4B]">{data.name}</h1>
-              <button
-                onClick={() => { ymGoal("premium_modal_open"); setShowPremium(true); }}
-                className={`px-2 py-0.5 rounded-lg text-[10px] font-black active:scale-95 transition-transform ${
-                  data.is_premium
-                    ? "bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-sm"
-                    : "bg-gray-200 text-gray-500"
-                }`}>
-                {data.trial_active ? `👑 Trial · ${data.trial_days_left}д` : data.is_premium_paid ? "👑 Premium" : "👑 Premium"}
-              </button>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -381,7 +378,7 @@ export default function ParentMiniApp() {
             onDenyExtension={denyExtension}
             onDeleteTask={deleteTask}
             onCancelTask={cancelTask}
-            isPremium={data.is_premium}
+            isPremium={effectiveIsPremium}
             trialUsed={data.trial_used}
             onActivateTrial={activateTrial}
             onSubscribe={() => setShowPremium(true)}
@@ -425,7 +422,7 @@ export default function ParentMiniApp() {
             onAddChild={addChild}
             onRemoveChild={removeChild}
             onRefreshInvite={refreshInvite}
-            isPremium={data.is_premium}
+            isPremium={effectiveIsPremium}
             trialUsed={data.trial_used}
             parentId={data.id}
             onActivateTrial={activateTrial}
