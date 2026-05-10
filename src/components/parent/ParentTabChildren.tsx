@@ -165,14 +165,12 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
                 </div>
 
                 {/* Повторная отправка ссылки */}
-                {c.inviteCode && (
-                  <button
-                    onClick={() => shareCode(c.id, c.inviteCode!, c.name)}
-                    className="w-full flex items-center justify-center gap-2 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 font-bold text-xs active:scale-95 transition-all"
-                  >
-                    {copiedId === c.id ? "✅ Ссылка скопирована!" : "📤 Отправить ссылку повторно"}
-                  </button>
-                )}
+                <button
+                  onClick={() => c.inviteCode ? shareCode(c.id, c.inviteCode, c.name) : onRefreshInvite(c.id)}
+                  className="w-full flex items-center justify-center gap-2 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 font-bold text-xs active:scale-95 transition-all"
+                >
+                  {copiedId === c.id ? "✅ Ссылка скопирована!" : "📤 Отправить ссылку повторно"}
+                </button>
 
                 {/* Push-статус */}
                 {c.pushSubscribed ? (
