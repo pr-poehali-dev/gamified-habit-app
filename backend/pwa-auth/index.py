@@ -23,9 +23,8 @@ from datetime import datetime, timezone, timedelta
 SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "t_p84704826_gamified_habit_app")
 SMSAERO_EMAIL = os.environ.get("SMSAERO_EMAIL", "")
 SMSAERO_API_KEY = os.environ.get("SMSAERO_API_KEY", "")
-SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
-SENDGRID_FROM = "noreply@tasks4kids.ru"
-SENDGRID_FROM_NAME = "СтарКидс"
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+RESEND_FROM = "СтарКидс <onboarding@resend.dev>"
 OTP_TTL_MINUTES = 10
 SESSION_TTL_DAYS = 30
 
@@ -707,34 +706,34 @@ def link_phone_confirm(telegram_id: int, phone_raw: str, otp_input: str) -> dict
     return ok({"status": "ok", "phone": phone})
 
 
-def send_email_via_sendgrid(to_email: str, subject: str, html: str) -> tuple[bool, str]:
-    """Отправить письмо через SendGrid API."""
-    if not SENDGRID_API_KEY:
-        return False, "SENDGRID_API_KEY не настроен"
+def send_email_via_resend(to_email: str, subject: str, html: str) -> tuple[bool, str]:
+    """Отправить письмо через Resend API."""
+    if not RESEND_API_KEY:
+        return False, "RESEND_API_KEY не настроен"
     payload = json.dumps({
-        "personalizations": [{"to": [{"email": to_email}]}],
-        "from": {"email": SENDGRID_FROM, "name": SENDGRID_FROM_NAME},
+        "from": RESEND_FROM,
+        "to": [to_email],
         "subject": subject,
-        "content": [{"type": "text/html", "value": html}],
+        "html": html,
     }).encode("utf-8")
     req = urllib.request.Request(
-        "https://api.sendgrid.com/v3/mail/send",
+        "https://api.resend.com/emails",
         data=payload,
         headers={
-            "Authorization": f"Bearer {SENDGRID_API_KEY}",
+            "Authorization": f"Bearer {RESEND_API_KEY}",
             "Content-Type": "application/json",
         },
         method="POST",
     )
     try:
         resp = urllib.request.urlopen(req, timeout=10)
-        return resp.status in (200, 202), ""
+        return resp.status in (200, 201), ""
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", errors="ignore")
-        print(f"[SendGrid] error {e.code}: {body}")
-        return False, f"SendGrid error {e.code}"
+        print(f"[Resend] error {e.code}: {body}")
+        return False, f"Resend error {e.code}"
     except Exception as e:
-        print(f"[SendGrid] exception: {e}")
+        print(f"[Resend] exception: {e}")
         return False, str(e)
 
 
@@ -788,7 +787,7 @@ def send_email_otp(email_raw: str) -> dict:
       Если вы не запрашивали код — проигнорируйте это письмо.</p>
     </div>
     """
-    ok_send, send_err = send_email_via_sendgrid(email, "Код входа в СтарКидс", html)
+    ok_send, send_err = send_email_via_resend(email, "Код входа в СтарКидс", html)
     if not ok_send:
         return err(f"Не удалось отправить письмо: {send_err}")
 
