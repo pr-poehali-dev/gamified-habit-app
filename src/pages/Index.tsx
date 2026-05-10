@@ -1227,10 +1227,24 @@ function CtaSection() {
           </a>
         </div>
 
+        {/* FREE banner */}
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: 12,
+          background: "rgba(255,255,255,0.1)", border: "1.5px solid rgba(134,239,172,0.4)",
+          borderRadius: 14, padding: "12px 20px", marginBottom: 24,
+        }}>
+          <span style={{ fontSize: 24 }}>🎁</span>
+          <div style={{ textAlign: "left" }}>
+            <div style={{ fontSize: 13, fontWeight: 900, color: "#86efac" }}>Полностью бесплатно навсегда</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 1.4 }}>
+              Без подписок, без скрытых платежей. Сервис бесплатен для всех семей.
+            </div>
+          </div>
+        </div>
+
         {/* Trust row */}
         <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "8px 24px", marginBottom: 36 }}>
           {[
-            "✅ Бесплатно навсегда",
             "🛡️ Без данных о детях",
             "⚡ Готово за 2 минуты",
             "📱 Без скачивания",
@@ -1538,20 +1552,6 @@ export default function Index() {
           <p className="hero-subtitle" style={{ fontSize: "1rem" }}>
             Ребёнок выполняет задания, зарабатывает звёзды и тратит их на призы которые выбрал сам. Никаких уговоров и скандалов.
           </p>
-
-          {/* FREE banner */}
-          <div style={{
-            background: "linear-gradient(135deg,#f0fdf4,#dcfce7)", border: "1.5px solid #86efac",
-            borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, marginBottom: 16,
-          }}>
-            <span style={{ fontSize: 24 }}>🎁</span>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 900, color: "#15803d" }}>Полностью бесплатно навсегда</div>
-              <div style={{ fontSize: 11, color: "#166534", lineHeight: 1.4 }}>
-                Без подписок, без скрытых платежей. Сервис бесплатен для всех семей.
-              </div>
-            </div>
-          </div>
 
           {/* CTA */}
           <div style={{ marginBottom: 16 }}>
