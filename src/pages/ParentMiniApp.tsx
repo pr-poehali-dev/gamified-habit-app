@@ -11,6 +11,7 @@ import { ParentTabGrades, ParentTabBonuses, ParentTabProfile, ParentTabPartners 
 import { ParentBottomNav, type ParentTab } from "@/components/parent/ParentBottomNav";
 import { ParentOnboarding } from "@/components/parent/ParentOnboarding";
 import { PremiumModal } from "@/components/parent/PremiumModal";
+import { SupportModal } from "@/components/ui/SupportModal";
 import { logoutPwa } from "@/components/pwa/pwaApi";
 import { clearPwaSession, getPwaSessionRaw } from "@/components/pwa/usePwaSession";
 import ymGoal from "@/lib/ym";
@@ -77,6 +78,7 @@ export default function ParentMiniApp() {
   const [toast, setToast] = useState<string | null>(null);
   const [onboardingDone, setOnboardingDone] = useState(() => !!localStorage.getItem("parent_onboarding_done"));
   const [showPremium, setShowPremium] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [savingName, setSavingName] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -331,6 +333,8 @@ export default function ParentMiniApp() {
         </div>
       )}
 
+      <SupportModal open={showSupport} onClose={() => setShowSupport(false)} />
+
       {/* PremiumModal сохранён на будущее */}
       {showPremium && (
         <PremiumModal
@@ -359,6 +363,13 @@ export default function ParentMiniApp() {
           </div>
           <div className="flex items-center gap-2">
             <StreakCard streak={streak} reward={streakReward} compact />
+            <button
+              onClick={() => setShowSupport(true)}
+              className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-gray-100 active:scale-95 transition-transform"
+              title="Техподдержка"
+            >
+              💬
+            </button>
             <div className="w-10 h-10 bg-gradient-to-br from-[#6B7BFF] to-[#9B6BFF] rounded-2xl flex items-center justify-center text-xl shadow-md">👨</div>
           </div>
         </div>

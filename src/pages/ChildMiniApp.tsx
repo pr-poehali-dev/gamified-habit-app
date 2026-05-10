@@ -13,6 +13,7 @@ import InstallPwaGuide from "@/components/pwa/InstallPwaGuide";
 import { ChildConnectScreen } from "@/components/child/ChildConnectScreen";
 import { ChildTabFriends } from "@/components/child/ChildTabFriends";
 import { AchievementUnlockModal } from "@/components/ui/AchievementBadge";
+import { SupportModal } from "@/components/ui/SupportModal";
 import ymGoal from "@/lib/ym";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -69,6 +70,7 @@ export default function ChildMiniApp() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<ChildTab>("tasks");
   const [toast, setToast] = useState<string | null>(null);
+  const [showSupport, setShowSupport] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(() => !!localStorage.getItem("child_onboarding_done"));
   const [showInstallGuide, setShowInstallGuide] = useState(() => {
     const inTg = !!(window.Telegram?.WebApp?.initData?.length);
@@ -317,6 +319,7 @@ export default function ChildMiniApp() {
         </div>
       )}
 
+      <SupportModal open={showSupport} onClose={() => setShowSupport(false)} />
       {levelUpLevel !== null && <LevelUpModal level={levelUpLevel} onClose={() => setLevelUpLevel(null)} />}
       {newAchievement && <AchievementUnlockModal achievementId={newAchievement} onClose={() => setNewAchievement(null)} />}
 
@@ -326,7 +329,7 @@ export default function ChildMiniApp() {
             <h1 className="text-2xl font-black text-[#2D1B69]">Привет, {data.name}! 👋</h1>
             <p className="text-sm text-gray-400 font-semibold">{data.age} лет · Выполняй задания!</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <div className="bg-white/80 rounded-2xl px-3 py-2 text-center shadow-sm">
               <p className="text-yellow-500 text-xl font-black">{data.stars}</p>
               <p className="text-gray-400 text-xs font-bold">звёзд ⭐</p>
@@ -335,6 +338,13 @@ export default function ChildMiniApp() {
               <p className="text-[#2D1B69] text-xl font-black">{level}</p>
               <p className="text-gray-400 text-xs font-bold">ур. {levelEmoji}</p>
             </div>
+            <button
+              onClick={() => setShowSupport(true)}
+              className="w-9 h-9 bg-white/80 rounded-xl flex items-center justify-center shadow-sm text-base active:scale-95 transition-transform"
+              title="Техподдержка"
+            >
+              💬
+            </button>
           </div>
         </div>
         <div className="bg-white/80 backdrop-blur rounded-2xl px-4 py-3 shadow-sm">
