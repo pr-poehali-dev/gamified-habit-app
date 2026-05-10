@@ -466,6 +466,310 @@ function ProblemSolution() {
   );
 }
 
+// ─── Мотивация ───────────────────────────────────────────────────────────────
+
+// Мокап: экран достижений ребёнка
+function AchievementsMockup() {
+  const achievements = [
+    { emoji: "⭐", title: "Первая звезда", done: true, new: true },
+    { emoji: "🔥", title: "Серия 3 дня",  done: true, new: false },
+    { emoji: "📋", title: "5 заданий",    done: true, new: false },
+    { emoji: "💰", title: "50 звёзд",     done: true, new: false },
+    { emoji: "🛍️", title: "Покупка",     done: true, new: false },
+    { emoji: "🔥", title: "Серия 7 дней", done: false, new: false },
+    { emoji: "🏆", title: "10 заданий",   done: false, new: false },
+    { emoji: "💎", title: "100 звёзд",    done: false, new: false },
+  ];
+  return (
+    <div style={{
+      width: 240, background: "#d1d5db", borderRadius: 36, padding: 3,
+      boxShadow: "0 20px 56px rgba(107,123,255,0.22), 0 0 0 1px rgba(0,0,0,0.05)",
+    }}>
+      <div style={{ background: "linear-gradient(180deg,#f8f9ff,#f0f4ff)", borderRadius: 33, overflow: "hidden" }}>
+        <div style={{ padding: "8px 14px 4px", display: "flex", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: "#1E1B4B" }}>9:41</span>
+          <div style={{ width: 60, height: 14, background: "#1f2937", borderRadius: 99 }} />
+          <span style={{ fontSize: 8, color: "#9ca3af" }}>🔋</span>
+        </div>
+
+        {/* Unlock banner */}
+        <div style={{ margin: "0 10px 8px", background: "linear-gradient(135deg,#fef9c3,#fef3c7)", border: "1px solid #fde68a", borderRadius: 12, padding: "8px 10px", display: "flex", alignItems: "center", gap: 7 }}>
+          <div style={{ width: 32, height: 32, background: "linear-gradient(135deg,#f59e0b,#ef4444)", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🎉</div>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 900, color: "#92400e" }}>Новое достижение!</div>
+            <div style={{ fontSize: 9, color: "#d97706" }}>«Первая звезда» разблокирована</div>
+          </div>
+        </div>
+
+        <div style={{ padding: "0 10px 6px" }}>
+          <div style={{ fontSize: 9, fontWeight: 800, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 7 }}>🏆 Достижения</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 5, marginBottom: 10 }}>
+            {achievements.map((a, i) => (
+              <div key={i} style={{
+                background: a.new ? "linear-gradient(135deg,#fef9c3,#fef3c7)" : a.done ? "#ede9fe" : "#f3f4f6",
+                border: `1.5px solid ${a.new ? "#fde68a" : a.done ? "#c4b5fd" : "#e5e7eb"}`,
+                borderRadius: 10, padding: "7px 3px", textAlign: "center",
+                opacity: a.done ? 1 : 0.4,
+                position: "relative",
+              }}>
+                {a.new && <div style={{ position: "absolute", top: -4, right: -4, width: 10, height: 10, background: "#ef4444", borderRadius: "50%", border: "1.5px solid #fff" }} />}
+                <div style={{ fontSize: 16 }}>{a.emoji}</div>
+                <div style={{ fontSize: 7, color: a.done ? "#5b21b6" : "#9ca3af", marginTop: 2, lineHeight: 1.2, fontWeight: 600 }}>{a.title}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Progress to next */}
+          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 11, padding: "8px 10px", marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#6b7280", marginBottom: 4, fontWeight: 700 }}>
+              <span>🔥 До серии 7 дней</span><span>3/7</span>
+            </div>
+            <div style={{ height: 6, background: "#e5e7eb", borderRadius: 99, overflow: "hidden" }}>
+              <div style={{ width: "43%", height: "100%", background: "linear-gradient(90deg,#f59e0b,#ef4444)", borderRadius: 99 }} />
+            </div>
+          </div>
+        </div>
+
+        <div style={{ borderTop: "1px solid #e5e7eb", background: "#fff", display: "flex", padding: "5px 0 9px" }}>
+          {[["✅","Задачи",false],["📝","Оценки",false],["🛍️","Магазин",false],["🏆","Профиль",true]].map(([icon,label,active], i) => (
+            <div key={i} style={{ flex: 1, textAlign: "center" }}>
+              <div style={{ fontSize: 14 }}>{icon}</div>
+              <div style={{ fontSize: 7, fontWeight: 700, color: active ? "#6B7BFF" : "#9ca3af" }}>{label}</div>
+              {active && <div style={{ width: 14, height: 2, background: "#6B7BFF", borderRadius: 99, margin: "2px auto 0" }} />}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Мокап: магазин наград
+function ShopMockup() {
+  return (
+    <div style={{
+      width: 240, background: "#d1d5db", borderRadius: 36, padding: 3,
+      boxShadow: "0 20px 56px rgba(245,158,11,0.18), 0 0 0 1px rgba(0,0,0,0.05)",
+    }}>
+      <div style={{ background: "linear-gradient(180deg,#f8f9ff,#fffbeb)", borderRadius: 33, overflow: "hidden" }}>
+        <div style={{ padding: "8px 14px 4px", display: "flex", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: "#1E1B4B" }}>9:41</span>
+          <div style={{ width: 60, height: 14, background: "#1f2937", borderRadius: 99 }} />
+          <span style={{ fontSize: 8, color: "#9ca3af" }}>🔋</span>
+        </div>
+        <div style={{ padding: "6px 10px 10px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 900, color: "#1E1B4B" }}>🛍️ Магазин</div>
+            <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 9, padding: "3px 9px", fontSize: 11, fontWeight: 800, color: "#d97706" }}>42 ⭐</div>
+          </div>
+          {[
+            { emoji: "🎮", title: "+1 час игры",    cost: 10, progress: 100, canBuy: true },
+            { emoji: "🍦", title: "Мороженое",       cost: 8,  progress: 100, canBuy: true },
+            { emoji: "🍕", title: "Пицца на ужин",  cost: 15, progress: 100, canBuy: true },
+            { emoji: "🎬", title: "Поход в кино",    cost: 30, progress: 100, canBuy: true },
+            { emoji: "🎯", title: "Новая игра",      cost: 80, progress: 53,  canBuy: false },
+          ].map((r, i) => (
+            <div key={i} style={{
+              background: "#fff", border: `1px solid ${r.canBuy ? "#f3f4f6" : "#f3f4f6"}`,
+              borderRadius: 11, padding: "7px 9px", marginBottom: 5, boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: r.canBuy ? 0 : 5 }}>
+                <div style={{ width: 28, height: 28, background: "#f9fafb", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>{r.emoji}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#1E1B4B" }}>{r.title}</div>
+                  <div style={{ fontSize: 9, color: "#d97706", fontWeight: 700 }}>{r.cost} ⭐</div>
+                </div>
+                <div style={{
+                  background: r.canBuy ? "linear-gradient(135deg,#6B7BFF,#9B6BFF)" : "#f3f4f6",
+                  borderRadius: 7, padding: "4px 8px", fontSize: 9, fontWeight: 800,
+                  color: r.canBuy ? "#fff" : "#9ca3af",
+                }}>{r.canBuy ? "Купить" : "🔒"}</div>
+              </div>
+              {!r.canBuy && (
+                <div>
+                  <div style={{ height: 4, background: "#e5e7eb", borderRadius: 99, overflow: "hidden" }}>
+                    <div style={{ width: `${r.progress}%`, height: "100%", background: "linear-gradient(90deg,#6B7BFF,#9B6BFF)", borderRadius: 99 }} />
+                  </div>
+                  <div style={{ fontSize: 8, color: "#9ca3af", marginTop: 2 }}>42 из 80 ⭐ накоплено</div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MotivationSection() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const observer = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.08 });
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const pillars = [
+    {
+      emoji: "🎯",
+      title: "Мгновенная связь: действие → награда",
+      text: "Детский мозг устроен так: он ищет немедленный результат. Убрал комнату — через секунду видит +3⭐ на экране. Это не просто красиво — это именно то, как работает мотивация.",
+      color: "#ede9fe", border: "#c4b5fd", accent: "#6B7BFF",
+    },
+    {
+      emoji: "📈",
+      title: "Прогресс виден — значит хочется идти дальше",
+      text: "Уровни, прогресс-бары, полоска до следующей ачивки. Ребёнок видит, насколько он близко к цели — и это само по себе мотивирует сделать ещё одно задание.",
+      color: "#fce7f3", border: "#f9a8d4", accent: "#ec4899",
+    },
+    {
+      emoji: "🏆",
+      title: "Достижения создают гордость",
+      text: "Открыть скрытую ачивку, достичь нового уровня — это момент настоящей гордости. Дети делятся этим с друзьями и родителями. Внутренняя мотивация растёт.",
+      color: "#fef9c3", border: "#fde68a", accent: "#d97706",
+    },
+    {
+      emoji: "🎁",
+      title: "Реальный приз — реальная цель",
+      text: "Ребёнок сам выбирает, на что копит: поход в кино, час игры, пицца. Когда цель своя — стараться хочется по-настоящему. Никакого давления извне.",
+      color: "#dcfce7", border: "#86efac", accent: "#16a34a",
+    },
+  ];
+
+  return (
+    <section ref={ref} style={{
+      background: "#fff",
+      padding: "80px 24px",
+      opacity: visible ? 1 : 0,
+      transform: visible ? "translateY(0)" : "translateY(40px)",
+      transition: "opacity 0.7s ease, transform 0.7s ease",
+    }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 60 }}>
+          <div style={{
+            display: "inline-block", background: "rgba(107,123,255,0.08)", border: "1px solid rgba(107,123,255,0.2)",
+            color: "#6B7BFF", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em",
+            textTransform: "uppercase", padding: "5px 14px", borderRadius: 50, marginBottom: 14,
+          }}>Игровая мотивация</div>
+          <h2 style={{
+            fontFamily: "Nunito, sans-serif", fontWeight: 900,
+            fontSize: "clamp(1.8rem, 3.5vw, 2.6rem)", color: "#1E1B4B", lineHeight: 1.2, marginBottom: 16,
+          }}>Почему игровая механика<br />работает лучше уговоров</h2>
+          <p style={{ color: "#6b7280", fontSize: "1.05rem", maxWidth: 580, margin: "0 auto", lineHeight: 1.7 }}>
+            Современные дети выросли в мире, где прогресс виден мгновенно — в играх, роликах, приложениях.
+            Их мозг привык к этому. Мы используем тот же принцип для реальных дел.
+          </p>
+        </div>
+
+        {/* Big stat row */}
+        <div style={{
+          display: "flex", gap: 1, background: "#e5e7eb", borderRadius: 20, overflow: "hidden",
+          marginBottom: 64, flexWrap: "wrap",
+        }}>
+          {[
+            { num: "в 3×", label: "выше вовлечённость", sub: "когда есть система прогресса" },
+            { num: "87%", label: "детей выполняют задания", sub: "при наличии игровой цели" },
+            { num: "< 5 лет", label: "возраст игровой логики", sub: "дети понимают «заработал → потратил»" },
+            { num: "2 мин", label: "и семья в игре", sub: "от регистрации до первого задания" },
+          ].map((s, i) => (
+            <div key={i} style={{ flex: 1, minWidth: 180, background: "#fff", padding: "24px 20px", textAlign: "center" }}>
+              <div style={{ fontSize: "2rem", fontWeight: 900, color: "#1E1B4B", fontFamily: "Nunito, sans-serif", lineHeight: 1 }}>{s.num}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", margin: "6px 0 3px" }}>{s.label}</div>
+              <div style={{ fontSize: 11, color: "#9ca3af", lineHeight: 1.4 }}>{s.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Two columns: pillars left, phones right */}
+        <div style={{ display: "flex", gap: 48, alignItems: "flex-start", justifyContent: "center", flexWrap: "wrap" }}>
+
+          {/* Left: 4 pillars */}
+          <div style={{ flex: 1, minWidth: 280, maxWidth: 480, display: "flex", flexDirection: "column", gap: 16 }}>
+            {pillars.map((p, i) => (
+              <div key={i} style={{
+                background: p.color, border: `1px solid ${p.border}`,
+                borderRadius: 18, padding: "18px 20px",
+                display: "flex", gap: 14, alignItems: "flex-start",
+                transition: "transform 0.2s",
+              }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: 13, background: "#fff",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 22, flexShrink: 0,
+                  boxShadow: `0 4px 12px ${p.border}`,
+                }}>{p.emoji}</div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: "#1E1B4B", marginBottom: 5, fontFamily: "Nunito, sans-serif" }}>{p.title}</div>
+                  <div style={{ fontSize: 13, color: "#4b5563", lineHeight: 1.6 }}>{p.text}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Right: two stacked phones */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", flexShrink: 0 }}>
+
+            {/* Label */}
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#1E1B4B", marginBottom: 4 }}>Что видит ребёнок</div>
+              <div style={{ fontSize: 12, color: "#9ca3af" }}>Прогресс и цели всегда перед глазами</div>
+            </div>
+
+            {/* Phones side by side */}
+            <div style={{ display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap", justifyContent: "center" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7BFF", background: "#ede9fe", border: "1px solid #c4b5fd", borderRadius: 50, padding: "3px 12px" }}>Достижения</div>
+                <AchievementsMockup />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#d97706", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 50, padding: "3px 12px" }}>Магазин призов</div>
+                <ShopMockup />
+              </div>
+            </div>
+
+            {/* Quote */}
+            <div style={{
+              background: "linear-gradient(135deg,#f0f0ff,#fdf4ff)", border: "1px solid #c4b5fd",
+              borderRadius: 16, padding: "16px 20px", maxWidth: 500, textAlign: "center",
+            }}>
+              <div style={{ fontSize: 20, marginBottom: 8 }}>💬</div>
+              <div style={{ fontSize: 13, color: "#4c1d95", lineHeight: 1.6, fontStyle: "italic" }}>
+                «Дочь сама попросила задания на выходные — хотела накопить на кино. Раньше даже мысли такой не было»
+              </div>
+              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8, fontWeight: 600 }}>— Марина, мама 10-летней Сони</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom insight */}
+        <div style={{
+          marginTop: 60, display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center",
+        }}>
+          {[
+            { icon: "🎮", title: "Та же механика что в играх", text: "Уровни, очки, достижения — дети уже знают как это работает" },
+            { icon: "🧠", title: "Дофамин от реального дела", text: "Мозг получает удовольствие не от игры, а от убранной комнаты" },
+            { icon: "🔄", title: "Привычка формируется сама", text: "Через 2-3 недели задания становятся частью дня без напоминаний" },
+          ].map((c, i) => (
+            <div key={i} style={{
+              flex: 1, minWidth: 220, maxWidth: 320,
+              background: "#f8f9ff", border: "1px solid #e5e7eb",
+              borderRadius: 18, padding: "20px 18px", textAlign: "center",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+            }}>
+              <div style={{ fontSize: 32, marginBottom: 10 }}>{c.icon}</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#1E1B4B", marginBottom: 6, fontFamily: "Nunito, sans-serif" }}>{c.title}</div>
+              <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.6 }}>{c.text}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── Review ──────────────────────────────────────────────────────────────────
 const ReviewCard = ({ text, author, role, stars }: { text: string; author: string; role: string; stars: number }) => (
   <div className="review-card">
@@ -706,6 +1010,9 @@ export default function Index() {
 
       {/* How to start — новый блок с мокапами */}
       <HowToStart />
+
+      {/* Motivation */}
+      <MotivationSection />
 
       {/* Reviews */}
       <section className="section reviews-section">
