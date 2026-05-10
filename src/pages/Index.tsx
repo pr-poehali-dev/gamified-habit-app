@@ -1301,19 +1301,19 @@ export default function Index() {
           </button>
 
           {/* Desktop nav links */}
-          <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, justifyContent: "center" }} className="landing-nav-links">
+          <div style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }} className="landing-nav-links">
             {NAV_LINKS.map(link => (
               <button key={link.href}
                 onClick={() => { scrollTo(link.href); setMobileMenuOpen(false); }}
                 style={{
                   background: "none", border: "none", cursor: "pointer",
-                  fontSize: 13, fontWeight: 600, color: scrolled ? "#374151" : "rgba(255,255,255,0.85)",
+                  fontSize: 13, fontWeight: 600, color: "#374151",
                   padding: "6px 10px", borderRadius: 8,
                   transition: "color 0.2s, background 0.2s",
                   whiteSpace: "nowrap",
                 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(107,123,255,0.1)"; (e.currentTarget as HTMLElement).style.color = "#6B7BFF"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = scrolled ? "#374151" : "rgba(255,255,255,0.85)"; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(107,123,255,0.08)"; (e.currentTarget as HTMLElement).style.color = "#6B7BFF"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "#374151"; }}
               >
                 {link.label}
               </button>
@@ -1325,13 +1325,15 @@ export default function Index() {
             <button
               onClick={() => setSupportOpen(true)}
               style={{
-                background: scrolled ? "#f3f4f6" : "rgba(255,255,255,0.15)",
-                border: scrolled ? "1px solid #e5e7eb" : "1px solid rgba(255,255,255,0.25)",
+                background: "#f3f4f6",
+                border: "1px solid #e5e7eb",
                 borderRadius: 50, padding: "7px 14px", fontSize: 12, fontWeight: 700,
-                color: scrolled ? "#374151" : "#fff",
+                color: "#374151",
                 cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
                 transition: "all 0.2s", whiteSpace: "nowrap",
               }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#ede9fe"; (e.currentTarget as HTMLElement).style.color = "#6B7BFF"; (e.currentTarget as HTMLElement).style.borderColor = "#c4b5fd"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#f3f4f6"; (e.currentTarget as HTMLElement).style.color = "#374151"; (e.currentTarget as HTMLElement).style.borderColor = "#e5e7eb"; }}
             >
               💬 Поддержка
             </button>
@@ -1348,7 +1350,7 @@ export default function Index() {
               aria-label="Меню"
             >
               {[0,1,2].map(i => (
-                <span key={i} style={{ display: "block", width: 22, height: 2, background: scrolled ? "#374151" : "#fff", borderRadius: 99, transition: "all 0.2s" }} />
+                <span key={i} style={{ display: "block", width: 22, height: 2, background: "#374151", borderRadius: 99 }} />
               ))}
             </button>
           </div>
