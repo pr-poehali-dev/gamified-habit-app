@@ -60,10 +60,9 @@ export function ChildTabFriends() {
   useEffect(() => { load(); }, [load]);
 
   const addFriend = async () => {
-    const id = parseInt(friendIdInput.trim());
-    if (!id || sending) return;
+    if (!friendIdInput.trim() || sending) return;
     setSending(true);
-    const res = await apiCall("child/friends/add", { friend_id: id });
+    const res = await apiCall("child/friends/add", { friend_id: friendIdInput.trim() });
     setSending(false);
     if (res.ok) {
       tg()?.HapticFeedback?.notificationOccurred("success");
@@ -73,10 +72,10 @@ export function ChildTabFriends() {
     } else {
       const errMap: Record<string, string> = {
         not_found: "Игрок не найден",
-        self_add: "Это твой ID 😄",
+        self_add: "Это твой код 😄",
         already_friends: "Вы уже друзья!",
         already_sent: "Заявка уже отправлена",
-        invalid_id: "Введи числовой ID",
+        invalid_id: "Введи код друга",
       };
       showToast("❌ " + (errMap[res.error as string] || "Ошибка"));
     }
@@ -131,14 +130,14 @@ export function ChildTabFriends() {
 
       {/* Мой ID */}
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-        <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-2">Мой ID</p>
+        <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-2">Мой код</p>
         <button
           onClick={copyMyId}
           className="w-full bg-gradient-to-r from-[#F0EEFF] to-[#FFF0F5] rounded-xl px-4 py-4 flex items-center justify-between active:scale-[0.98] transition-transform"
         >
           <div>
-            <span className="text-3xl font-black text-[#2D1B69] tracking-wider">#{data.myId}</span>
-            <p className="text-xs text-gray-400 mt-0.5 text-left">Скажи этот номер другу</p>
+            <span className="text-3xl font-black text-[#2D1B69] tracking-[0.25em]">{data.myId}</span>
+            <p className="text-xs text-gray-400 mt-0.5 text-left">Скажи этот код другу</p>
           </div>
           <span className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${copiedId ? "bg-green-100 text-green-600" : "bg-white text-gray-400 border border-gray-200"}`}>
             {copiedId ? "✓ Скопирован" : "Копировать"}
@@ -159,7 +158,7 @@ export function ChildTabFriends() {
                 <span className="text-3xl">{req.avatar}</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-[#2D1B69] text-sm">{req.name}</p>
-                  <p className="text-xs text-gray-400">#{req.childId} · {req.age} лет</p>
+                  <p className="text-xs text-gray-400">{req.age} лет</p>
                 </div>
                 <div className="flex gap-1.5">
                   <button onClick={() => rejectRequest(req.requestId)} className="px-3 py-2 rounded-xl bg-gray-100 text-gray-500 text-xs font-bold active:scale-95 transition-transform">✕</button>
@@ -230,12 +229,13 @@ export function ChildTabFriends() {
         <p className="text-xs font-black text-gray-400 uppercase tracking-wide">Добавить друга</p>
         <div className="flex gap-2">
           <input
-            type="number"
+            type="text"
             value={friendIdInput}
             onChange={e => setFriendIdInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && addFriend()}
-            placeholder="Введи ID друга"
-            className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-[#2D1B69] bg-gray-50 placeholder:text-gray-300 text-center"
+            placeholder="Код друга"
+            maxLength={10}
+            className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-[#2D1B69] bg-gray-50 placeholder:text-gray-300 text-center tracking-widest"
           />
           <button
             onClick={addFriend}
@@ -247,8 +247,8 @@ export function ChildTabFriends() {
         </div>
         <div className="bg-[#F8F7FF] rounded-xl p-3 space-y-1">
           <p className="text-xs font-bold text-[#2D1B69]">📋 Как добавить друга:</p>
-          <p className="text-[11px] text-gray-500">1. Узнай у друга его ID (раздел «Друзья»)</p>
-          <p className="text-[11px] text-gray-500">2. Введи ID выше и нажми ➕</p>
+          <p className="text-[11px] text-gray-500">1. Узнай у друга его код (раздел «Друзья»)</p>
+          <p className="text-[11px] text-gray-500">2. Введи код выше и нажми ➕</p>
           <p className="text-[11px] text-gray-500">3. Друг получит уведомление и примет заявку</p>
         </div>
       </div>
@@ -263,7 +263,6 @@ export function ChildTabFriends() {
                 <span className="text-2xl">{req.avatar}</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-[#2D1B69] text-sm">{req.name}</p>
-                  <p className="text-xs text-gray-400">#{req.childId}</p>
                 </div>
                 <span className="text-xs text-amber-500 font-bold bg-amber-50 px-2 py-1 rounded-lg">ждём ответа</span>
               </div>

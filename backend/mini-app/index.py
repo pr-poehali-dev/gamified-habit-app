@@ -1567,27 +1567,36 @@ import secrets as _secrets
 
 
 def ensure_friend_code(conn, child_id):
-    """Генерирует friend_code если его нет."""
+    """Генерирует случайный 6-значный публичный ID если его нет."""
     with conn.cursor() as cur:
         cur.execute(f"SELECT friend_code FROM {SCHEMA}.children WHERE id = %s", (child_id,))
         code = cur.fetchone()[0]
         if code:
             return code
-        code = _secrets.token_hex(4).upper()
+        # Генерируем уникальный 6-значный код вида 100000–999999
+        for _ in range(10):
+            candidate = str(_secrets.randbelow(900000) + 100000)
+            cur.execute(f"SELECT 1 FROM {SCHEMA}.children WHERE friend_code = %s", (candidate,))
+            if not cur.fetchone():
+                code = candidate
+                break
+        else:
+            code = str(_secrets.randbelow(900000) + 100000)
         cur.execute(f"UPDATE {SCHEMA}.children SET friend_code = %s WHERE id = %s", (code, child_id))
         conn.commit()
         return code
 
 
 def handle_friends_list(conn, body):
-    """Список друзей + входящие/исходящие заявки. Поиск по числовому ID."""
+    """Список друзей + входящие/исходящие заявки. Публичный ID = friend_code."""
     tid, child = resolve_child(conn, body)
     if not child:
         return error_response("Unauthorized", 401)
     cid = child["id"]
+    my_public_id = ensure_friend_code(conn, cid)
     with conn.cursor() as cur:
         cur.execute(f"""
-            SELECT c.id, c.name, c.avatar, c.stars, c.total_stars_earned, c.age,
+            SELECT c.id, c.name, c.avatar, c.stars, c.total_stars_earned, c.age, c.friend_code,
                    (SELECT COUNT(*) FROM {SCHEMA}.tasks WHERE child_id = c.id AND status = 'approved') as tasks_done
             FROM {SCHEMA}.friendships f
             JOIN {SCHEMA}.children c ON c.id = CASE WHEN f.requester_id = %s THEN f.addressee_id ELSE f.requester_id END
@@ -1597,22 +1606,22 @@ def handle_friends_list(conn, body):
         friends = []
         for r in cur.fetchall():
             lvl, _ = compute_level(r[4])
-            friends.append({"id": r[0], "name": r[1], "avatar": r[2], "stars": r[3], "totalStarsEarned": r[4], "age": r[5], "tasksDone": r[6], "level": lvl})
+            friends.append({"id": r[0], "publicId": r[6] or str(r[0]), "name": r[1], "avatar": r[2], "stars": r[3], "totalStarsEarned": r[4], "age": r[5], "tasksDone": r[7], "level": lvl})
         cur.execute(f"""
-            SELECT f.id, c.id as child_id, c.name, c.avatar, c.age
+            SELECT f.id, c.id as child_id, c.name, c.avatar, c.age, c.friend_code
             FROM {SCHEMA}.friendships f
             JOIN {SCHEMA}.children c ON c.id = f.requester_id
             WHERE f.addressee_id = %s AND f.status = 'pending'
             ORDER BY f.created_at DESC
         """, (cid,))
-        incoming = [{"requestId": r[0], "childId": r[1], "name": r[2], "avatar": r[3], "age": r[4]} for r in cur.fetchall()]
+        incoming = [{"requestId": r[0], "childId": r[1], "name": r[2], "avatar": r[3], "age": r[4], "publicId": r[5] or str(r[1])} for r in cur.fetchall()]
         cur.execute(f"""
-            SELECT f.id, c.id as child_id, c.name, c.avatar
+            SELECT f.id, c.id as child_id, c.name, c.avatar, c.friend_code
             FROM {SCHEMA}.friendships f
             JOIN {SCHEMA}.children c ON c.id = f.addressee_id
             WHERE f.requester_id = %s AND f.status = 'pending'
         """, (cid,))
-        outgoing = [{"requestId": r[0], "childId": r[1], "name": r[2], "avatar": r[3]} for r in cur.fetchall()]
+        outgoing = [{"requestId": r[0], "childId": r[1], "name": r[2], "avatar": r[3], "publicId": r[4] or str(r[1])} for r in cur.fetchall()]
     my_tasks_done = 0
     with conn.cursor() as cur:
         cur.execute(f"SELECT COUNT(*) FROM {SCHEMA}.tasks WHERE child_id = %s AND status = 'approved'", (cid,))
@@ -1620,8 +1629,8 @@ def handle_friends_list(conn, body):
     my_level, _ = compute_level(child["total_stars_earned"])
     return json_response({
         "ok": True,
-        "myId": cid,
-        "me": {"id": cid, "name": child["name"], "avatar": child["avatar"], "stars": child["stars"], "totalStarsEarned": child["total_stars_earned"], "level": my_level, "tasksDone": my_tasks_done},
+        "myId": my_public_id,
+        "me": {"id": cid, "publicId": my_public_id, "name": child["name"], "avatar": child["avatar"], "stars": child["stars"], "totalStarsEarned": child["total_stars_earned"], "level": my_level, "tasksDone": my_tasks_done},
         "friends": friends,
         "incoming": incoming,
         "outgoing": outgoing,
@@ -1633,18 +1642,20 @@ def handle_friend_add(conn, body):
     tid, child = resolve_child(conn, body)
     if not child:
         return error_response("Unauthorized", 401)
-    raw_id = body.get("friend_id")
-    try:
-        target_id = int(raw_id)
-    except (TypeError, ValueError):
+    public_id = str(body.get("friend_id", "")).strip()
+    if not public_id:
         return error_response("invalid_id")
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT id, name, avatar, telegram_id FROM {SCHEMA}.children WHERE friend_code = %s", (public_id,))
+        row = cur.fetchone()
+        if not row:
+            return error_response("not_found")
+        target_id = row[0]
     if target_id == child["id"]:
         return error_response("self_add")
     with conn.cursor() as cur:
         cur.execute(f"SELECT id, name, avatar, telegram_id FROM {SCHEMA}.children WHERE id = %s", (target_id,))
         row = cur.fetchone()
-        if not row:
-            return error_response("not_found")
         target_name, target_avatar, target_tg_id = row[1], row[2], row[3]
         cur.execute(f"SELECT id, status FROM {SCHEMA}.friendships WHERE (requester_id = %s AND addressee_id = %s) OR (requester_id = %s AND addressee_id = %s)", (child["id"], target_id, target_id, child["id"]))
         existing = cur.fetchone()
