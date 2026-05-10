@@ -25,10 +25,12 @@ const isTelegramEnv = () => {
 
 function Spinner() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F0F4FF] to-[#F4F0FF]">
-      <div className="text-center space-y-3">
-        <div className="w-12 h-12 border-4 border-[#6B7BFF] border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-gray-500 font-medium text-sm">Загрузка...</p>
+    <div className="app-desktop-bg min-h-screen">
+      <div className="app-shell flex items-center justify-center bg-gradient-to-br from-[#F0F4FF] to-[#F4F0FF]" style={{ minHeight: "100vh" }}>
+        <div className="text-center space-y-3">
+          <div className="w-12 h-12 border-4 border-[#6B7BFF] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-gray-500 font-medium text-sm">Загрузка...</p>
+        </div>
       </div>
     </div>
   );

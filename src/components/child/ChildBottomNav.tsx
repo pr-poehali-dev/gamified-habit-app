@@ -30,7 +30,7 @@ export function ChildBottomNav({ tab, onTabChange, pendingTasksCount, doneTasksC
   const isLocked = (key: ChildTab) => key === "grades" && level < 2;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-4 px-4">
+    <div className="bottom-nav-fixed fixed bottom-0 left-0 right-0 flex justify-center pb-4 px-4">
       <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl px-2 py-2 flex gap-0.5 border border-white">
         {NAV_ITEMS.map(t => {
           const badge = getBadge(t.key);

@@ -323,9 +323,10 @@ export default function ParentMiniApp() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F0F4FF] via-[#F8F9FF] to-[#F4F0FF]" style={{ fontFamily: "Golos Text, sans-serif" }}>
+    <div className="app-desktop-bg" style={{ fontFamily: "Golos Text, sans-serif" }}>
+    <div className="app-shell bg-gradient-to-br from-[#F0F4FF] via-[#F8F9FF] to-[#F4F0FF]">
       {toast && (
-        <div className="fixed top-4 left-4 right-4 z-50 bg-[#1E1B4B] text-white rounded-2xl px-4 py-3 text-sm font-bold shadow-xl text-center" style={{ animation: "slideDown 0.3s ease" }}>
+        <div className="app-toast fixed top-4 left-4 right-4 z-50 bg-[#1E1B4B] text-white rounded-2xl px-4 py-3 text-sm font-bold shadow-xl text-center" style={{ animation: "slideDown 0.3s ease" }}>
           {toast}
         </div>
       )}
@@ -450,6 +451,7 @@ export default function ParentMiniApp() {
         pendingTasksCount={pendingTasks.length}
         pendingGradesCount={pendingGrades.length}
       />
+    </div>
     </div>
   );
 }

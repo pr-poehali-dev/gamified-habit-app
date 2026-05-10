@@ -25,7 +25,7 @@ export function ParentBottomNav({ tab, onTabChange, pendingTasksCount, pendingGr
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-4 px-4">
+    <div className="bottom-nav-fixed fixed bottom-0 left-0 right-0 flex justify-center pb-4 px-4">
       <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl px-2 py-2 flex gap-0.5 border border-white">
         {NAV_ITEMS.filter(t => !t.hidden).map(t => {
           const badge = getBadge(t.key);

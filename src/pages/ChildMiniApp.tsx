@@ -309,9 +309,10 @@ export default function ChildMiniApp() {
   const approvedTasks = data.tasks.filter(t => t.status === "approved" || t.status === "done");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFF0F5] via-[#F0EEFF] to-[#E8F8FF]" style={{ fontFamily: "Nunito, sans-serif" }}>
+    <div className="app-desktop-bg" style={{ fontFamily: "Nunito, sans-serif" }}>
+    <div className="app-shell bg-gradient-to-br from-[#FFF0F5] via-[#F0EEFF] to-[#E8F8FF]">
       {toast && (
-        <div className="fixed top-4 left-4 right-4 z-50 bg-[#2D1B69] text-white rounded-2xl px-4 py-3 text-sm font-bold shadow-xl text-center" style={{ animation: "slideDown 0.3s ease" }}>
+        <div className="app-toast fixed top-4 left-4 right-4 z-50 bg-[#2D1B69] text-white rounded-2xl px-4 py-3 text-sm font-bold shadow-xl text-center" style={{ animation: "slideDown 0.3s ease" }}>
           {toast}
         </div>
       )}
@@ -408,6 +409,7 @@ export default function ChildMiniApp() {
         friendRequestsCount={friendRequests}
         level={level}
       />
+    </div>
     </div>
   );
 }
