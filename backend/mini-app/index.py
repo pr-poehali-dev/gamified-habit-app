@@ -1580,12 +1580,11 @@ def ensure_friend_code(conn, child_id):
 
 
 def handle_friends_list(conn, body):
-    """Список друзей + входящие заявки."""
+    """Список друзей + входящие/исходящие заявки. Поиск по числовому ID."""
     tid, child = resolve_child(conn, body)
     if not child:
         return error_response("Unauthorized", 401)
     cid = child["id"]
-    friend_code = ensure_friend_code(conn, cid)
     with conn.cursor() as cur:
         cur.execute(f"""
             SELECT c.id, c.name, c.avatar, c.stars, c.total_stars_earned, c.age,
@@ -1621,7 +1620,7 @@ def handle_friends_list(conn, body):
     my_level, _ = compute_level(child["total_stars_earned"])
     return json_response({
         "ok": True,
-        "friendCode": friend_code,
+        "myId": cid,
         "me": {"id": cid, "name": child["name"], "avatar": child["avatar"], "stars": child["stars"], "totalStarsEarned": child["total_stars_earned"], "level": my_level, "tasksDone": my_tasks_done},
         "friends": friends,
         "incoming": incoming,
@@ -1630,22 +1629,23 @@ def handle_friends_list(conn, body):
 
 
 def handle_friend_add(conn, body):
-    """Отправить запрос дружбы по friend_code."""
+    """Отправить запрос дружбы по числовому ID ребёнка."""
     tid, child = resolve_child(conn, body)
     if not child:
         return error_response("Unauthorized", 401)
-    code = (body.get("friend_code") or "").strip().upper()
-    if not code:
-        return error_response("no_code")
+    raw_id = body.get("friend_id")
+    try:
+        target_id = int(raw_id)
+    except (TypeError, ValueError):
+        return error_response("invalid_id")
+    if target_id == child["id"]:
+        return error_response("self_add")
     with conn.cursor() as cur:
-        cur.execute(f"SELECT id FROM {SCHEMA}.children WHERE friend_code = %s", (code,))
+        cur.execute(f"SELECT id, name, avatar, telegram_id FROM {SCHEMA}.children WHERE id = %s", (target_id,))
         row = cur.fetchone()
         if not row:
-            return error_response("invalid_code")
-        target_id = row[0]
-        if target_id == child["id"]:
-            return error_response("self_add")
-        a, b = min(child["id"], target_id), max(child["id"], target_id)
+            return error_response("not_found")
+        target_name, target_avatar, target_tg_id = row[1], row[2], row[3]
         cur.execute(f"SELECT id, status FROM {SCHEMA}.friendships WHERE (requester_id = %s AND addressee_id = %s) OR (requester_id = %s AND addressee_id = %s)", (child["id"], target_id, target_id, child["id"]))
         existing = cur.fetchone()
         if existing:
@@ -1656,9 +1656,23 @@ def handle_friend_add(conn, body):
             if existing[1] == "rejected":
                 cur.execute(f"UPDATE {SCHEMA}.friendships SET status = 'pending', requester_id = %s, addressee_id = %s, updated_at = now() WHERE id = %s", (child["id"], target_id, existing[0]))
                 conn.commit()
-                return json_response({"ok": True})
-        cur.execute(f"INSERT INTO {SCHEMA}.friendships (requester_id, addressee_id, status) VALUES (%s, %s, 'pending')", (child["id"], target_id))
-        conn.commit()
+            else:
+                cur.execute(f"INSERT INTO {SCHEMA}.friendships (requester_id, addressee_id, status) VALUES (%s, %s, 'pending')", (child["id"], target_id))
+                conn.commit()
+        else:
+            cur.execute(f"INSERT INTO {SCHEMA}.friendships (requester_id, addressee_id, status) VALUES (%s, %s, 'pending')", (child["id"], target_id))
+            conn.commit()
+    # Уведомление: Telegram
+    if target_tg_id and CHILD_TOKEN:
+        send_tg_message(CHILD_TOKEN, target_tg_id,
+            f"👋 <b>{child['name']}</b> {child['avatar']} хочет добавить тебя в друзья!\n\nОткрой раздел «Друзья» и прими или отклони заявку.")
+    # Уведомление: Push (PWA)
+    send_push("send_to_child", target_id, {
+        "title": f"👋 {child['name']} хочет дружить!",
+        "body": "Открой «Друзья» и прими заявку",
+        "url": "/app",
+        "tag": "friend_request",
+    })
     return json_response({"ok": True})
 
 
@@ -1670,13 +1684,31 @@ def handle_friend_accept(conn, body):
     request_id = body.get("request_id")
     if not request_id:
         return error_response("no_request_id")
+    requester_tg_id = None
+    requester_id = None
     with conn.cursor() as cur:
-        cur.execute(f"SELECT id, addressee_id, status FROM {SCHEMA}.friendships WHERE id = %s", (request_id,))
+        cur.execute(f"SELECT id, requester_id, addressee_id, status FROM {SCHEMA}.friendships WHERE id = %s", (request_id,))
         row = cur.fetchone()
-        if not row or row[1] != child["id"] or row[2] != "pending":
+        if not row or row[2] != child["id"] or row[3] != "pending":
             return error_response("invalid_request")
+        requester_id = row[1]
         cur.execute(f"UPDATE {SCHEMA}.friendships SET status = 'accepted', updated_at = now() WHERE id = %s", (request_id,))
         conn.commit()
+        cur.execute(f"SELECT telegram_id FROM {SCHEMA}.children WHERE id = %s", (requester_id,))
+        r = cur.fetchone()
+        if r:
+            requester_tg_id = r[0]
+    # Уведомить того, кто отправил заявку
+    if requester_tg_id and CHILD_TOKEN:
+        send_tg_message(CHILD_TOKEN, requester_tg_id,
+            f"🤝 <b>{child['name']}</b> {child['avatar']} принял(а) твою заявку в друзья!\n\nТеперь вы в одном рейтинге — соревнуйтесь!")
+    if requester_id:
+        send_push("send_to_child", requester_id, {
+            "title": f"🤝 {child['name']} принял заявку!",
+            "body": "Вы теперь друзья — смотри рейтинг",
+            "url": "/app",
+            "tag": "friend_accepted",
+        })
     return json_response({"ok": True})
 
 
