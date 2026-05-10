@@ -24,7 +24,7 @@ SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "t_p84704826_gamified_habit_app")
 SMSAERO_EMAIL = os.environ.get("SMSAERO_EMAIL", "")
 SMSAERO_API_KEY = os.environ.get("SMSAERO_API_KEY", "")
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
-RESEND_FROM = "СтарКидс <onboarding@resend.dev>"
+RESEND_FROM = "СтарКидс <noreply@tasks4kids.ru>"
 OTP_TTL_MINUTES = 10
 SESSION_TTL_DAYS = 30
 
