@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import AppMockup from "@/components/landing/AppMockup";
 
 const PWA_URL = "/app";
 
@@ -172,6 +173,9 @@ export default function Index() {
         <div className="stat-divider" />
         <div className="stat-item"><span className="stat-num">🔥 365</span><span className="stat-label">дней серий подряд</span></div>
       </section>
+
+      {/* App Mockup */}
+      <AppMockup />
 
       {/* Features */}
       <section className="section features-section">
