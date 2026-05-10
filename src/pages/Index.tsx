@@ -902,7 +902,7 @@ function FriendsSection() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
             {[
-              { emoji: "🏆", title: "Рейтинг среди друзей", text: "Еженедельный топ по звёздам — ребёнок всегда знает своё место и хочет подняться выше." },
+              { emoji: "🏆", title: "Рейтинг среди друзей", text: "Еженедельный топ по звёздам — ребёнок видит прогресс друзей и сам хочет стараться больше." },
               { emoji: "🎉", title: "Достижения видны всем", text: "Открыл «Серию 7 дней» — друзья это увидят. Гордость работает лучше любого напоминания." },
               { emoji: "🔥", title: "Серии заражают", text: "Когда у друга 12 дней подряд, а у тебя 5 — хочется не пропускать. Именно так формируется привычка." },
               { emoji: "🤝", title: "Добавить по коду", text: "Простое подключение без аккаунтов: ребёнок делится своим кодом — и друг уже в рейтинге." },
@@ -929,6 +929,221 @@ function FriendsSection() {
             <div style={{ fontSize: 12, color: "#5b21b6", lineHeight: 1.6 }}>
               Внешняя мотивация от друзей снимает с вас роль надзирателя. Ребёнок старается не потому что «мама сказала» — а потому что не хочет отставать от Лёши.
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── FAQ ─────────────────────────────────────────────────────────────────────
+const FAQ_ITEMS = [
+  {
+    q: "Это действительно бесплатно? В чём подвох?",
+    a: "Никакого подвоха. Сервис полностью бесплатен для всех семей — без пробных периодов, без скрытых платежей, без подписки. Мы создали его чтобы помочь семьям, а не заработать на них.",
+    emoji: "💸",
+  },
+  {
+    q: "Какие данные о ребёнке вы собираете?",
+    a: "Только имя — и то оно хранится локально в вашей семье. Мы не собираем телефон ребёнка, его школу, геолокацию, фотографии или что-либо ещё. У ребёнка нет аккаунта — только игровые данные: задания и звёзды.",
+    emoji: "🛡️",
+  },
+  {
+    q: "Нужно ли скачивать приложение?",
+    a: "Нет. СтарКидс работает прямо в браузере — на телефоне, планшете или компьютере. Ничего устанавливать не нужно. Просто открыли ссылку — и всё работает.",
+    emoji: "📱",
+  },
+  {
+    q: "Как ребёнок подключается?",
+    a: "Вы создаёте профиль ребёнка и получаете уникальную ссылку. Ребёнок переходит по ней, вводит только своё имя — и сразу видит задания. Никакой регистрации, никакого телефона у ребёнка не нужно.",
+    emoji: "🔗",
+  },
+  {
+    q: "А если ребёнок схитрит и скажет, что сделал задание?",
+    a: "Для этого есть режим фото-подтверждения: ребёнок прикладывает фотографию результата, и звёзды начисляются только после вашего одобрения. Без споров — вы просто смотрите фото.",
+    emoji: "📸",
+  },
+  {
+    q: "Сколько детей можно добавить?",
+    a: "Любое количество. Каждый ребёнок получает свой список заданий, свои награды и свой прогресс. Удобно для семей с двумя и более детьми — можно сравнивать успехи.",
+    emoji: "👨‍👩‍👧‍👦",
+  },
+  {
+    q: "Подходит ли это для детей любого возраста?",
+    a: "Да. Система рассчитана на детей от 5 до 16 лет. Для младших — простые задания и большие яркие звёзды. Для старших — оценки из школы, рейтинг друзей, более сложные достижения.",
+    emoji: "🎂",
+  },
+  {
+    q: "Что если ребёнок потеряет интерес через неделю?",
+    a: "Именно для этого есть друзья, рейтинги и серии дней. Соревновательный элемент удерживает интерес лучше, чем любые напоминания. Но если вы хотите — просто измените призы в магазине: пусть ребёнок сам выберет, на что копить.",
+    emoji: "🔄",
+  },
+  {
+    q: "Могу ли я сам придумывать задания и призы?",
+    a: "Да, полностью. Вы создаёте любые задания с любым количеством звёзд, ставите дедлайны, настраиваете магазин призов под вашу семью. Есть готовые шаблоны, если не хочется думать с нуля.",
+    emoji: "✏️",
+  },
+  {
+    q: "Что если у меня возникнут вопросы или проблемы?",
+    a: "Напишите нам на support@tasks4kids.ru — отвечаем в течение дня. Также есть центр поддержки на сайте.",
+    emoji: "💬",
+  },
+];
+
+function FaqSection() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const observer = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.05 });
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <section ref={ref} style={{
+      background: "#f8f9ff",
+      padding: "80px 24px",
+      opacity: visible ? 1 : 0,
+      transform: visible ? "translateY(0)" : "translateY(32px)",
+      transition: "opacity 0.6s ease, transform 0.6s ease",
+    }}>
+      <div style={{ maxWidth: 780, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <div style={{
+            display: "inline-block", background: "rgba(107,123,255,0.08)", border: "1px solid rgba(107,123,255,0.2)",
+            color: "#6B7BFF", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em",
+            textTransform: "uppercase", padding: "5px 14px", borderRadius: 50, marginBottom: 14,
+          }}>Частые вопросы</div>
+          <h2 style={{
+            fontFamily: "Nunito, sans-serif", fontWeight: 900,
+            fontSize: "clamp(1.7rem, 3vw, 2.4rem)", color: "#1E1B4B", lineHeight: 1.2, marginBottom: 12,
+          }}>Всё что хотите спросить<br />— уже здесь</h2>
+          <p style={{ color: "#6b7280", fontSize: "0.95rem" }}>Снимаем последние сомнения</p>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {FAQ_ITEMS.map((item, i) => (
+            <div key={i} style={{
+              background: "#fff", border: "1px solid #e5e7eb", borderRadius: 18,
+              padding: "20px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+            }}>
+              <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                  background: "linear-gradient(135deg,#ede9fe,#e0e7ff)",
+                  border: "1px solid #c4b5fd",
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19,
+                }}>{item.emoji}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: "1rem", fontWeight: 800, color: "#1E1B4B", marginBottom: 8, fontFamily: "Nunito, sans-serif", lineHeight: 1.3 }}>
+                    {item.q}
+                  </div>
+                  <div style={{ fontSize: "0.9rem", color: "#4b5563", lineHeight: 1.7 }}>
+                    {item.a}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ textAlign: "center", marginTop: 36 }}>
+          <p style={{ color: "#9ca3af", fontSize: 13 }}>
+            Остался вопрос?{" "}
+            <a href="mailto:support@tasks4kids.ru" style={{ color: "#6B7BFF", fontWeight: 700, textDecoration: "none" }}>
+              Напишите нам →
+            </a>
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── CTA ─────────────────────────────────────────────────────────────────────
+function CtaSection() {
+  return (
+    <section style={{
+      background: "linear-gradient(160deg, #1E1B4B 0%, #312e81 50%, #4c1d95 100%)",
+      padding: "80px 24px",
+      textAlign: "center",
+      position: "relative",
+      overflow: "hidden",
+    }}>
+      {/* Blobs */}
+      <div style={{ position: "absolute", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle,rgba(107,123,255,0.3) 0%,transparent 70%)", top: -150, left: -150, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle,rgba(155,107,255,0.25) 0%,transparent 70%)", bottom: -100, right: -80, pointerEvents: "none" }} />
+
+      <div style={{ maxWidth: 680, margin: "0 auto", position: "relative", zIndex: 2 }}>
+        {/* Stars deco */}
+        <div style={{ fontSize: 36, marginBottom: 8, letterSpacing: 8 }}>⭐⭐⭐</div>
+
+        <h2 style={{
+          fontFamily: "Nunito, sans-serif", fontWeight: 900,
+          fontSize: "clamp(2rem, 4vw, 3rem)", color: "#fff", lineHeight: 1.15, marginBottom: 16,
+        }}>
+          Ваш ребёнок уже сегодня<br />
+          <span style={{ background: "linear-gradient(135deg,#a5b4fc,#c4b5fd)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+            может заработать первые звёзды
+          </span>
+        </h2>
+
+        <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "1.05rem", lineHeight: 1.7, marginBottom: 36, maxWidth: 480, margin: "0 auto 36px" }}>
+          Создайте первое задание за 2 минуты.<br />
+          Бесплатно. Без установки. Без данных о ребёнке.
+        </p>
+
+        {/* Main CTA button */}
+        <div style={{ marginBottom: 24 }}>
+          <a href="/app" style={{
+            display: "inline-flex", flexDirection: "column", alignItems: "center",
+            background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)",
+            color: "#fff", borderRadius: 22, padding: "20px 52px",
+            fontSize: 20, fontWeight: 900, textDecoration: "none",
+            boxShadow: "0 12px 40px rgba(107,123,255,0.5), 0 0 0 1px rgba(255,255,255,0.1)",
+            letterSpacing: "-0.2px",
+            transition: "transform 0.15s, box-shadow 0.15s",
+          }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-3px)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 18px 50px rgba(107,123,255,0.65), 0 0 0 1px rgba(255,255,255,0.15)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 12px 40px rgba(107,123,255,0.5), 0 0 0 1px rgba(255,255,255,0.1)"; }}
+          >
+            👨‍👩‍👧 Попробовать бесплатно
+            <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.8, marginTop: 4 }}>Без установки · Только ваш телефон</span>
+          </a>
+        </div>
+
+        {/* Trust row */}
+        <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "8px 24px", marginBottom: 36 }}>
+          {[
+            "✅ Бесплатно навсегда",
+            "🛡️ Без данных о детях",
+            "⚡ Готово за 2 минуты",
+            "📱 Без скачивания",
+          ].map((t, i) => (
+            <span key={i} style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", fontWeight: 600 }}>{t}</span>
+          ))}
+        </div>
+
+        {/* Social proof mini */}
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: 12,
+          background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 16, padding: "14px 24px",
+        }}>
+          <div style={{ display: "flex", gap: -4 }}>
+            {["👩","👨","👩‍🦱","👨‍🦳","👩‍🦰"].map((e, i) => (
+              <div key={i} style={{
+                width: 32, height: 32, borderRadius: "50%",
+                background: `hsl(${240 + i * 30}, 70%, 60%)`,
+                border: "2px solid rgba(255,255,255,0.2)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 15, marginLeft: i > 0 ? -8 : 0,
+              }}>{e}</div>
+            ))}
+          </div>
+          <div style={{ textAlign: "left" }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#fff" }}>Уже используют сотни семей</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>⭐⭐⭐⭐⭐ средняя оценка</div>
           </div>
         </div>
       </div>
@@ -1180,28 +1395,11 @@ export default function Index() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <FaqSection />
+
       {/* Final CTA */}
-      <section className="cta-section">
-        <div className="cta-bg-blob cta-bg-blob--1" />
-        <div className="cta-bg-blob cta-bg-blob--2" />
-        <div className="cta-content">
-          <div className="cta-emoji">🚀</div>
-          <h2 className="cta-title">Попробуйте прямо сейчас!</h2>
-          <p className="cta-subtitle">
-            Полностью бесплатно. Без установки. Без карты.<br />
-            Только ваш номер телефона — и вы готовы к старту.
-          </p>
-          <div className="cta-actions">
-            <a href={PWA_URL} className="cta-btn cta-btn--parent">
-              <span className="cta-btn-icon">👨‍👩‍👧</span>
-              <span>
-                <span className="cta-btn-main">Начать бесплатно</span>
-                <span className="cta-btn-sub">Регистрация за 2 минуты</span>
-              </span>
-            </a>
-          </div>
-        </div>
-      </section>
+      <CtaSection />
 
       {/* Footer */}
       <footer className="landing-footer">
