@@ -162,6 +162,16 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
                   <button onClick={() => onRefreshInvite(c.id)} className="text-[10px] font-bold text-gray-400 underline">сбросить</button>
                 </div>
 
+                {/* Повторная отправка ссылки */}
+                {c.inviteCode && (
+                  <button
+                    onClick={() => shareCode(c.id, c.inviteCode!, c.name)}
+                    className="w-full flex items-center justify-center gap-2 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 font-bold text-xs active:scale-95 transition-all"
+                  >
+                    {copiedId === c.id ? "✅ Ссылка скопирована!" : "📤 Отправить ссылку повторно"}
+                  </button>
+                )}
+
                 {/* Push-статус */}
                 {c.pushSubscribed ? (
                   <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">

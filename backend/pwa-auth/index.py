@@ -350,7 +350,7 @@ def register_child(invite_code: str) -> dict:
     cur = conn.cursor()
 
     cur.execute(
-        f"SELECT id, parent_id, name FROM {SCHEMA}.children WHERE invite_code = %s",
+        f"SELECT id, parent_id, name, child_pin FROM {SCHEMA}.children WHERE invite_code = %s",
         (invite_code.strip().upper(),)
     )
     child_row = cur.fetchone()
@@ -360,7 +360,7 @@ def register_child(invite_code: str) -> dict:
         conn.close()
         return err("Код не найден. Попросите родителя проверить ссылку.")
 
-    child_id, parent_id, child_name = child_row
+    child_id, parent_id, child_name, child_pin = child_row
 
     token = generate_token()
 
@@ -379,6 +379,76 @@ def register_child(invite_code: str) -> dict:
         "child_id": child_id,
         "parent_id": parent_id,
         "child_name": child_name or "",
+        "has_pin": bool(child_pin),
+    })
+
+
+def child_set_pin(session_token: str, pin: str) -> dict:
+    """Установить PIN-код для ребёнка."""
+    if not session_token or not pin or len(pin) != 4 or not pin.isdigit():
+        return err("Укажите сессию и 4-значный PIN.")
+
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        f"UPDATE {SCHEMA}.children SET child_pin = %s WHERE pwa_session_token = %s RETURNING id",
+        (pin, session_token)
+    )
+    row = cur.fetchone()
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    if not row:
+        return err("Сессия не найдена.", 401)
+
+    return ok({"status": "ok"})
+
+
+def child_login_pin(invite_code: str, pin: str) -> dict:
+    """Войти как ребёнок по коду приглашения + PIN."""
+    if not invite_code or not pin:
+        return err("Укажите код и PIN.")
+
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        f"SELECT id, parent_id, name, child_pin FROM {SCHEMA}.children WHERE invite_code = %s",
+        (invite_code.strip().upper(),)
+    )
+    row = cur.fetchone()
+
+    if not row:
+        cur.close(); conn.close()
+        return err("Код не найден. Проверьте ссылку от родителя.")
+
+    child_id, parent_id, child_name, child_pin = row
+
+    if not child_pin:
+        cur.close(); conn.close()
+        return err("PIN не установлен. Войдите по ссылке от родителя.")
+
+    if child_pin != pin.strip():
+        cur.close(); conn.close()
+        return err("Неверный PIN-код.")
+
+    token = generate_token()
+    cur.execute(
+        f"UPDATE {SCHEMA}.children SET pwa_session_token = %s WHERE id = %s",
+        (token, child_id)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return ok({
+        "status": "ok",
+        "role": "child",
+        "session_token": token,
+        "child_id": child_id,
+        "parent_id": parent_id,
+        "child_name": child_name or "",
+        "has_pin": True,
     })
 
 
@@ -692,6 +762,12 @@ def handler(event: dict, context) -> dict:
 
     if action == "register_child":
         return register_child(body.get("invite_code", ""))
+
+    if action == "child_set_pin":
+        return child_set_pin(body.get("session_token", ""), body.get("pin", ""))
+
+    if action == "child_login_pin":
+        return child_login_pin(body.get("invite_code", ""), body.get("pin", ""))
 
     if action == "verify_session":
         return verify_session(

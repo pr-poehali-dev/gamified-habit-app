@@ -48,9 +48,27 @@ export async function loginPin(
 
 export async function registerChild(
   inviteCode: string
-): Promise<{ status?: string; role?: string; session_token?: string; child_id?: number; parent_id?: number; child_name?: string; error?: string }> {
+): Promise<{ status?: string; role?: string; session_token?: string; child_id?: number; parent_id?: number; child_name?: string; has_pin?: boolean; error?: string }> {
   return call({ action: "register_child", invite_code: inviteCode }) as Promise<{
-    status?: string; role?: string; session_token?: string; child_id?: number; parent_id?: number; child_name?: string; error?: string;
+    status?: string; role?: string; session_token?: string; child_id?: number; parent_id?: number; child_name?: string; has_pin?: boolean; error?: string;
+  }>;
+}
+
+export async function childSetPin(
+  sessionToken: string,
+  pin: string
+): Promise<{ status?: string; error?: string }> {
+  return call({ action: "child_set_pin", session_token: sessionToken, pin }) as Promise<{
+    status?: string; error?: string;
+  }>;
+}
+
+export async function childLoginPin(
+  inviteCode: string,
+  pin: string
+): Promise<{ status?: string; role?: string; session_token?: string; child_id?: number; parent_id?: number; child_name?: string; has_pin?: boolean; error?: string }> {
+  return call({ action: "child_login_pin", invite_code: inviteCode, pin }) as Promise<{
+    status?: string; role?: string; session_token?: string; child_id?: number; parent_id?: number; child_name?: string; has_pin?: boolean; error?: string;
   }>;
 }
 
