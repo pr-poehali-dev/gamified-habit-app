@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 
 const isTelegramMiniApp = () => {
   const initData = window.Telegram?.WebApp?.initData;
@@ -34,8 +35,7 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
     if (navigator.share) {
       try {
         await navigator.share({ title: "СтарКидс — приглашение", text });
-        setCopiedId(id);
-        setTimeout(() => setCopiedId(null), 2000);
+        toast.success("Приглашение отправлено!");
         return;
       } catch {
         // пользователь отменил или share недоступен — падаем в clipboard
@@ -44,7 +44,6 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
     try {
       await navigator.clipboard.writeText(text);
     } catch {
-      // clipboard тоже недоступен — последний fallback через textarea
       const el = document.createElement("textarea");
       el.value = text;
       el.style.position = "fixed";
@@ -55,14 +54,26 @@ export function ParentTabChildren({ children, onAddChild, onRemoveChild, onRefre
       document.execCommand("copy");
       document.body.removeChild(el);
     }
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+    toast.success("Ссылка скопирована!", { description: "Отправь её ребёнку в любом мессенджере" });
   };
 
   const copyPwaLink = async (id: number, code: string) => {
-    await navigator.clipboard.writeText(getPwaInviteUrl(code));
+    try {
+      await navigator.clipboard.writeText(getPwaInviteUrl(code));
+    } catch {
+      const el = document.createElement("textarea");
+      el.value = getPwaInviteUrl(code);
+      el.style.position = "fixed";
+      el.style.opacity = "0";
+      document.body.appendChild(el);
+      el.focus();
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    }
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+    toast.success("Ссылка скопирована!");
   };
 
   const handleAdd = () => {
