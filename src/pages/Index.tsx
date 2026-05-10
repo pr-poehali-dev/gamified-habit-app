@@ -71,93 +71,189 @@ export default function Index() {
         </div>
       </nav>
 
-      {/* Hero — компактный, с большим CTA */}
-      <section className="landing-hero" style={{ minHeight: "auto", paddingBottom: 48 }}>
+      {/* Hero */}
+      <section className="landing-hero" style={{ minHeight: "auto", paddingBottom: 56, alignItems: "center", gap: "4rem" }}>
         <div className="hero-bg-blob hero-bg-blob--1" />
         <div className="hero-bg-blob hero-bg-blob--2" />
         <div className="hero-bg-blob hero-bg-blob--3" />
 
+        {/* Left: text + CTA */}
         <div
           className="hero-content"
           style={{
             opacity: heroVisible ? 1 : 0,
             transform: heroVisible ? "translateY(0)" : "translateY(24px)",
             transition: "opacity 0.7s ease, transform 0.7s ease",
-            maxWidth: 520,
-            textAlign: "center",
+            maxWidth: 480,
+            textAlign: "left",
           }}
         >
-          <div className="hero-badge">🎮 Превращаем рутину в приключение</div>
-          <h1 className="hero-title">
+          <div className="hero-badge">🎮 Геймификация домашних обязанностей</div>
+          <h1 className="hero-title" style={{ fontSize: "clamp(1.9rem, 4.5vw, 3rem)" }}>
             Домашние дела —<br />
             <span className="hero-title-accent">как игра, где дети</span><br />
             сами хотят победить!
           </h1>
-          <p className="hero-subtitle">
-            Ребёнок выполняет задания, получает звёзды, прокачивает уровень и тратит их на реальные призы. Никаких уговоров.
+          <p className="hero-subtitle" style={{ fontSize: "1rem" }}>
+            Ребёнок выполняет задания, зарабатывает звёзды и тратит их на призы которые выбрал сам. Никаких уговоров и скандалов.
           </p>
 
-          {/* Большой CTA */}
-          <a
-            href={PWA_URL}
-            style={{
-              display: "inline-flex",
-              flexDirection: "column",
-              alignItems: "center",
-              background: "linear-gradient(135deg, #6B7BFF 0%, #9B6BFF 100%)",
-              color: "#fff",
-              borderRadius: 24,
-              padding: "18px 48px",
-              fontSize: 20,
-              fontWeight: 900,
-              textDecoration: "none",
-              boxShadow: "0 8px 32px rgba(107,123,255,0.35)",
-              marginTop: 8,
-              marginBottom: 4,
-              transition: "transform 0.15s, box-shadow 0.15s",
-              letterSpacing: "-0.3px",
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1.03)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; }}
-          >
-            👨‍👩‍👧 Попробовать бесплатно
-            <span style={{ fontSize: 13, fontWeight: 600, opacity: 0.85, marginTop: 2 }}>Без установки · Прямо в браузере</span>
-          </a>
+          {/* CTA */}
+          <div style={{ marginBottom: 16 }}>
+            <a
+              href={PWA_URL}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 10,
+                background: "linear-gradient(135deg, #ff6b9d 0%, #ff9b6b 100%)",
+                color: "#fff", borderRadius: 18, padding: "16px 32px",
+                fontSize: 17, fontWeight: 900, textDecoration: "none",
+                boxShadow: "0 8px 32px rgba(255,107,157,0.4)",
+                transition: "transform 0.15s, box-shadow 0.15s",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 12px 40px rgba(255,107,157,0.55)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 32px rgba(255,107,157,0.4)"; }}
+            >
+              <span style={{ fontSize: 22 }}>👨‍👩‍👧</span>
+              <span>
+                <span style={{ display: "block" }}>Попробовать бесплатно</span>
+                <span style={{ display: "block", fontSize: 11, fontWeight: 500, opacity: 0.88, marginTop: 1 }}>Без установки · Прямо в браузере</span>
+              </span>
+            </a>
+          </div>
 
-          <p style={{ color: "#9CA3AF", fontSize: 13, marginTop: 10 }}>
-            Регистрация за 1 минуту · Бесплатно
-          </p>
+          {/* Trust badges row */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 14px", marginBottom: 20 }}>
+            {[
+              { icon: "🔒", text: "Без личных данных ребёнка" },
+              { icon: "⚡", text: "Старт за 1 минуту" },
+              { icon: "💳", text: "Бесплатно" },
+              { icon: "📱", text: "Без скачивания" },
+            ].map((b, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <span style={{ fontSize: 14 }}>{b.icon}</span>
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>{b.text}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Safety block */}
+          <div style={{
+            background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 14, padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start",
+          }}>
+            <span style={{ fontSize: 20, lineHeight: 1, marginTop: 1 }}>🛡️</span>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.9)", marginBottom: 3 }}>Полная безопасность для ребёнка</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: 1.5 }}>
+                Мы не собираем имя, фото, геолокацию или школу ребёнка. Только игровые данные: задания и звёзды. Никакой рекламы.
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Phone mockup */}
+        {/* Right: live phone mockup */}
         <div
-          className="hero-mockup"
           style={{
             opacity: heroVisible ? 1 : 0,
-            transform: heroVisible ? "translateY(0) rotate(-2deg)" : "translateY(48px) rotate(-2deg)",
+            transform: heroVisible ? "translateY(0) rotate(2deg)" : "translateY(48px) rotate(2deg)",
             transition: "opacity 0.9s ease 0.2s, transform 0.9s ease 0.2s",
+            flexShrink: 0,
+            position: "relative",
           }}
         >
-          <div className="phone-shell">
-            <div className="phone-screen">
-              <div className="phone-header">
-                <div className="phone-avatar">🧒</div>
+          {/* Label above phone */}
+          <div style={{
+            position: "absolute", top: -32, left: "50%", transform: "translateX(-50%)",
+            background: "rgba(255,107,157,0.2)", border: "1px solid rgba(255,107,157,0.4)",
+            borderRadius: 50, padding: "4px 14px", whiteSpace: "nowrap",
+            fontSize: 11, fontWeight: 700, color: "#ff9b9b",
+          }}>
+            Так видит ребёнок 👆
+          </div>
+
+          {/* Phone shell */}
+          <div style={{
+            width: 250, background: "linear-gradient(145deg,#1a1040,#2a1860)",
+            borderRadius: 40, padding: 3,
+            boxShadow: "0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.1)",
+            animation: "landing-float 5s ease-in-out infinite",
+          }}>
+            <div style={{ background: "linear-gradient(180deg,#f8f9ff 0%,#f0f4ff 100%)", borderRadius: 37, overflow: "hidden" }}>
+              {/* Status bar */}
+              <div style={{ background: "#f8f9ff", padding: "8px 16px 4px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#1E1B4B" }}>9:41</span>
+                <div style={{ width: 70, height: 18, background: "#1E1B4B", borderRadius: 99 }} />
+                <span style={{ fontSize: 9, color: "#6b7280" }}>●●● 🔋</span>
+              </div>
+              {/* Child header */}
+              <div style={{ padding: "8px 12px 6px", background: "#f8f9ff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 30, height: 30, background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>🦋</div>
                 <div>
-                  <div className="phone-name">Маша · 42⭐</div>
-                  <div className="phone-status">🔥 серия 5 дней</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: "#1E1B4B" }}>Маша · 42⭐</div>
+                  <div style={{ fontSize: 9, color: "#ea580c", fontWeight: 700 }}>🔥 серия 5 дней</div>
+                </div>
+                <div style={{ marginLeft: "auto", fontSize: 9, fontWeight: 700, background: "#ede9fe", color: "#6B7BFF", borderRadius: 7, padding: "2px 6px" }}>ур.4 🥈</div>
+              </div>
+              {/* Progress */}
+              <div style={{ padding: "6px 12px", background: "#f8f9ff", borderBottom: "1px solid #f3f4f6" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 8, color: "#9ca3af", marginBottom: 3 }}>
+                  <span>До уровня 5</span><span>42/50 ⭐</span>
+                </div>
+                <div style={{ height: 5, background: "#e5e7eb", borderRadius: 99, overflow: "hidden" }}>
+                  <div style={{ width: "84%", height: "100%", background: "linear-gradient(90deg,#6B7BFF,#f59e0b)", borderRadius: 99 }} />
                 </div>
               </div>
-              <div className="phone-body">
-                <div className="phone-card phone-card--purple"><span>🧹 Убраться в комнате</span><span className="phone-stars">+3 ⭐</span></div>
-                <div className="phone-card phone-card--pink"><span>📚 Сделать уроки</span><span className="phone-stars">+4 ⭐</span></div>
-                <div className="phone-card phone-card--orange"><span>📸 Полить цветы</span><span className="phone-stars">+2 ⭐</span></div>
-                <div className="phone-card phone-card--green"><span>✅ Почистить зубы</span><span className="phone-stars">выполнено</span></div>
-                <div className="phone-progress">
-                  <div className="phone-progress__label"><span>Уровень 4 🥈</span><span>42/50 ⭐</span></div>
-                  <div className="phone-progress__bar"><div className="phone-progress__fill" style={{ width: "84%" }} /></div>
-                </div>
-                <div className="phone-achievements"><span>🏆</span><span>⚡</span><span>🌟</span><span>🔥</span><span style={{ opacity: 0.3 }}>🎯</span></div>
+              {/* Tasks */}
+              <div style={{ padding: "8px 10px 2px" }}>
+                <div style={{ fontSize: 8, fontWeight: 800, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 }}>📋 Мои задания</div>
+                {[
+                  { emoji: "🧹", title: "Убраться в комнате", stars: 3, bg: "#ede9fe", border: "#c4b5fd", done: false },
+                  { emoji: "📚", title: "Сделать уроки",      stars: 4, bg: "#fce7f3", border: "#f9a8d4", done: false },
+                  { emoji: "🦷", title: "Почистить зубы",     stars: 1, bg: "#dcfce7", border: "#86efac", done: true  },
+                  { emoji: "🌸", title: "Полить цветы",        stars: 2, bg: "#fef9c3", border: "#fde047", done: false },
+                ].map((t, i) => (
+                  <div key={i} style={{
+                    background: t.done ? "#f0fdf4" : "#fff", border: `1px solid ${t.done ? "#bbf7d0" : "#f3f4f6"}`,
+                    borderRadius: 10, padding: "6px 8px", marginBottom: 5,
+                    display: "flex", alignItems: "center", gap: 6, opacity: t.done ? 0.65 : 1,
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                  }}>
+                    <div style={{ width: 24, height: 24, background: t.bg, border: `1px solid ${t.border}`, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0 }}>{t.emoji}</div>
+                    <div style={{ flex: 1, fontSize: 9, fontWeight: 700, color: "#1E1B4B", textDecoration: t.done ? "line-through" : "none" }}>{t.title}</div>
+                    {t.done
+                      ? <span style={{ fontSize: 12 }}>✅</span>
+                      : <div style={{ background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", borderRadius: 6, padding: "3px 5px", fontSize: 8, fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }}>+{t.stars}⭐</div>
+                    }
+                  </div>
+                ))}
               </div>
+              {/* Achievements row */}
+              <div style={{ display: "flex", justifyContent: "center", gap: 6, padding: "6px 0 10px", fontSize: 16 }}>
+                <span>🏆</span><span>⚡</span><span>🌟</span><span>🔥</span><span style={{ opacity: 0.25 }}>🎯</span>
+              </div>
+              {/* Bottom nav */}
+              <div style={{ borderTop: "1px solid #e5e7eb", background: "#fff", display: "flex", padding: "6px 0 10px" }}>
+                {[["✅","Задачи",true],["📝","Оценки",false],["🛍️","Магазин",false],["🏆","Профиль",false]].map(([icon, label, active], i) => (
+                  <div key={i} style={{ flex: 1, textAlign: "center" }}>
+                    <div style={{ fontSize: 14 }}>{icon}</div>
+                    <div style={{ fontSize: 7, fontWeight: 700, color: active ? "#6B7BFF" : "#9ca3af" }}>{label}</div>
+                    {active && <div style={{ width: 14, height: 2, background: "#6B7BFF", borderRadius: 99, margin: "2px auto 0" }} />}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Floating badge */}
+          <div style={{
+            position: "absolute", bottom: 24, right: -20,
+            background: "#fff", borderRadius: 14, padding: "8px 12px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.15)", display: "flex", alignItems: "center", gap: 7,
+          }}>
+            <div style={{ width: 28, height: 28, background: "linear-gradient(135deg,#4ade80,#22c55e)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>✅</div>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 800, color: "#1E1B4B" }}>+3 ⭐ получено!</div>
+              <div style={{ fontSize: 9, color: "#9ca3af" }}>Маша · только что</div>
             </div>
           </div>
         </div>
