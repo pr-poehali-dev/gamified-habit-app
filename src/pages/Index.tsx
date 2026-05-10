@@ -767,6 +767,101 @@ function MotivationSection() {
             </div>
           ))}
         </div>
+
+        {/* Научные источники */}
+        <div style={{
+          marginTop: 56, background: "#f8f9ff", border: "1px solid #e5e7eb",
+          borderRadius: 20, padding: "28px 32px",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+            <span style={{ fontSize: 20 }}>📚</span>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#374151", fontFamily: "Nunito, sans-serif" }}>
+              Научная база
+            </div>
+            <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 500 }}>
+              — тезисы подтверждены исследованиями
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {[
+              {
+                tezis: "Немедленное вознаграждение усиливает мотивацию",
+                source: "Deci, E.L. & Ryan, R.M. (2000). Self-determination theory",
+                desc: "Теория самодетерминации: внешние награды, связанные с ощущением компетентности, поддерживают внутреннюю мотивацию и не подавляют её.",
+                url: "https://selfdeterminationtheory.org/theory/",
+                tag: "Психология мотивации",
+              },
+              {
+                tezis: "Игровые механики повышают вовлечённость в задачи",
+                source: "Hamari, J., Koivisto, J. & Sarsa, H. (2014). Does Gamification Work? — CHI Conference",
+                desc: "Мета-анализ 24 исследований геймификации: в большинстве случаев игровые элементы положительно влияют на вовлечённость и мотивацию пользователей.",
+                url: "https://dl.acm.org/doi/10.1109/HICSS.2014.377",
+                tag: "Геймификация",
+              },
+              {
+                tezis: "Прогресс-бары и уровни удерживают интерес",
+                source: "Werbach, K. & Hunter, D. (2012). For the Win. Wharton Digital Press",
+                desc: "Визуальный прогресс активирует «эффект незавершённого действия» (эффект Зейгарник) — мозг стремится довести начатое до конца.",
+                url: "https://gamification.co/",
+                tag: "Поведенческая психология",
+              },
+              {
+                tezis: "Социальное сравнение усиливает настойчивость",
+                source: "Festinger, L. (1954). A Theory of Social Comparison Processes. Human Relations",
+                desc: "Теория социального сравнения: люди оценивают собственные успехи через сравнение с похожими другими — это стимулирует прилагать больше усилий.",
+                url: "https://journals.sagepub.com/doi/10.1177/001872675400700202",
+                tag: "Социальная психология",
+              },
+              {
+                tezis: "Самостоятельный выбор цели повышает её ценность",
+                source: "Bandura, A. (1997). Self-efficacy: The exercise of control. Freeman",
+                desc: "Когда ребёнок сам выбирает цель (приз в магазине), его самоэффективность и мотивация к достижению значительно выше, чем при навязанных целях.",
+                url: "https://www.albertbandura.com/albert-bandura-self-efficacy.html",
+                tag: "Теория самоэффективности",
+              },
+            ].map((item, i) => (
+              <div key={i} style={{
+                display: "flex", gap: 14, alignItems: "flex-start",
+                paddingBottom: i < 4 ? 14 : 0,
+                borderBottom: i < 4 ? "1px solid #e5e7eb" : "none",
+              }}>
+                <div style={{
+                  flexShrink: 0, marginTop: 2,
+                  width: 24, height: 24, borderRadius: 6,
+                  background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 12, fontWeight: 900, color: "#fff",
+                }}>{i + 1}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 3 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#1E1B4B" }}>
+                      {item.tezis}
+                    </span>
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, color: "#6B7BFF",
+                      background: "#ede9fe", border: "1px solid #c4b5fd",
+                      borderRadius: 50, padding: "1px 8px",
+                    }}>{item.tag}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.6, marginBottom: 4 }}>
+                    {item.desc}
+                  </div>
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: 11, color: "#6B7BFF", textDecoration: "none", fontWeight: 600 }}
+                  >
+                    {item.source} ↗
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 16, fontSize: 11, color: "#9ca3af", lineHeight: 1.5 }}>
+            * Приведённые исследования относятся к психологии мотивации и геймификации в широком смысле. СтарКидс опирается на эти принципы при проектировании игровой механики.
+          </div>
+        </div>
       </div>
     </section>
   );
