@@ -125,9 +125,8 @@ export function ChildTabFriends() {
 
   const shareCode = async () => {
     if (!data) return;
-    const pwaUrl = `${window.location.origin}/app`;
     const text = isPwaMode()
-      ? `Добавь меня в друзья в СтарКидс! 🌟\n\nМой код: ${data.friendCode}\n\n👉 Открой приложение: ${pwaUrl}\n→ Перейди в «Друзья»\n→ Введи мой код`
+      ? `Добавь меня в друзья в СтарКидс! 🌟\n\nМой код друга: ${data.friendCode}\n\n👉 Войди в приложение по своей ссылке от родителя\n→ Перейди в раздел «Друзья»\n→ Введи мой код`
       : `Добавь меня в друзья в СтарКидс! 🌟\n\nМой код: ${data.friendCode}\n\n👉 Открой бота: ${BOT_LINK}\n→ Нажми «Открыть СтарКидс»\n→ Перейди в «Друзья»\n→ Введи мой код`;
     if (navigator.share) {
       try { await navigator.share({ text }); } catch (_) { /* user cancelled */ }
@@ -257,7 +256,7 @@ export function ChildTabFriends() {
           <p className="text-[11px] text-gray-500">1. Нажми «Отправить код другу» ниже</p>
           {isPwaMode() ? (
             <>
-              <p className="text-[11px] text-gray-500">2. Друг открывает <b>tasks4kids.ru/app</b></p>
+              <p className="text-[11px] text-gray-500">2. Друг входит по своей ссылке от родителя</p>
               <p className="text-[11px] text-gray-500">3. Переходит в раздел «Друзья»</p>
               <p className="text-[11px] text-gray-500">4. Вводит твой код — и вы друзья!</p>
             </>
