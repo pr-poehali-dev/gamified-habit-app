@@ -38,8 +38,8 @@
       "method": "POST",
       "path": "/",
       "body": {"action": "child/friends/list", "telegram_id": 999999999},
-      "expectedStatus": 400,
-      "expectedBody": {"error": "not_found"},
+      "expectedStatus": 401,
+      "expectedBody": {"error": "Unauthorized"},
       "bodyMatcher": "partial"
     },
     {
@@ -47,7 +47,7 @@
       "method": "POST",
       "path": "/",
       "body": {"action": "child/friends/add", "telegram_id": 999999999},
-      "expectedStatus": 400,
+      "expectedStatus": 401,
       "bodyMatcher": "partial"
     }
   ]

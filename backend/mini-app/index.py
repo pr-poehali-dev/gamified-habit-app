@@ -1581,12 +1581,9 @@ def ensure_friend_code(conn, child_id):
 
 def handle_friends_list(conn, body):
     """Список друзей + входящие заявки."""
-    tid = resolve_telegram_id(body, CHILD_TOKEN)
-    if not tid:
-        return error_response("no_tg_id")
-    child = get_child_by_tg(conn, tid)
+    tid, child = resolve_child(conn, body)
     if not child:
-        return error_response("not_found")
+        return error_response("Unauthorized", 401)
     cid = child["id"]
     friend_code = ensure_friend_code(conn, cid)
     with conn.cursor() as cur:
@@ -1634,12 +1631,9 @@ def handle_friends_list(conn, body):
 
 def handle_friend_add(conn, body):
     """Отправить запрос дружбы по friend_code."""
-    tid = resolve_telegram_id(body, CHILD_TOKEN)
-    if not tid:
-        return error_response("no_tg_id")
-    child = get_child_by_tg(conn, tid)
+    tid, child = resolve_child(conn, body)
     if not child:
-        return error_response("not_found")
+        return error_response("Unauthorized", 401)
     code = (body.get("friend_code") or "").strip().upper()
     if not code:
         return error_response("no_code")
@@ -1670,12 +1664,9 @@ def handle_friend_add(conn, body):
 
 def handle_friend_accept(conn, body):
     """Принять заявку."""
-    tid = resolve_telegram_id(body, CHILD_TOKEN)
-    if not tid:
-        return error_response("no_tg_id")
-    child = get_child_by_tg(conn, tid)
+    tid, child = resolve_child(conn, body)
     if not child:
-        return error_response("not_found")
+        return error_response("Unauthorized", 401)
     request_id = body.get("request_id")
     if not request_id:
         return error_response("no_request_id")
@@ -1691,12 +1682,9 @@ def handle_friend_accept(conn, body):
 
 def handle_friend_reject(conn, body):
     """Отклонить заявку."""
-    tid = resolve_telegram_id(body, CHILD_TOKEN)
-    if not tid:
-        return error_response("no_tg_id")
-    child = get_child_by_tg(conn, tid)
+    tid, child = resolve_child(conn, body)
     if not child:
-        return error_response("not_found")
+        return error_response("Unauthorized", 401)
     request_id = body.get("request_id")
     if not request_id:
         return error_response("no_request_id")
@@ -1712,12 +1700,9 @@ def handle_friend_reject(conn, body):
 
 def handle_friend_remove(conn, body):
     """Удалить друга (ставим rejected)."""
-    tid = resolve_telegram_id(body, CHILD_TOKEN)
-    if not tid:
-        return error_response("no_tg_id")
-    child = get_child_by_tg(conn, tid)
+    tid, child = resolve_child(conn, body)
     if not child:
-        return error_response("not_found")
+        return error_response("Unauthorized", 401)
     friend_id = body.get("friend_id")
     if not friend_id:
         return error_response("no_friend_id")
