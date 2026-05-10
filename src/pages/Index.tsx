@@ -3,22 +3,252 @@ import AppMockup from "@/components/landing/AppMockup";
 
 const PWA_URL = "/app";
 
-const FeatureCard = ({ emoji, title, description, delay }: { emoji: string; title: string; description: string; delay: number }) => {
+// Телефон-проблема: ребёнок не хочет делать дела
+function PhoneProblem() {
+  return (
+    <div style={{
+      width: 260, flexShrink: 0,
+      background: "#e2e8f0", borderRadius: 44, padding: 4,
+      boxShadow: "0 24px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.06)",
+    }}>
+      <div style={{ background: "#fff5f5", borderRadius: 40, overflow: "hidden", minHeight: 480 }}>
+        {/* Status bar */}
+        <div style={{ background: "#fff5f5", padding: "10px 18px 4px", display: "flex", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "#374151" }}>9:41</span>
+          <div style={{ width: 80, height: 20, background: "#1f2937", borderRadius: 99, position: "absolute", left: "50%", transform: "translateX(-50%)", marginTop: -2 }} />
+          <span style={{ fontSize: 9, color: "#9ca3af" }}>●●● 🔋</span>
+        </div>
+        <div style={{ padding: "14px 14px 10px" }}>
+          {/* Angry messages */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#6b7280", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>💬 Типичный вечер</div>
+            {[
+              { from: "parent", text: "Убери комнату!" },
+              { from: "child",  text: "Потом..." },
+              { from: "parent", text: "Ты уже 3 раза говорил «потом»" },
+              { from: "child",  text: "Не хочу 😤" },
+              { from: "parent", text: "Сделай уроки хотя бы!" },
+              { from: "child",  text: "Скучно. Буду в телефоне" },
+            ].map((m, i) => (
+              <div key={i} style={{
+                display: "flex", justifyContent: m.from === "parent" ? "flex-start" : "flex-end", marginBottom: 5,
+              }}>
+                <div style={{
+                  background: m.from === "parent" ? "#fee2e2" : "#fef3c7",
+                  border: `1px solid ${m.from === "parent" ? "#fca5a5" : "#fde68a"}`,
+                  borderRadius: m.from === "parent" ? "4px 14px 14px 14px" : "14px 4px 14px 14px",
+                  padding: "6px 10px", fontSize: 11, fontWeight: 600,
+                  color: m.from === "parent" ? "#991b1b" : "#92400e",
+                  maxWidth: "75%",
+                }}>{m.text}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Problem stats */}
+          <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 14, padding: "10px 12px" }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: "#dc2626", marginBottom: 8 }}>😩 Каждый день одно и то же</div>
+            {[
+              { icon: "😤", text: "Скандал из-за уборки" },
+              { icon: "📵", text: "Ребёнок в телефоне вместо уроков" },
+              { icon: "😔", text: "Родитель чувствует себя надзирателем" },
+              { icon: "🔁", text: "Повторяется снова и снова" },
+            ].map((p, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
+                <span style={{ fontSize: 16 }}>{p.icon}</span>
+                <span style={{ fontSize: 10, color: "#7f1d1d", fontWeight: 600 }}>{p.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Телефон-решение: СтарКидс
+function PhoneSolution() {
+  return (
+    <div style={{
+      width: 260, flexShrink: 0,
+      background: "#e2e8f0", borderRadius: 44, padding: 4,
+      boxShadow: "0 24px 60px rgba(107,123,255,0.25), 0 0 0 1px rgba(107,123,255,0.1)",
+    }}>
+      <div style={{ background: "linear-gradient(180deg,#f8f9ff,#f0f4ff)", borderRadius: 40, overflow: "hidden", minHeight: 480 }}>
+        {/* Status bar */}
+        <div style={{ background: "#f8f9ff", padding: "10px 18px 4px", display: "flex", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "#1E1B4B" }}>9:41</span>
+          <div style={{ width: 80, height: 20, background: "#1f2937", borderRadius: 99, position: "absolute", left: "50%", transform: "translateX(-50%)", marginTop: -2 }} />
+          <span style={{ fontSize: 9, color: "#9ca3af" }}>●●● 🔋</span>
+        </div>
+        <div style={{ padding: "10px 12px 10px" }}>
+          {/* Child header */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <div style={{ width: 36, height: 36, background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🦋</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 900, color: "#1E1B4B" }}>Катя</div>
+              <div style={{ fontSize: 10, color: "#d97706", fontWeight: 700 }}>42⭐ · Уровень 4 🥈</div>
+            </div>
+            <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8, padding: "3px 7px", fontSize: 10, fontWeight: 800, color: "#ea580c" }}>🔥 5 дней</div>
+          </div>
+
+          {/* Progress */}
+          <div style={{ background: "#fff", borderRadius: 12, padding: "7px 10px", marginBottom: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: "1px solid #f3f4f6" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#9ca3af", marginBottom: 4 }}>
+              <span>До уровня 5 🥇</span><span>42/50 ⭐</span>
+            </div>
+            <div style={{ height: 7, background: "#e5e7eb", borderRadius: 99, overflow: "hidden" }}>
+              <div style={{ width: "84%", height: "100%", background: "linear-gradient(90deg,#6B7BFF,#f59e0b)", borderRadius: 99 }} />
+            </div>
+          </div>
+
+          {/* Tasks */}
+          <div style={{ fontSize: 9, fontWeight: 800, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 }}>📋 Задания сегодня</div>
+          {[
+            { emoji: "🧹", title: "Убраться в комнате", stars: 3, bg: "#ede9fe", border: "#c4b5fd", done: true },
+            { emoji: "📚", title: "Домашнее задание",   stars: 4, bg: "#fce7f3", border: "#f9a8d4", done: false },
+            { emoji: "🦷", title: "Почистить зубы",     stars: 1, bg: "#dcfce7", border: "#86efac", done: true },
+            { emoji: "🍽️", title: "Помыть посуду",      stars: 2, bg: "#fef9c3", border: "#fde047", done: false },
+          ].map((t, i) => (
+            <div key={i} style={{
+              background: t.done ? "#f0fdf4" : "#fff",
+              border: `1px solid ${t.done ? "#bbf7d0" : "#f3f4f6"}`,
+              borderRadius: 11, padding: "7px 9px", marginBottom: 5,
+              display: "flex", alignItems: "center", gap: 7,
+              opacity: t.done ? 0.75 : 1,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+            }}>
+              <div style={{ width: 26, height: 26, background: t.bg, border: `1px solid ${t.border}`, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>{t.emoji}</div>
+              <div style={{ flex: 1, fontSize: 10, fontWeight: 700, color: "#1E1B4B", textDecoration: t.done ? "line-through" : "none" }}>{t.title}</div>
+              {t.done
+                ? <span style={{ fontSize: 13 }}>✅</span>
+                : <div style={{ background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", borderRadius: 6, padding: "3px 6px", fontSize: 9, fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }}>+{t.stars}⭐</div>
+              }
+            </div>
+          ))}
+
+          {/* Reward teaser */}
+          <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 12, padding: "8px 10px", marginTop: 2, display: "flex", alignItems: "center", gap: 7 }}>
+            <span style={{ fontSize: 20 }}>🎬</span>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 800, color: "#1E1B4B" }}>Поход в кино</div>
+              <div style={{ fontSize: 9, color: "#d97706" }}>Ещё 8⭐ до цели!</div>
+            </div>
+            <div style={{ marginLeft: "auto" }}>
+              <div style={{ height: 5, width: 50, background: "#e5e7eb", borderRadius: 99, overflow: "hidden" }}>
+                <div style={{ width: "84%", height: "100%", background: "linear-gradient(90deg,#f59e0b,#ef4444)", borderRadius: 99 }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom nav */}
+        <div style={{ borderTop: "1px solid #e5e7eb", background: "#fff", display: "flex", padding: "6px 0 10px", marginTop: 4 }}>
+          {[["✅","Задачи",true],["📝","Оценки",false],["🛍️","Магазин",false],["🏆","Профиль",false]].map(([icon,label,active], i) => (
+            <div key={i} style={{ flex: 1, textAlign: "center" }}>
+              <div style={{ fontSize: 15 }}>{icon}</div>
+              <div style={{ fontSize: 7, fontWeight: 700, color: active ? "#6B7BFF" : "#9ca3af" }}>{label}</div>
+              {active && <div style={{ width: 14, height: 2, background: "#6B7BFF", borderRadius: 99, margin: "2px auto 0" }} />}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProblemSolution() {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
-    const observer = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.15 });
+    const observer = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.1 });
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
+
   return (
-    <div ref={ref} className="feature-card" style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(32px)", transition: `opacity 0.55s ease ${delay}ms, transform 0.55s ease ${delay}ms` }}>
-      <div className="feature-emoji">{emoji}</div>
-      <h3 className="feature-title">{title}</h3>
-      <p className="feature-desc">{description}</p>
-    </div>
+    <section ref={ref} style={{
+      background: "#fff", padding: "80px 24px",
+      opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(40px)",
+      transition: "opacity 0.7s ease, transform 0.7s ease",
+    }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 56 }}>
+          <div style={{
+            display: "inline-block", background: "rgba(107,123,255,0.08)", border: "1px solid rgba(107,123,255,0.2)",
+            color: "#6B7BFF", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em",
+            textTransform: "uppercase", padding: "5px 14px", borderRadius: 50, marginBottom: 14,
+          }}>Как это работает</div>
+          <h2 style={{
+            fontFamily: "Nunito, sans-serif", fontWeight: 900,
+            fontSize: "clamp(1.8rem, 3.5vw, 2.6rem)", color: "#1E1B4B", lineHeight: 1.2, marginBottom: 12,
+          }}>Превращаем конфликт в игру</h2>
+          <p style={{ color: "#6b7280", fontSize: "1rem", maxWidth: 460, margin: "0 auto" }}>
+            Одна простая идея — и домашние дела перестают быть проблемой
+          </p>
+        </div>
+
+        {/* Two-column: problem + solution */}
+        <div style={{ display: "flex", gap: 24, alignItems: "flex-start", justifyContent: "center", flexWrap: "wrap" }}>
+
+          {/* Problem side */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, flex: 1, minWidth: 280, maxWidth: 340 }}>
+            <div style={{
+              background: "#fef2f2", border: "2px solid #fecaca", borderRadius: 20,
+              padding: "12px 20px", textAlign: "center", width: "100%",
+            }}>
+              <div style={{ fontSize: 28, marginBottom: 4 }}>😩</div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: "#dc2626", marginBottom: 4 }}>Было</div>
+              <div style={{ fontSize: 13, color: "#7f1d1d" }}>Уговоры, скандалы, повторения — каждый вечер одно и то же</div>
+            </div>
+            <PhoneProblem />
+          </div>
+
+          {/* Arrow */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 80, fontSize: 36, color: "#6B7BFF", flexShrink: 0 }}>
+            →
+          </div>
+
+          {/* Solution side */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, flex: 1, minWidth: 280, maxWidth: 340 }}>
+            <div style={{
+              background: "linear-gradient(135deg,#ede9fe,#f0f9ff)", border: "2px solid #c4b5fd", borderRadius: 20,
+              padding: "12px 20px", textAlign: "center", width: "100%",
+            }}>
+              <div style={{ fontSize: 28, marginBottom: 4 }}>🚀</div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: "#6B7BFF", marginBottom: 4 }}>Стало</div>
+              <div style={{ fontSize: 13, color: "#4c1d95" }}>Ребёнок сам бежит выполнять задания — ведь за них дают звёзды на призы</div>
+            </div>
+            <PhoneSolution />
+          </div>
+        </div>
+
+        {/* Key insight */}
+        <div style={{
+          marginTop: 56, background: "linear-gradient(135deg,#f0f0ff,#fdf4ff)", border: "1px solid #c4b5fd",
+          borderRadius: 24, padding: "32px 40px", textAlign: "center", maxWidth: 700, margin: "56px auto 0",
+        }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>💡</div>
+          <div style={{ fontSize: "clamp(1.1rem, 2.5vw, 1.4rem)", fontWeight: 900, color: "#1E1B4B", marginBottom: 10, fontFamily: "Nunito, sans-serif" }}>
+            Главный принцип: ребёнок делает то, что ему интересно
+          </div>
+          <div style={{ fontSize: "0.95rem", color: "#6b7280", lineHeight: 1.7, maxWidth: 500, margin: "0 auto 24px" }}>
+            Звёзды → уровни → достижения → реальные призы. Та же механика, что в любимых играх. Только вместо виртуальных монет — убранная комната.
+          </div>
+          <a href="/app" style={{
+            display: "inline-flex", alignItems: "center", gap: 8,
+            background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", color: "#fff",
+            borderRadius: 16, padding: "14px 32px", fontSize: 15, fontWeight: 800,
+            textDecoration: "none", boxShadow: "0 6px 24px rgba(107,123,255,0.35)",
+          }}>
+            Попробовать бесплатно →
+          </a>
+        </div>
+      </div>
+    </section>
   );
-};
+}
 
 const StepItem = ({ num, text, delay }: { num: string; text: string; delay: number }) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -273,19 +503,8 @@ export default function Index() {
       {/* App Mockup */}
       <AppMockup />
 
-      {/* Features */}
-      <section className="section features-section">
-        <div className="section-label">Игровая механика</div>
-        <h2 className="section-title">Почему дети сами просят<br />дать им задание?</h2>
-        <div className="features-grid">
-          <FeatureCard emoji="⭐" title="Звёзды за каждое дело" description="Убрал комнату — получи 3⭐. Получил пятёрку — ещё 5⭐. Ребёнок видит прямую связь: старание = награда." delay={0} />
-          <FeatureCard emoji="🎮" title="Уровни как в играх" description="От Новичка до Легенды — 10+ уровней с уникальными значками. Каждый уровень — ощущение победы." delay={100} />
-          <FeatureCard emoji="🏆" title="Секретные достижения" description="16 скрытых ачивок: «Первая звезда», «Серия 7 дней», «Коллекционер». Дети обожают открывать их неожиданно!" delay={200} />
-          <FeatureCard emoji="🛍️" title="Магазин желаний" description="Ребёнок сам выбирает, на что потратить звёзды: пицца, поход в кино, лишний час игр. Родитель создаёт — ребёнок копит." delay={300} />
-          <FeatureCard emoji="🔥" title="Серии без пропусков" description="Каждый день активности — бонус. Чем длиннее серия, тем больше награда. Прерывать серию? Ни за что!" delay={400} />
-          <FeatureCard emoji="📸" title="Фото «я сделал!»" description="Ребёнок фотографирует результат, родитель подтверждает одним нажатием. Честно, быстро, без споров." delay={500} />
-        </div>
-      </section>
+      {/* Problem → Solution */}
+      <ProblemSolution />
 
       {/* For parents / for kids */}
       <section className="section roles-section">
