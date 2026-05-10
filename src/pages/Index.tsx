@@ -3,7 +3,267 @@ import AppMockup from "@/components/landing/AppMockup";
 
 const PWA_URL = "/app";
 
-// Телефон-проблема: ребёнок не хочет делать дела
+// ─── Мини-телефон для пошаговых мокапов ─────────────────────────────────────
+function MiniPhone({ children, label }: { children: React.ReactNode; label?: string }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+      {label && (
+        <div style={{
+          background: "#ede9fe", border: "1px solid #c4b5fd", borderRadius: 50,
+          padding: "3px 12px", fontSize: 11, fontWeight: 700, color: "#6B7BFF",
+        }}>{label}</div>
+      )}
+      <div style={{
+        width: 200, background: "#d1d5db", borderRadius: 32, padding: 3,
+        boxShadow: "0 12px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.05)",
+        flexShrink: 0,
+      }}>
+        <div style={{ background: "#f8f9ff", borderRadius: 29, overflow: "hidden", minHeight: 360, position: "relative" }}>
+          <div style={{ background: "#f8f9ff", padding: "7px 14px 3px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: "#374151" }}>9:41</span>
+            <div style={{ width: 56, height: 14, background: "#1f2937", borderRadius: 99 }} />
+            <span style={{ fontSize: 8, color: "#9ca3af" }}>🔋</span>
+          </div>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Шаг 1: форма ввода телефона
+function StepPhone() {
+  return (
+    <MiniPhone label="Шаг 1">
+      <div style={{ padding: "16px 12px" }}>
+        <div style={{ textAlign: "center", marginBottom: 14 }}>
+          <div style={{ fontSize: 28, marginBottom: 6 }}>⭐</div>
+          <div style={{ fontSize: 13, fontWeight: 900, color: "#1E1B4B", marginBottom: 3 }}>Добро пожаловать!</div>
+          <div style={{ fontSize: 10, color: "#9ca3af" }}>Введите номер телефона</div>
+        </div>
+        <div style={{ background: "#fff", border: "2px solid #6B7BFF", borderRadius: 12, padding: "10px 12px", marginBottom: 8 }}>
+          <div style={{ fontSize: 10, color: "#9ca3af", marginBottom: 2 }}>Номер телефона</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#1E1B4B" }}>+7 (999) 123-45-67</div>
+        </div>
+        <div style={{ background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", borderRadius: 12, padding: "10px", textAlign: "center", fontSize: 12, fontWeight: 800, color: "#fff", marginBottom: 10 }}>
+          Получить код →
+        </div>
+        <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "7px 9px", display: "flex", gap: 6, alignItems: "flex-start" }}>
+          <span style={{ fontSize: 13 }}>🛡️</span>
+          <div style={{ fontSize: 9, color: "#166534", lineHeight: 1.4 }}>
+            Только ваш телефон. Никаких данных о детях не собираем.
+          </div>
+        </div>
+      </div>
+    </MiniPhone>
+  );
+}
+
+// Шаг 2: добавление ребёнка
+function StepAddChild() {
+  return (
+    <MiniPhone label="Шаг 2">
+      <div style={{ padding: "12px 12px" }}>
+        <div style={{ fontSize: 12, fontWeight: 900, color: "#1E1B4B", marginBottom: 10, textAlign: "center" }}>👶 Добавить ребёнка</div>
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 9, color: "#9ca3af", marginBottom: 3, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Аватар</div>
+          <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+            {["🦋","🐱","🦊","🐼","🐸","🦁"].map((e,i) => (
+              <div key={i} style={{ width: 28, height: 28, borderRadius: 8, background: i===0?"#ede9fe":"#f3f4f6", border: i===0?"2px solid #6B7BFF":"1px solid #e5e7eb", display:"flex", alignItems:"center", justifyContent:"center", fontSize: 14 }}>{e}</div>
+            ))}
+          </div>
+        </div>
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 9, color: "#9ca3af", marginBottom: 3, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Имя</div>
+          <div style={{ background: "#fff", border: "1.5px solid #6B7BFF", borderRadius: 9, padding: "6px 9px", fontSize: 11, fontWeight: 700, color: "#1E1B4B" }}>Катя</div>
+        </div>
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 9, color: "#9ca3af", marginBottom: 4, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Возраст</div>
+          <div style={{ display: "flex", gap: 4 }}>
+            {[7,8,9,10,11,12].map((a) => (
+              <div key={a} style={{ width: 24, height: 24, borderRadius: 7, background: a===9?"linear-gradient(135deg,#6B7BFF,#9B6BFF)":"#f3f4f6", display:"flex", alignItems:"center", justifyContent:"center", fontSize: 9, fontWeight: 800, color: a===9?"#fff":"#374151" }}>{a}</div>
+            ))}
+          </div>
+        </div>
+        <div style={{ background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", borderRadius: 10, padding: "9px", textAlign: "center", fontSize: 11, fontWeight: 800, color: "#fff" }}>
+          Добавить ребёнка ✓
+        </div>
+      </div>
+    </MiniPhone>
+  );
+}
+
+// Шаг 3: инвайт-код для ребёнка
+function StepInvite() {
+  return (
+    <MiniPhone label="Шаг 3">
+      <div style={{ padding: "12px 12px" }}>
+        <div style={{ textAlign: "center", marginBottom: 10 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "#6B7BFF", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>⏳ Ожидает подключения</div>
+          <div style={{ fontSize: 12, fontWeight: 900, color: "#1E1B4B", marginBottom: 2 }}>Катя добавлена!</div>
+          <div style={{ fontSize: 9, color: "#9ca3af" }}>Отправьте ребёнку ссылку</div>
+        </div>
+        <div style={{ background: "#f8faff", border: "1.5px solid #c4b5fd", borderRadius: 12, padding: "10px", marginBottom: 8 }}>
+          <div style={{ fontSize: 9, color: "#9ca3af", marginBottom: 4 }}>Код для ребёнка</div>
+          <div style={{ fontSize: 17, fontWeight: 900, color: "#6B7BFF", letterSpacing: "0.15em", textAlign: "center", marginBottom: 6 }}>BSPVNV</div>
+          <div style={{ background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", borderRadius: 8, padding: "7px", textAlign: "center", fontSize: 10, fontWeight: 800, color: "#fff" }}>
+            📤 Отправить приглашение
+          </div>
+        </div>
+        <div style={{ fontSize: 9, color: "#9ca3af", textAlign: "center", lineHeight: 1.4 }}>
+          Ребёнок переходит по ссылке<br />и вводит только своё имя
+        </div>
+      </div>
+    </MiniPhone>
+  );
+}
+
+// Шаг 4: создание задания
+function StepTask() {
+  return (
+    <MiniPhone label="Шаг 4">
+      <div style={{ padding: "10px 12px" }}>
+        <div style={{ fontSize: 12, fontWeight: 900, color: "#1E1B4B", marginBottom: 8, textAlign: "center" }}>📋 Первое задание</div>
+        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: "8px 10px", marginBottom: 6, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontSize: 9, color: "#9ca3af", marginBottom: 2 }}>⚡ Шаблоны</div>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {["🧹 Уборка","📚 Уроки","🦷 Зубы"].map((t,i) => (
+              <div key={i} style={{ background: i===0?"#ede9fe":"#f3f4f6", border: i===0?"1px solid #c4b5fd":"1px solid #e5e7eb", borderRadius: 6, padding: "3px 7px", fontSize: 9, fontWeight: 700, color: i===0?"#6B7BFF":"#374151" }}>{t}</div>
+            ))}
+          </div>
+        </div>
+        <div style={{ background: "#fff", border: "1.5px solid #6B7BFF", borderRadius: 10, padding: "7px 10px", marginBottom: 6 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#1E1B4B" }}>🧹 Убраться в комнате</div>
+        </div>
+        <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+          {[1,2,3,4,5].map(s => (
+            <div key={s} style={{ flex: 1, background: s===3?"linear-gradient(135deg,#f59e0b,#ef4444)":"#f3f4f6", borderRadius: 7, padding: "6px 0", textAlign: "center", fontSize: 10, fontWeight: 800, color: s===3?"#fff":"#374151" }}>{s}⭐</div>
+          ))}
+        </div>
+        <div style={{ background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", borderRadius: 10, padding: "9px", textAlign: "center", fontSize: 11, fontWeight: 800, color: "#fff" }}>
+          Создать задание ✓
+        </div>
+      </div>
+    </MiniPhone>
+  );
+}
+
+// ─── Секция "Как начать" ─────────────────────────────────────────────────────
+function HowToStart() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const observer = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.08 });
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const steps = [
+    {
+      num: "1", title: "Введите свой номер телефона", desc: "Никаких паролей и почты. SMS-код за 30 секунд — и вы внутри.",
+      note: "📱 Только ваш телефон. Больше ничего.", mock: <StepPhone />,
+    },
+    {
+      num: "2", title: "Добавьте ребёнка", desc: "Выберите аватар, введите имя и возраст. Это всё что нужно знать приложению.",
+      note: "🛡️ Мы не собираем данные о детях — ни телефон, ни школу, ни что-либо ещё.", mock: <StepAddChild />,
+    },
+    {
+      num: "3", title: "Отправьте ребёнку ссылку", desc: "Ребёнок переходит по ссылке и вводит только своё имя. Никакой регистрации.",
+      note: "🔗 Ребёнок подключается без телефона и аккаунта.", mock: <StepInvite />,
+    },
+    {
+      num: "4", title: "Создайте первое задание", desc: "Выберите из шаблонов или напишите своё. Укажите сколько звёзд за выполнение.",
+      note: "⚡ Первое задание — за 30 секунд.", mock: <StepTask />,
+    },
+  ];
+
+  return (
+    <section ref={ref} style={{
+      background: "linear-gradient(180deg, #f8f9ff 0%, #f0f4ff 100%)",
+      padding: "80px 24px",
+      opacity: visible ? 1 : 0,
+      transform: visible ? "translateY(0)" : "translateY(40px)",
+      transition: "opacity 0.7s ease, transform 0.7s ease",
+    }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 60 }}>
+          <div style={{
+            display: "inline-block", background: "rgba(107,123,255,0.08)", border: "1px solid rgba(107,123,255,0.2)",
+            color: "#6B7BFF", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em",
+            textTransform: "uppercase", padding: "5px 14px", borderRadius: 50, marginBottom: 14,
+          }}>Старт за 2 минуты</div>
+          <h2 style={{
+            fontFamily: "Nunito, sans-serif", fontWeight: 900,
+            fontSize: "clamp(1.8rem, 3.5vw, 2.6rem)", color: "#1E1B4B", lineHeight: 1.2, marginBottom: 12,
+          }}>Как начать работу</h2>
+          <p style={{ color: "#6b7280", fontSize: "1rem", maxWidth: 440, margin: "0 auto" }}>
+            Четыре шага — и ваша семья уже в игре
+          </p>
+        </div>
+
+        {/* Steps */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 48 }}>
+          {steps.map((step, i) => (
+            <div key={i} style={{
+              display: "flex", gap: 40, alignItems: "center",
+              flexDirection: i % 2 === 0 ? "row" : "row-reverse",
+              flexWrap: "wrap", justifyContent: "center",
+            }}>
+              {/* Text */}
+              <div style={{ flex: 1, minWidth: 260, maxWidth: 400 }}>
+                <div style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 40, height: 40, borderRadius: 12,
+                  background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)",
+                  fontSize: 18, fontWeight: 900, color: "#fff", marginBottom: 12,
+                  boxShadow: "0 4px 14px rgba(107,123,255,0.35)",
+                }}>{step.num}</div>
+                <h3 style={{ fontFamily: "Nunito, sans-serif", fontWeight: 900, fontSize: "1.25rem", color: "#1E1B4B", marginBottom: 8, lineHeight: 1.3 }}>
+                  {step.title}
+                </h3>
+                <p style={{ fontSize: "0.95rem", color: "#6b7280", lineHeight: 1.65, marginBottom: 12 }}>
+                  {step.desc}
+                </p>
+                <div style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  background: "#f0fdf4", border: "1px solid #bbf7d0",
+                  borderRadius: 10, padding: "7px 12px",
+                  fontSize: 12, fontWeight: 700, color: "#166534",
+                }}>
+                  {step.note}
+                </div>
+              </div>
+
+              {/* Phone mockup */}
+              <div style={{ flexShrink: 0 }}>
+                {step.mock}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom CTA */}
+        <div style={{ textAlign: "center", marginTop: 60 }}>
+          <a href={PWA_URL} style={{
+            display: "inline-flex", alignItems: "center", gap: 10,
+            background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", color: "#fff",
+            borderRadius: 18, padding: "16px 40px", fontSize: 17, fontWeight: 900,
+            textDecoration: "none", boxShadow: "0 8px 28px rgba(107,123,255,0.35)",
+          }}>
+            <span style={{ fontSize: 22 }}>🚀</span>
+            <span>
+              <span style={{ display: "block" }}>Начать прямо сейчас</span>
+              <span style={{ display: "block", fontSize: 11, fontWeight: 500, opacity: 0.85, marginTop: 1 }}>Бесплатно · Без установки · 2 минуты</span>
+            </span>
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Мокапы Problem/Solution ─────────────────────────────────────────────────
 function PhoneProblem() {
   return (
     <div style={{
@@ -12,14 +272,12 @@ function PhoneProblem() {
       boxShadow: "0 24px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.06)",
     }}>
       <div style={{ background: "#fff5f5", borderRadius: 40, overflow: "hidden", minHeight: 480 }}>
-        {/* Status bar */}
         <div style={{ background: "#fff5f5", padding: "10px 18px 4px", display: "flex", justifyContent: "space-between" }}>
           <span style={{ fontSize: 10, fontWeight: 700, color: "#374151" }}>9:41</span>
           <div style={{ width: 80, height: 20, background: "#1f2937", borderRadius: 99, position: "absolute", left: "50%", transform: "translateX(-50%)", marginTop: -2 }} />
           <span style={{ fontSize: 9, color: "#9ca3af" }}>●●● 🔋</span>
         </div>
         <div style={{ padding: "14px 14px 10px" }}>
-          {/* Angry messages */}
           <div style={{ marginBottom: 10 }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: "#6b7280", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>💬 Типичный вечер</div>
             {[
@@ -30,9 +288,7 @@ function PhoneProblem() {
               { from: "parent", text: "Сделай уроки хотя бы!" },
               { from: "child",  text: "Скучно. Буду в телефоне" },
             ].map((m, i) => (
-              <div key={i} style={{
-                display: "flex", justifyContent: m.from === "parent" ? "flex-start" : "flex-end", marginBottom: 5,
-              }}>
+              <div key={i} style={{ display: "flex", justifyContent: m.from === "parent" ? "flex-start" : "flex-end", marginBottom: 5 }}>
                 <div style={{
                   background: m.from === "parent" ? "#fee2e2" : "#fef3c7",
                   border: `1px solid ${m.from === "parent" ? "#fca5a5" : "#fde68a"}`,
@@ -44,8 +300,6 @@ function PhoneProblem() {
               </div>
             ))}
           </div>
-
-          {/* Problem stats */}
           <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 14, padding: "10px 12px" }}>
             <div style={{ fontSize: 10, fontWeight: 800, color: "#dc2626", marginBottom: 8 }}>😩 Каждый день одно и то же</div>
             {[
@@ -66,7 +320,6 @@ function PhoneProblem() {
   );
 }
 
-// Телефон-решение: СтарКидс
 function PhoneSolution() {
   return (
     <div style={{
@@ -75,14 +328,12 @@ function PhoneSolution() {
       boxShadow: "0 24px 60px rgba(107,123,255,0.25), 0 0 0 1px rgba(107,123,255,0.1)",
     }}>
       <div style={{ background: "linear-gradient(180deg,#f8f9ff,#f0f4ff)", borderRadius: 40, overflow: "hidden", minHeight: 480 }}>
-        {/* Status bar */}
         <div style={{ background: "#f8f9ff", padding: "10px 18px 4px", display: "flex", justifyContent: "space-between" }}>
           <span style={{ fontSize: 10, fontWeight: 700, color: "#1E1B4B" }}>9:41</span>
           <div style={{ width: 80, height: 20, background: "#1f2937", borderRadius: 99, position: "absolute", left: "50%", transform: "translateX(-50%)", marginTop: -2 }} />
           <span style={{ fontSize: 9, color: "#9ca3af" }}>●●● 🔋</span>
         </div>
         <div style={{ padding: "10px 12px 10px" }}>
-          {/* Child header */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <div style={{ width: 36, height: 36, background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🦋</div>
             <div style={{ flex: 1 }}>
@@ -91,8 +342,6 @@ function PhoneSolution() {
             </div>
             <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8, padding: "3px 7px", fontSize: 10, fontWeight: 800, color: "#ea580c" }}>🔥 5 дней</div>
           </div>
-
-          {/* Progress */}
           <div style={{ background: "#fff", borderRadius: 12, padding: "7px 10px", marginBottom: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: "1px solid #f3f4f6" }}>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#9ca3af", marginBottom: 4 }}>
               <span>До уровня 5 🥇</span><span>42/50 ⭐</span>
@@ -101,8 +350,6 @@ function PhoneSolution() {
               <div style={{ width: "84%", height: "100%", background: "linear-gradient(90deg,#6B7BFF,#f59e0b)", borderRadius: 99 }} />
             </div>
           </div>
-
-          {/* Tasks */}
           <div style={{ fontSize: 9, fontWeight: 800, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 }}>📋 Задания сегодня</div>
           {[
             { emoji: "🧹", title: "Убраться в комнате", stars: 3, bg: "#ede9fe", border: "#c4b5fd", done: true },
@@ -111,38 +358,24 @@ function PhoneSolution() {
             { emoji: "🍽️", title: "Помыть посуду",      stars: 2, bg: "#fef9c3", border: "#fde047", done: false },
           ].map((t, i) => (
             <div key={i} style={{
-              background: t.done ? "#f0fdf4" : "#fff",
-              border: `1px solid ${t.done ? "#bbf7d0" : "#f3f4f6"}`,
+              background: t.done ? "#f0fdf4" : "#fff", border: `1px solid ${t.done ? "#bbf7d0" : "#f3f4f6"}`,
               borderRadius: 11, padding: "7px 9px", marginBottom: 5,
-              display: "flex", alignItems: "center", gap: 7,
-              opacity: t.done ? 0.75 : 1,
+              display: "flex", alignItems: "center", gap: 7, opacity: t.done ? 0.75 : 1,
               boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
             }}>
               <div style={{ width: 26, height: 26, background: t.bg, border: `1px solid ${t.border}`, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>{t.emoji}</div>
               <div style={{ flex: 1, fontSize: 10, fontWeight: 700, color: "#1E1B4B", textDecoration: t.done ? "line-through" : "none" }}>{t.title}</div>
-              {t.done
-                ? <span style={{ fontSize: 13 }}>✅</span>
-                : <div style={{ background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", borderRadius: 6, padding: "3px 6px", fontSize: 9, fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }}>+{t.stars}⭐</div>
-              }
+              {t.done ? <span style={{ fontSize: 13 }}>✅</span> : <div style={{ background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", borderRadius: 6, padding: "3px 6px", fontSize: 9, fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }}>+{t.stars}⭐</div>}
             </div>
           ))}
-
-          {/* Reward teaser */}
           <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 12, padding: "8px 10px", marginTop: 2, display: "flex", alignItems: "center", gap: 7 }}>
             <span style={{ fontSize: 20 }}>🎬</span>
             <div>
               <div style={{ fontSize: 10, fontWeight: 800, color: "#1E1B4B" }}>Поход в кино</div>
               <div style={{ fontSize: 9, color: "#d97706" }}>Ещё 8⭐ до цели!</div>
             </div>
-            <div style={{ marginLeft: "auto" }}>
-              <div style={{ height: 5, width: 50, background: "#e5e7eb", borderRadius: 99, overflow: "hidden" }}>
-                <div style={{ width: "84%", height: "100%", background: "linear-gradient(90deg,#f59e0b,#ef4444)", borderRadius: 99 }} />
-              </div>
-            </div>
           </div>
         </div>
-
-        {/* Bottom nav */}
         <div style={{ borderTop: "1px solid #e5e7eb", background: "#fff", display: "flex", padding: "6px 0 10px", marginTop: 4 }}>
           {[["✅","Задачи",true],["📝","Оценки",false],["🛍️","Магазин",false],["🏆","Профиль",false]].map(([icon,label,active], i) => (
             <div key={i} style={{ flex: 1, textAlign: "center" }}>
@@ -173,7 +406,6 @@ function ProblemSolution() {
       transition: "opacity 0.7s ease, transform 0.7s ease",
     }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <div style={{
             display: "inline-block", background: "rgba(107,123,255,0.08)", border: "1px solid rgba(107,123,255,0.2)",
@@ -189,33 +421,18 @@ function ProblemSolution() {
           </p>
         </div>
 
-        {/* Two-column: problem + solution */}
         <div style={{ display: "flex", gap: 24, alignItems: "flex-start", justifyContent: "center", flexWrap: "wrap" }}>
-
-          {/* Problem side */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, flex: 1, minWidth: 280, maxWidth: 340 }}>
-            <div style={{
-              background: "#fef2f2", border: "2px solid #fecaca", borderRadius: 20,
-              padding: "12px 20px", textAlign: "center", width: "100%",
-            }}>
+            <div style={{ background: "#fef2f2", border: "2px solid #fecaca", borderRadius: 20, padding: "12px 20px", textAlign: "center", width: "100%" }}>
               <div style={{ fontSize: 28, marginBottom: 4 }}>😩</div>
               <div style={{ fontSize: 16, fontWeight: 900, color: "#dc2626", marginBottom: 4 }}>Было</div>
               <div style={{ fontSize: 13, color: "#7f1d1d" }}>Уговоры, скандалы, повторения — каждый вечер одно и то же</div>
             </div>
             <PhoneProblem />
           </div>
-
-          {/* Arrow */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 80, fontSize: 36, color: "#6B7BFF", flexShrink: 0 }}>
-            →
-          </div>
-
-          {/* Solution side */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 80, fontSize: 36, color: "#6B7BFF", flexShrink: 0 }}>→</div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, flex: 1, minWidth: 280, maxWidth: 340 }}>
-            <div style={{
-              background: "linear-gradient(135deg,#ede9fe,#f0f9ff)", border: "2px solid #c4b5fd", borderRadius: 20,
-              padding: "12px 20px", textAlign: "center", width: "100%",
-            }}>
+            <div style={{ background: "linear-gradient(135deg,#ede9fe,#f0f9ff)", border: "2px solid #c4b5fd", borderRadius: 20, padding: "12px 20px", textAlign: "center", width: "100%" }}>
               <div style={{ fontSize: 28, marginBottom: 4 }}>🚀</div>
               <div style={{ fontSize: 16, fontWeight: 900, color: "#6B7BFF", marginBottom: 4 }}>Стало</div>
               <div style={{ fontSize: 13, color: "#4c1d95" }}>Ребёнок сам бежит выполнять задания — ведь за них дают звёзды на призы</div>
@@ -224,7 +441,6 @@ function ProblemSolution() {
           </div>
         </div>
 
-        {/* Key insight */}
         <div style={{
           marginTop: 56, background: "linear-gradient(135deg,#f0f0ff,#fdf4ff)", border: "1px solid #c4b5fd",
           borderRadius: 24, padding: "32px 40px", textAlign: "center", maxWidth: 700, margin: "56px auto 0",
@@ -250,22 +466,7 @@ function ProblemSolution() {
   );
 }
 
-const StepItem = ({ num, text, delay }: { num: string; text: string; delay: number }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const observer = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.1 });
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-  return (
-    <div ref={ref} className="step-item" style={{ opacity: visible ? 1 : 0, transform: visible ? "translateX(0)" : "translateX(-28px)", transition: `opacity 0.5s ease ${delay}ms, transform 0.5s ease ${delay}ms` }}>
-      <div className="step-num">{num}</div>
-      <p className="step-text">{text}</p>
-    </div>
-  );
-};
-
+// ─── Review ──────────────────────────────────────────────────────────────────
 const ReviewCard = ({ text, author, role, stars }: { text: string; author: string; role: string; stars: number }) => (
   <div className="review-card">
     <div className="review-stars">{"⭐".repeat(stars)}</div>
@@ -277,6 +478,7 @@ const ReviewCard = ({ text, author, role, stars }: { text: string; author: strin
   </div>
 );
 
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function Index() {
   const [scrolled, setScrolled] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
@@ -314,8 +516,7 @@ export default function Index() {
             opacity: heroVisible ? 1 : 0,
             transform: heroVisible ? "translateY(0)" : "translateY(24px)",
             transition: "opacity 0.7s ease, transform 0.7s ease",
-            maxWidth: 480,
-            textAlign: "left",
+            maxWidth: 480, textAlign: "left",
           }}
         >
           <div className="hero-badge">🎮 Геймификация домашних обязанностей</div>
@@ -328,20 +529,34 @@ export default function Index() {
             Ребёнок выполняет задания, зарабатывает звёзды и тратит их на призы которые выбрал сам. Никаких уговоров и скандалов.
           </p>
 
+          {/* FREE banner */}
+          <div style={{
+            background: "linear-gradient(135deg,#f0fdf4,#dcfce7)", border: "1.5px solid #86efac",
+            borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, marginBottom: 16,
+          }}>
+            <span style={{ fontSize: 24 }}>🎁</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 900, color: "#15803d" }}>Полностью бесплатно навсегда</div>
+              <div style={{ fontSize: 11, color: "#166534", lineHeight: 1.4 }}>
+                Без подписок, без скрытых платежей. Сервис бесплатен для всех семей.
+              </div>
+            </div>
+          </div>
+
           {/* CTA */}
           <div style={{ marginBottom: 16 }}>
             <a
               href={PWA_URL}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 10,
-                background: "linear-gradient(135deg, #ff6b9d 0%, #ff9b6b 100%)",
+                background: "linear-gradient(135deg, #6B7BFF 0%, #9B6BFF 100%)",
                 color: "#fff", borderRadius: 18, padding: "16px 32px",
                 fontSize: 17, fontWeight: 900, textDecoration: "none",
-                boxShadow: "0 8px 32px rgba(255,107,157,0.4)",
+                boxShadow: "0 8px 32px rgba(107,123,255,0.4)",
                 transition: "transform 0.15s, box-shadow 0.15s",
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 12px 40px rgba(255,107,157,0.55)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 32px rgba(255,107,157,0.4)"; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 12px 40px rgba(107,123,255,0.55)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 32px rgba(107,123,255,0.4)"; }}
             >
               <span style={{ fontSize: 22 }}>👨‍👩‍👧</span>
               <span>
@@ -351,17 +566,17 @@ export default function Index() {
             </a>
           </div>
 
-          {/* Trust badges row */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 14px", marginBottom: 20 }}>
+          {/* Trust badges */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 16px", marginBottom: 16 }}>
             {[
-              { icon: "🔒", text: "Без личных данных ребёнка" },
-              { icon: "⚡", text: "Старт за 1 минуту" },
-              { icon: "💳", text: "Бесплатно" },
-              { icon: "📱", text: "Без скачивания" },
+              { icon: "📱", text: "Только ваш телефон при регистрации" },
+              { icon: "🛡️", text: "Никаких данных о детях" },
+              { icon: "⚡", text: "Готово за 2 минуты" },
+              { icon: "🚫", text: "Без установки и скачивания" },
             ].map((b, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <span style={{ fontSize: 14 }}>{b.icon}</span>
-                <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 500 }}>{b.text}</span>
+                <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>{b.text}</span>
               </div>
             ))}
           </div>
@@ -373,49 +588,39 @@ export default function Index() {
           }}>
             <span style={{ fontSize: 20, lineHeight: 1, marginTop: 1 }}>🛡️</span>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#15803d", marginBottom: 3 }}>Полная безопасность для ребёнка</div>
-              <div style={{ fontSize: 11, color: "#4b7a5a", lineHeight: 1.5 }}>
-                Мы не собираем имя, фото, геолокацию или школу ребёнка. Только игровые данные: задания и звёзды. Никакой рекламы.
+              <div style={{ fontSize: 11, fontWeight: 900, color: "#15803d", marginBottom: 3 }}>Мы не собираем данные о детях</div>
+              <div style={{ fontSize: 11, color: "#166534", lineHeight: 1.6 }}>
+                Для регистрации нужен только <b>номер телефона родителя</b>. У ребёнка нет аккаунта — только имя и игровые звёзды. Никаких телефонов, школ, фотографий и геолокации детей.
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right: live phone mockup */}
-        <div
-          style={{
-            opacity: heroVisible ? 1 : 0,
-            transform: heroVisible ? "translateY(0) rotate(2deg)" : "translateY(48px) rotate(2deg)",
-            transition: "opacity 0.9s ease 0.2s, transform 0.9s ease 0.2s",
-            flexShrink: 0,
-            position: "relative",
-          }}
-        >
-          {/* Label above phone */}
+        {/* Right: phone mockup */}
+        <div style={{
+          opacity: heroVisible ? 1 : 0,
+          transform: heroVisible ? "translateY(0) rotate(2deg)" : "translateY(48px) rotate(2deg)",
+          transition: "opacity 0.9s ease 0.2s, transform 0.9s ease 0.2s",
+          flexShrink: 0, position: "relative",
+        }}>
           <div style={{
             position: "absolute", top: -32, left: "50%", transform: "translateX(-50%)",
-            background: "rgba(255,107,157,0.2)", border: "1px solid rgba(255,107,157,0.4)",
+            background: "rgba(107,123,255,0.12)", border: "1px solid rgba(107,123,255,0.3)",
             borderRadius: 50, padding: "4px 14px", whiteSpace: "nowrap",
-            fontSize: 11, fontWeight: 700, color: "#ff9b9b",
-          }}>
-            Так видит ребёнок 👆
-          </div>
+            fontSize: 11, fontWeight: 700, color: "#6B7BFF",
+          }}>Так видит ребёнок 👆</div>
 
-          {/* Phone shell */}
           <div style={{
-            width: 250, background: "linear-gradient(145deg,#1a1040,#2a1860)",
-            borderRadius: 40, padding: 3,
-            boxShadow: "0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.1)",
+            width: 250, background: "#d1d5db", borderRadius: 40, padding: 3,
+            boxShadow: "0 30px 80px rgba(107,123,255,0.2), 0 0 0 1px rgba(0,0,0,0.06)",
             animation: "landing-float 5s ease-in-out infinite",
           }}>
-            <div style={{ background: "linear-gradient(180deg,#f8f9ff 0%,#f0f4ff 100%)", borderRadius: 37, overflow: "hidden" }}>
-              {/* Status bar */}
+            <div style={{ background: "linear-gradient(180deg,#f8f9ff,#f0f4ff)", borderRadius: 37, overflow: "hidden" }}>
               <div style={{ background: "#f8f9ff", padding: "8px 16px 4px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontSize: 10, fontWeight: 700, color: "#1E1B4B" }}>9:41</span>
                 <div style={{ width: 70, height: 18, background: "#1E1B4B", borderRadius: 99 }} />
                 <span style={{ fontSize: 9, color: "#6b7280" }}>●●● 🔋</span>
               </div>
-              {/* Child header */}
               <div style={{ padding: "8px 12px 6px", background: "#f8f9ff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ width: 30, height: 30, background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>🦋</div>
                 <div>
@@ -424,7 +629,6 @@ export default function Index() {
                 </div>
                 <div style={{ marginLeft: "auto", fontSize: 9, fontWeight: 700, background: "#ede9fe", color: "#6B7BFF", borderRadius: 7, padding: "2px 6px" }}>ур.4 🥈</div>
               </div>
-              {/* Progress */}
               <div style={{ padding: "6px 12px", background: "#f8f9ff", borderBottom: "1px solid #f3f4f6" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 8, color: "#9ca3af", marginBottom: 3 }}>
                   <span>До уровня 5</span><span>42/50 ⭐</span>
@@ -433,14 +637,13 @@ export default function Index() {
                   <div style={{ width: "84%", height: "100%", background: "linear-gradient(90deg,#6B7BFF,#f59e0b)", borderRadius: 99 }} />
                 </div>
               </div>
-              {/* Tasks */}
               <div style={{ padding: "8px 10px 2px" }}>
                 <div style={{ fontSize: 8, fontWeight: 800, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 }}>📋 Мои задания</div>
                 {[
-                  { emoji: "🧹", title: "Убраться в комнате", stars: 3, bg: "#ede9fe", border: "#c4b5fd", done: false },
-                  { emoji: "📚", title: "Сделать уроки",      stars: 4, bg: "#fce7f3", border: "#f9a8d4", done: false },
-                  { emoji: "🦷", title: "Почистить зубы",     stars: 1, bg: "#dcfce7", border: "#86efac", done: true  },
-                  { emoji: "🌸", title: "Полить цветы",        stars: 2, bg: "#fef9c3", border: "#fde047", done: false },
+                  { emoji: "🧹", title: "Убраться в комнате", bg: "#ede9fe", border: "#c4b5fd", done: true, stars: 3 },
+                  { emoji: "📚", title: "Сделать уроки",      bg: "#fce7f3", border: "#f9a8d4", done: false, stars: 4 },
+                  { emoji: "🦷", title: "Почистить зубы",     bg: "#dcfce7", border: "#86efac", done: false, stars: 1 },
+                  { emoji: "🌸", title: "Полить цветы",        bg: "#fef9c3", border: "#fde047", done: false, stars: 2 },
                 ].map((t, i) => (
                   <div key={i} style={{
                     background: t.done ? "#f0fdf4" : "#fff", border: `1px solid ${t.done ? "#bbf7d0" : "#f3f4f6"}`,
@@ -450,20 +653,15 @@ export default function Index() {
                   }}>
                     <div style={{ width: 24, height: 24, background: t.bg, border: `1px solid ${t.border}`, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0 }}>{t.emoji}</div>
                     <div style={{ flex: 1, fontSize: 9, fontWeight: 700, color: "#1E1B4B", textDecoration: t.done ? "line-through" : "none" }}>{t.title}</div>
-                    {t.done
-                      ? <span style={{ fontSize: 12 }}>✅</span>
-                      : <div style={{ background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", borderRadius: 6, padding: "3px 5px", fontSize: 8, fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }}>+{t.stars}⭐</div>
-                    }
+                    {t.done ? <span style={{ fontSize: 12 }}>✅</span> : <div style={{ background: "linear-gradient(135deg,#6B7BFF,#9B6BFF)", borderRadius: 6, padding: "3px 5px", fontSize: 8, fontWeight: 800, color: "#fff" }}>+{t.stars}⭐</div>}
                   </div>
                 ))}
               </div>
-              {/* Achievements row */}
-              <div style={{ display: "flex", justifyContent: "center", gap: 6, padding: "6px 0 10px", fontSize: 16 }}>
+              <div style={{ display: "flex", justifyContent: "center", gap: 6, padding: "4px 0 8px", fontSize: 16 }}>
                 <span>🏆</span><span>⚡</span><span>🌟</span><span>🔥</span><span style={{ opacity: 0.25 }}>🎯</span>
               </div>
-              {/* Bottom nav */}
-              <div style={{ borderTop: "1px solid #e5e7eb", background: "#fff", display: "flex", padding: "6px 0 10px" }}>
-                {[["✅","Задачи",true],["📝","Оценки",false],["🛍️","Магазин",false],["🏆","Профиль",false]].map(([icon, label, active], i) => (
+              <div style={{ borderTop: "1px solid #e5e7eb", background: "#fff", display: "flex", padding: "5px 0 9px" }}>
+                {[["✅","Задачи",true],["📝","Оценки",false],["🛍️","Магазин",false],["🏆","Профиль",false]].map(([icon,label,active], i) => (
                   <div key={i} style={{ flex: 1, textAlign: "center" }}>
                     <div style={{ fontSize: 14 }}>{icon}</div>
                     <div style={{ fontSize: 7, fontWeight: 700, color: active ? "#6B7BFF" : "#9ca3af" }}>{label}</div>
@@ -474,11 +672,11 @@ export default function Index() {
             </div>
           </div>
 
-          {/* Floating badge */}
+          {/* Floating notification */}
           <div style={{
-            position: "absolute", bottom: 24, right: -20,
+            position: "absolute", bottom: 24, right: -24,
             background: "#fff", borderRadius: 14, padding: "8px 12px",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.15)", display: "flex", alignItems: "center", gap: 7,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.12)", display: "flex", alignItems: "center", gap: 7,
           }}>
             <div style={{ width: 28, height: 28, background: "linear-gradient(135deg,#4ade80,#22c55e)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>✅</div>
             <div>
@@ -489,7 +687,7 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Stats strip */}
+      {/* Stats */}
       <section className="stats-strip">
         <div className="stat-item"><span className="stat-num">⭐ 10+</span><span className="stat-label">уровней прокачки</span></div>
         <div className="stat-divider" />
@@ -497,7 +695,7 @@ export default function Index() {
         <div className="stat-divider" />
         <div className="stat-item"><span className="stat-num">🛍️ ∞</span><span className="stat-label">призов в магазине</span></div>
         <div className="stat-divider" />
-        <div className="stat-item"><span className="stat-num">🔥 365</span><span className="stat-label">дней серий подряд</span></div>
+        <div className="stat-item"><span className="stat-num">💸 0 ₽</span><span className="stat-label">стоимость навсегда</span></div>
       </section>
 
       {/* App Mockup */}
@@ -506,60 +704,8 @@ export default function Index() {
       {/* Problem → Solution */}
       <ProblemSolution />
 
-      {/* For parents / for kids */}
-      <section className="section roles-section">
-        <div className="roles-grid">
-          <div className="role-card role-card--parent">
-            <div className="role-card__icon">👨‍👩‍👧</div>
-            <h3 className="role-card__title">Для родителей</h3>
-            <ul className="role-card__list">
-              <li>✅ Создавай задания за минуту</li>
-              <li>✅ Ставь дедлайны и контролируй</li>
-              <li>✅ Проверяй фотоотчёты</li>
-              <li>✅ Настраивай магазин призов</li>
-              <li>✅ Смотри аналитику прогресса</li>
-              <li>✅ Добавляй нескольких детей</li>
-            </ul>
-            <a href={PWA_URL} className="role-card__btn role-card__btn--parent">Начать бесплатно →</a>
-          </div>
-          <div className="role-card role-card--child">
-            <div className="role-card__icon">🧒</div>
-            <h3 className="role-card__title">Для детей</h3>
-            <ul className="role-card__list">
-              <li>⭐ Зарабатывай звёзды за всё</li>
-              <li>⭐ Качай уровень и открывай ачивки</li>
-              <li>⭐ Покупай призы в магазине</li>
-              <li>⭐ Обменивай оценки на звёзды</li>
-              <li>⭐ Проси награды у родителей</li>
-              <li>⭐ Держи серию и получай бонусы</li>
-            </ul>
-            <a href={PWA_URL} className="role-card__btn role-card__btn--child">Подключить ребёнка →</a>
-          </div>
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section className="section steps-section">
-        <div className="section-label">Старт за 2 минуты</div>
-        <h2 className="section-title">Как это работает?</h2>
-        <div className="steps-grid">
-          <div className="steps-col">
-            <h3 className="steps-col__title">👨‍👩‍👧 Родитель</h3>
-            <StepItem num="1" text="Открой приложение и зарегистрируйся по номеру телефона" delay={0} />
-            <StepItem num="2" text="Добавь ребёнка и создай первое задание" delay={100} />
-            <StepItem num="3" text="Отправь ребёнку ссылку-приглашение" delay={200} />
-            <StepItem num="4" text="Подтверждай выполнение и начисляй звёзды" delay={300} />
-          </div>
-          <div className="steps-divider" />
-          <div className="steps-col">
-            <h3 className="steps-col__title">🧒 Ребёнок</h3>
-            <StepItem num="1" text="Переходит по ссылке от родителя" delay={0} />
-            <StepItem num="2" text="Входит в приложение одним нажатием" delay={100} />
-            <StepItem num="3" text="Выполняет задания и зарабатывает звёзды" delay={200} />
-            <StepItem num="4" text="Покупает призы и прокачивает уровень!" delay={300} />
-          </div>
-        </div>
-      </section>
+      {/* How to start — новый блок с мокапами */}
+      <HowToStart />
 
       {/* Reviews */}
       <section className="section reviews-section">
@@ -572,7 +718,7 @@ export default function Index() {
         </div>
       </section>
 
-      {/* CTA финальный */}
+      {/* Final CTA */}
       <section className="cta-section">
         <div className="cta-bg-blob cta-bg-blob--1" />
         <div className="cta-bg-blob cta-bg-blob--2" />
@@ -580,15 +726,15 @@ export default function Index() {
           <div className="cta-emoji">🚀</div>
           <h2 className="cta-title">Попробуйте прямо сейчас!</h2>
           <p className="cta-subtitle">
-            Без установки. Без карты. Прямо в браузере.<br />
-            Регистрация займёт одну минуту.
+            Полностью бесплатно. Без установки. Без карты.<br />
+            Только ваш номер телефона — и вы готовы к старту.
           </p>
           <div className="cta-actions">
             <a href={PWA_URL} className="cta-btn cta-btn--parent">
               <span className="cta-btn-icon">👨‍👩‍👧</span>
               <span>
                 <span className="cta-btn-main">Начать бесплатно</span>
-                <span className="cta-btn-sub">Регистрация за 1 минуту</span>
+                <span className="cta-btn-sub">Регистрация за 2 минуты</span>
               </span>
             </a>
           </div>
@@ -599,9 +745,7 @@ export default function Index() {
       <footer className="landing-footer">
         <div className="footer-logo"><span>⭐</span><span>СтарКидс</span></div>
         <p className="footer-tagline">Превращаем рутину в игру ⭐</p>
-        <div className="footer-links">
-          <a href={PWA_URL}>Войти в приложение</a>
-        </div>
+        <div className="footer-links"><a href={PWA_URL}>Войти в приложение</a></div>
         <div className="footer-links" style={{ marginTop: 12, fontSize: 13 }}>
           <a href="/legal?tab=privacy">Политика конфиденциальности</a>
           <span>·</span>
