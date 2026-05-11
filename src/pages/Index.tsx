@@ -712,7 +712,7 @@ function MotivationSection() {
           </div>
 
           {/* Right: two stacked phones */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", flexShrink: 0 }}>
+          <div className="hidden-mobile" style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", flexShrink: 0 }}>
 
             {/* Label */}
             <div style={{ textAlign: "center" }}>
