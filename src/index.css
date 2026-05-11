@@ -410,6 +410,9 @@
   .landing-nav-support {
     display: none !important;
   }
+  .hidden-mobile {
+    display: none !important;
+  }
 }
 
 @media (max-width: 480px) {
