@@ -1547,7 +1547,6 @@ export default function Index() {
             maxWidth: 480, textAlign: "left",
           }}
         >
-          <div className="hero-badge">🎮 Геймификация домашних обязанностей</div>
           <h1 className="hero-title" style={{ fontSize: "clamp(1.9rem, 4.5vw, 3rem)" }}>
             Дети сами просят<br />
             <span className="hero-title-accent">задания —</span><br />
