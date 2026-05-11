@@ -1470,7 +1470,11 @@ export default function Index() {
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#ede9fe"; (e.currentTarget as HTMLElement).style.color = "#6B7BFF"; (e.currentTarget as HTMLElement).style.borderColor = "#c4b5fd"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#f3f4f6"; (e.currentTarget as HTMLElement).style.color = "#374151"; (e.currentTarget as HTMLElement).style.borderColor = "#e5e7eb"; }}
             >
-              💬 Поддержка
+              <span style={{ position: "relative", display: "inline-flex" }}>
+                💬
+                <span style={{ position: "absolute", top: -3, right: -5, width: 8, height: 8, background: "#4ade80", borderRadius: "50%", border: "1.5px solid white" }} />
+              </span>
+              Поддержка
             </button>
             <a href={PWA_URL} className="landing-nav-btn" style={{ fontSize: 13 }}>Открыть приложение</a>
 

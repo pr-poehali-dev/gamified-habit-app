@@ -340,10 +340,11 @@ export default function ChildMiniApp() {
             </div>
             <button
               onClick={() => setShowSupport(true)}
-              className="w-9 h-9 bg-white/80 rounded-xl flex items-center justify-center shadow-sm text-base active:scale-95 transition-transform"
+              className="relative w-9 h-9 bg-white/80 rounded-xl flex items-center justify-center shadow-sm text-base active:scale-95 transition-transform"
               title="Техподдержка"
             >
               💬
+              <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white" />
             </button>
           </div>
         </div>

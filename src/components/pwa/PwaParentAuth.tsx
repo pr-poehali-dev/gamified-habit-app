@@ -456,8 +456,12 @@ export default function PwaParentAuth({ onSuccess }: Props) {
 
           </div>
 
-          <button onClick={() => setShowSupport(true)} className="w-full text-sm text-gray-400 text-center py-2 hover:text-[#6B7BFF] transition-colors">
-            💬 Техническая поддержка
+          <button onClick={() => setShowSupport(true)} className="w-full text-sm text-gray-400 text-center py-2 hover:text-[#6B7BFF] transition-colors flex items-center justify-center gap-1.5">
+            <span className="relative inline-flex">
+              💬
+              <span className="absolute -top-0.5 -right-1 w-2 h-2 bg-green-400 rounded-full border border-white" />
+            </span>
+            Техническая поддержка
           </button>
         </div>
       </div>

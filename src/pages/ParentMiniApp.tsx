@@ -373,10 +373,11 @@ export default function ParentMiniApp() {
             <StreakCard streak={streak} reward={streakReward} compact />
             <button
               onClick={() => setShowSupport(true)}
-              className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-gray-100 active:scale-95 transition-transform"
+              className="relative w-10 h-10 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-gray-100 active:scale-95 transition-transform"
               title="Техподдержка"
             >
               💬
+              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white" />
             </button>
             <button
               onClick={() => setTab("profile")}
