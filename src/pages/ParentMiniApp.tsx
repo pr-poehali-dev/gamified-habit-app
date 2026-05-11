@@ -12,7 +12,7 @@ import { ParentBottomNav, type ParentTab } from "@/components/parent/ParentBotto
 import { ParentOnboarding } from "@/components/parent/ParentOnboarding";
 import { PremiumModal } from "@/components/parent/PremiumModal";
 import { SupportModal } from "@/components/ui/SupportModal";
-import { logoutPwa } from "@/components/pwa/pwaApi";
+import { logoutPwa, checkPhone, sendOtp, verifyOtp } from "@/components/pwa/pwaApi";
 import { clearPwaSession, getPwaSessionRaw } from "@/components/pwa/usePwaSession";
 import ymGoal from "@/lib/ym";
 
@@ -81,6 +81,7 @@ export default function ParentMiniApp() {
   const [onboardingDone, setOnboardingDone] = useState(() => !!localStorage.getItem("parent_onboarding_done"));
   const [showPremium, setShowPremium] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
+  const [showVerifyPhone, setShowVerifyPhone] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [savingName, setSavingName] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -200,11 +201,15 @@ export default function ParentMiniApp() {
   const streakReward = data?.streakReward;
 
   const addChild = useCallback(async (name: string, age: number, avatar: string) => {
+    if (data?.is_verified === false) {
+      showToast("⚠️ Подтвердите аккаунт через телефон или Telegram");
+      return;
+    }
     const res = await apiCall("parent/child/add", { name, age, avatar });
     if (res.ok) { ymGoal("child_added"); showToast("👶 Ребёнок добавлен!"); load(true); }
     else if (res.error === "premium_required") showToast("👑 Несколько детей доступно в Premium");
     else showToast("❌ " + String(res.error || "Ошибка"));
-  }, []);
+  }, [data?.is_verified]);
 
   const refreshInvite = useCallback(async (childId: number) => {
     const res = await apiCall("parent/child/invite", { child_id: childId });
@@ -327,6 +332,7 @@ export default function ParentMiniApp() {
   }
 
   return (
+    <>
     <div className="app-desktop-bg" style={{ fontFamily: "Golos Text, sans-serif" }}>
     <div className="app-shell bg-gradient-to-br from-[#F0F4FF] via-[#F8F9FF] to-[#F4F0FF]">
       {toast && (
@@ -389,11 +395,11 @@ export default function ParentMiniApp() {
         {/* Баннер неверифицированного аккаунта */}
         {data.is_verified === false && (
           <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-start gap-3">
-            <span className="text-2xl mt-0.5">⚠️</span>
+            <span className="text-xl mt-0.5">⚠️</span>
             <div className="flex-1">
-              <p className="text-sm font-black text-amber-800">Аккаунт не верифицирован</p>
+              <p className="text-sm font-black text-amber-800">Подтвердите аккаунт</p>
               <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
-                Добавление детей и создание заданий недоступны. Подтвердите аккаунт через телефон или Telegram.
+                Добавление детей недоступно. Подтвердите через телефон или Telegram.
               </p>
               <div className="flex gap-2 mt-2.5">
                 <a href="https://t.me/parenttask_bot" target="_blank" rel="noreferrer"
@@ -401,7 +407,7 @@ export default function ParentMiniApp() {
                   ✈️ Telegram
                 </a>
                 <button
-                  onClick={() => { window.location.href = "/app?verify=phone"; }}
+                  onClick={() => setShowVerifyPhone(true)}
                   className="text-xs font-bold px-3 py-1.5 rounded-lg bg-[#6B7BFF] text-white">
                   📱 Телефон
                 </button>
@@ -495,6 +501,127 @@ export default function ParentMiniApp() {
         pendingGradesCount={pendingGrades.length}
       />
     </div>
+    </div>
+
+    {/* Модалка верификации телефона */}
+    {showVerifyPhone && (
+      <VerifyPhoneModal
+        onSuccess={() => { setShowVerifyPhone(false); load(true); }}
+        onClose={() => setShowVerifyPhone(false)}
+      />
+    )}
+    </>
+  );
+}
+
+function VerifyPhoneModal({ onSuccess, onClose }: { onSuccess: () => void; onClose: () => void }) {
+  const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [countdown, setCountdown] = useState(0);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (countdown > 0) { const t = setTimeout(() => setCountdown(c => c - 1), 1000); return () => clearTimeout(t); }
+  }, [countdown]);
+
+  const formatPhone = (val: string) => {
+    const d = val.replace(/\D/g, "").slice(0, 11);
+    if (!d.length) return "";
+    if (d.length <= 1) return "+7";
+    if (d.length <= 4) return `+7 (${d.slice(1)}`;
+    if (d.length <= 7) return `+7 (${d.slice(1, 4)}) ${d.slice(4)}`;
+    if (d.length <= 9) return `+7 (${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7)}`;
+    return `+7 (${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7, 9)}-${d.slice(9, 11)}`;
+  };
+
+  const handleSendOtp = async () => {
+    setError(""); setLoading(true);
+    const res = await sendOtp(phone);
+    setLoading(false);
+    if (res.error) { setError(res.error); return; }
+    setStep("otp"); setCountdown(60);
+    setTimeout(() => otpRefs.current[0]?.focus(), 100);
+  };
+
+  const handleDigit = (i: number, val: string) => {
+    if (!/^\d*$/.test(val)) return;
+    const next = [...otp]; next[i] = val.slice(-1);
+    setOtp(next);
+    if (val && i < 5) otpRefs.current[i + 1]?.focus();
+    if (next.every(d => d !== "")) handleVerify(next.join(""));
+  };
+
+  const handleVerify = async (code?: string) => {
+    const c = code || otp.join("");
+    if (c.length !== 6) { setError("Введите все 6 цифр."); return; }
+    setError(""); setLoading(true);
+    const session = getPwaSessionRaw();
+    const res = await verifyOtp(phone, c);
+    setLoading(false);
+    if (res.error) { setError(res.error); setOtp(["", "", "", "", "", ""]); setTimeout(() => otpRefs.current[0]?.focus(), 100); return; }
+    // Обновляем сессию если она была PWA
+    if (session && res.session_token) {
+      const { savePwaSession } = await import("@/components/pwa/usePwaSession");
+      savePwaSession(res.session_token, "parent");
+    }
+    onSuccess();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+      <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-black text-[#1E1B4B]">📱 Подтверждение телефона</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-sm">✕</button>
+        </div>
+
+        {step === "phone" && (
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500">Введите номер телефона — пришлём SMS с кодом</p>
+            <input
+              type="tel" placeholder="+7 (999) 000-00-00"
+              value={phone} onChange={e => setPhone(formatPhone(e.target.value))}
+              onKeyDown={e => e.key === "Enter" && phone.replace(/\D/g, "").length >= 11 && handleSendOtp()}
+              className="w-full border border-gray-200 rounded-xl px-3 py-3 text-center text-lg font-bold focus:outline-none focus:border-[#6B7BFF]"
+              autoFocus
+            />
+            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+            <button onClick={handleSendOtp} disabled={loading || phone.replace(/\D/g, "").length < 11}
+              className="w-full py-3 rounded-xl bg-[#6B7BFF] text-white font-black text-sm disabled:opacity-50">
+              {loading ? "Отправляем..." : "Получить SMS-код →"}
+            </button>
+          </div>
+        )}
+
+        {step === "otp" && (
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500 text-center">Код отправлен на {phone}</p>
+            <div className="flex gap-2 justify-center">
+              {otp.map((d, i) => (
+                <input key={i} ref={el => { otpRefs.current[i] = el; }}
+                  type="tel" inputMode="numeric" maxLength={1} value={d}
+                  onChange={e => handleDigit(i, e.target.value)}
+                  onKeyDown={e => e.key === "Backspace" && !d && i > 0 && otpRefs.current[i - 1]?.focus()}
+                  className="w-11 h-12 text-center text-xl font-bold border-2 border-gray-200 rounded-xl focus:border-[#6B7BFF] focus:outline-none"
+                />
+              ))}
+            </div>
+            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+            <button onClick={() => handleVerify()} disabled={loading || otp.some(d => !d)}
+              className="w-full py-3 rounded-xl bg-[#6B7BFF] text-white font-black text-sm disabled:opacity-50">
+              {loading ? "Проверяем..." : "Подтвердить"}
+            </button>
+            <button onClick={handleSendOtp} disabled={countdown > 0} className="w-full text-sm text-center">
+              {countdown > 0
+                ? <span className="text-gray-400">Повторить через {countdown} с</span>
+                : <span className="text-[#6B7BFF]">Отправить повторно</span>}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
