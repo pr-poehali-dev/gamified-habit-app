@@ -1549,9 +1549,9 @@ export default function Index() {
         >
           <div className="hero-badge">🎮 Геймификация домашних обязанностей</div>
           <h1 className="hero-title" style={{ fontSize: "clamp(1.9rem, 4.5vw, 3rem)" }}>
-            Домашние дела —<br />
-            <span className="hero-title-accent">как игра, где дети</span><br />
-            сами хотят победить!
+            Дети сами просят<br />
+            <span className="hero-title-accent">задания —</span><br />
+            это реально!
           </h1>
           <p className="hero-subtitle" style={{ fontSize: "1rem" }}>
             Ребёнок выполняет задания, зарабатывает звёзды и тратит их на призы которые выбрал сам. Никаких уговоров и скандалов.
