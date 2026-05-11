@@ -1459,6 +1459,7 @@ export default function Index() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
             <button
               onClick={() => setSupportOpen(true)}
+              className="landing-nav-support"
               style={{
                 background: "#f3f4f6",
                 border: "1px solid #e5e7eb",

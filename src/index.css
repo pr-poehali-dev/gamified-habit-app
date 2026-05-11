@@ -407,6 +407,16 @@
   .landing-burger {
     display: flex !important;
   }
+  .landing-nav-support {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .landing-nav-btn {
+    font-size: 0.75rem !important;
+    padding: 0.45rem 0.9rem !important;
+  }
 }
 
 @media (min-width: 861px) {
