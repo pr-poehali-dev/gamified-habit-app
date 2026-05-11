@@ -721,14 +721,18 @@ function MotivationSection() {
             </div>
 
             {/* Phones side by side */}
-            <div style={{ display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap", justifyContent: "center" }}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", gap: 12, alignItems: "flex-start", justifyContent: "center", flexWrap: "nowrap", overflowX: "auto", maxWidth: "100%", paddingBottom: 4 }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, flexShrink: 0 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7BFF", background: "#ede9fe", border: "1px solid #c4b5fd", borderRadius: 50, padding: "3px 12px" }}>Достижения</div>
-                <AchievementsMockup />
+                <div style={{ transform: "scale(0.82)", transformOrigin: "top center", marginBottom: -36 }}>
+                  <AchievementsMockup />
+                </div>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, flexShrink: 0 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#d97706", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 50, padding: "3px 12px" }}>Магазин призов</div>
-                <ShopMockup />
+                <div style={{ transform: "scale(0.82)", transformOrigin: "top center", marginBottom: -36 }}>
+                  <ShopMockup />
+                </div>
               </div>
             </div>
 
