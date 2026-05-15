@@ -1123,12 +1123,6 @@ def handle_add_child(conn, body):
     tid, parent = resolve_parent(conn, body)
     if not parent:
         return error_response("Unauthorized", 401)
-    if not parent.get("is_premium"):
-        with conn.cursor() as cur:
-            cur.execute(f"SELECT COUNT(*) FROM {SCHEMA}.children WHERE parent_id = %s", (parent["id"],))
-            child_count = cur.fetchone()[0]
-        if child_count >= 1:
-            return error_response("premium_required", 403)
     name = (body.get("name") or "").strip()
     age = body.get("age", 9)
     avatar = body.get("avatar", "👧")

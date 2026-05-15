@@ -314,18 +314,12 @@ export function ParentTabProfile({ name, parent_points, parent_xp, children, tas
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-[#1E1B4B]">Мои дети</h2>
         <div className="flex items-center gap-2">
-          {!isPremium && children.length >= 1 && <PremiumBadge compact trialUsed={trialUsed} onActivateTrial={onActivateTrial} onSubscribe={onSubscribe} />}
           <button
-            onClick={() => {
-              if (!isPremium && children.length >= 1) return;
-              setShowForm(v => !v);
-            }}
+            onClick={() => setShowForm(v => !v)}
             className={`text-sm font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-transform ${
-              !isPremium && children.length >= 1
-                ? "bg-gray-200 text-gray-400"
-                : children.length === 0
-                  ? "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white shadow-lg animate-[addChildPulse_2s_ease-in-out_infinite]"
-                  : "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white"
+              children.length === 0
+                ? "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white shadow-lg animate-[addChildPulse_2s_ease-in-out_infinite]"
+                : "bg-gradient-to-r from-[#6B7BFF] to-[#9B6BFF] text-white"
             }`}
           >
             {showForm ? "✕ Закрыть" : children.length === 0 ? "👶 Добавить ребёнка" : "+ Добавить"}

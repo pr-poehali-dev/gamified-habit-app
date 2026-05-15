@@ -207,7 +207,6 @@ export default function ParentMiniApp() {
     }
     const res = await apiCall("parent/child/add", { name, age, avatar });
     if (res.ok) { ymGoal("child_added"); showToast("👶 Ребёнок добавлен!"); load(true); }
-    else if (res.error === "premium_required") showToast("👑 Несколько детей доступно в Premium");
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, [data?.is_verified]);
 
