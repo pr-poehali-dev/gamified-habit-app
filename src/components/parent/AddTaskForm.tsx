@@ -220,26 +220,21 @@ export function AddTaskForm({ children, onAddTask, onClose, isPremium, trialUsed
 
         <div className="relative">
           <div onClick={() => {
-            if (!isPremium) return;
             setNewTask(t => {
               const newVal = !t.requirePhoto;
               return { ...t, requirePhoto: newVal, requireConfirm: newVal ? true : t.requireConfirm };
             });
           }}
-            className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${
-              !isPremium ? "border-gray-200 bg-gray-50 opacity-60" :
-              newTask.requirePhoto ? "border-purple-400 bg-purple-50 cursor-pointer" : "border-gray-200 bg-gray-50 cursor-pointer"
+            className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all cursor-pointer ${
+              newTask.requirePhoto ? "border-purple-400 bg-purple-50" : "border-gray-200 bg-gray-50"
             }`}>
             <span className="text-xl">📸</span>
             <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <p className={`text-sm font-black ${!isPremium ? "text-gray-400" : newTask.requirePhoto ? "text-purple-700" : "text-gray-600"}`}>Требовать фото</p>
-                {!isPremium && <PremiumBadge compact trialUsed={trialUsed} onActivateTrial={onActivateTrial} onSubscribe={onSubscribe} />}
-              </div>
+              <p className={`text-sm font-black ${newTask.requirePhoto ? "text-purple-700" : "text-gray-600"}`}>Требовать фото</p>
               <p className="text-xs text-gray-400">Ребёнок прикладывает фотоотчёт</p>
             </div>
-            <div className={`w-10 h-5 rounded-full transition-all duration-300 ${newTask.requirePhoto && isPremium ? "bg-purple-500" : "bg-gray-300"}`}>
-              <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-300 mt-0.5 ${newTask.requirePhoto && isPremium ? "ml-5" : "ml-0.5"}`} />
+            <div className={`w-10 h-5 rounded-full transition-all duration-300 ${newTask.requirePhoto ? "bg-purple-500" : "bg-gray-300"}`}>
+              <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-300 mt-0.5 ${newTask.requirePhoto ? "ml-5" : "ml-0.5"}`} />
             </div>
           </div>
         </div>

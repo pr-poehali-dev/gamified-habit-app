@@ -170,7 +170,7 @@ export default function ParentMiniApp() {
   const addTask = useCallback(async (newTask: { title: string; stars: number; emoji: string; childId: number; requirePhoto: boolean; requireConfirm: boolean; deadline: string | null }) => {
     const res = await apiCall("parent/task/add", { ...newTask, child_id: newTask.childId, require_photo: newTask.requirePhoto, require_confirm: newTask.requireConfirm, deadline: newTask.deadline });
     if (res.ok) { ymGoal("task_created"); showToast("📋 Задача создана!"); load(true); }
-    else if (res.error === "premium_required") showToast("👑 Фото-задачи доступны в Premium");
+
     else showToast("❌ " + String(res.error || "Ошибка"));
   }, [data]);
 

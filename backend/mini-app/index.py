@@ -864,8 +864,7 @@ def handle_add_task(conn, body):
     emoji = body.get("emoji", "📋")
     require_photo = bool(body.get("require_photo", False))
     require_confirm = bool(body.get("require_confirm", False))
-    if require_photo and not parent.get("is_premium"):
-        return error_response("premium_required", 403)
+
     deadline_str = body.get("deadline")  # ISO string or None
     if not title:
         return error_response("title required")
